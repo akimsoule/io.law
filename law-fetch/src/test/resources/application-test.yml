@@ -1,0 +1,57 @@
+spring:
+  application:
+    name: io.law-test
+  
+  datasource:
+    url: jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    username: sa
+    password:
+    driver-class-name: org.h2.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  
+  h2:
+    console:
+      enabled: false
+  
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
+
+law:
+  base-url: https://sgg.gouv.bj/doc
+  user-agent: Mozilla/5.0 (compatible; LawBatchBot/1.0; Test)
+  end-year: 2020
+  max-number-per-year: 50
+  
+  storage:
+    base-path: /tmp/law-test
+    pdf-dir: pdfs
+    ocr-dir: ocr
+    json-dir: articles
+  
+  http:
+    timeout: 10000
+    max-retries: 2
+    retry-delay: 1000
+  
+  batch:
+    chunk-size: 5
+    max-threads: 2
+    max-documents-to-extract: 10
+    max-items-to-fetch-previous: 20
+    job-timeout-minutes: 5
+
+logging:
+  level:
+    root: WARN
+    bj.gouv.sgg: INFO
+    org.springframework.batch: WARN

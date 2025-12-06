@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>bj.gouv.sgg</groupId>
+        <artifactId>io.law</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>law-tojson</artifactId>
+    <packaging>pom</packaging>
+    <name>Law ToJson Parent Module</name>
+
+    <modules>
+        <module>law-AIpdfToJson</module>
+        <module>law-pdfToOcr</module>
+        <module>law-OcrToJson</module>
+        <module>law-toJsonApp</module>
+        <module>law-toJsonCommon</module>
+    </modules>
+
+    <dependencies>
+        <dependency>
+            <groupId>bj.gouv.sgg</groupId>
+            <artifactId>law-common</artifactId>
+            <version>${revision}</version>
+        </dependency>
+    </dependencies>
+</project>
