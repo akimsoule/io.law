@@ -107,6 +107,19 @@ public class JobCommandLineRunner implements CommandLineRunner {
                 }
             });
         
+        // Support alias : --doc=xxx devient aussi --documentId=xxx
+        String docParam = null;
+        for (String arg : args) {
+            if (arg.startsWith("--doc=")) {
+                docParam = arg.substring("--doc=".length());
+                break;
+            }
+        }
+        if (docParam != null) {
+            builder.addString("documentId", docParam);
+            log.debug("Mapped --doc={} to documentId={}", docParam, docParam);
+        }
+        
         // Support direct des paramètres simples (--year=2024, --doc=loi-2025-17)
         Arrays.stream(args)
             .filter(arg -> arg.startsWith(ARG_PREFIX) && !arg.startsWith(JOB_ARG_PREFIX) && !arg.startsWith(PARAMS_ARG_PREFIX) && !arg.startsWith(SPRING_ARG_PREFIX))

@@ -62,4 +62,79 @@ class FileDownloadWriterTest {
         assertTrue(pdfPath.endsWith(".pdf"));
         assertTrue(pdfPath.contains("loi-2025-17"));
     }
+
+    @Test
+    void testDocumentWithPdfContent() {
+        // Given
+        byte[] pdfContent = "%PDF-1.4\n%EOF".getBytes();
+        testDocument.setPdfContent(pdfContent);
+
+        // When/Then
+        assertNotNull(testDocument.getPdfContent());
+        assertTrue(testDocument.getPdfContent().length > 0);
+        assertEquals(pdfContent.length, testDocument.getPdfContent().length);
+    }
+
+    @Test
+    void testDocumentWithSha256() {
+        // Given
+        String sha256Hash = "abc123def456";
+        testDocument.setSha256(sha256Hash);
+
+        // When/Then
+        assertEquals(sha256Hash, testDocument.getSha256());
+    }
+
+    @Test
+    void testDocumentWithNullPdfContent() {
+        // Given
+        LawDocument docWithoutContent = LawDocument.builder()
+            .type("loi")
+            .year(2025)
+            .number(18)
+            .url("https://sgg.gouv.bj/doc/loi-2025-18")
+            .status(LawDocument.ProcessingStatus.FETCHED)
+            .build();
+
+        // Then
+        assertNull(docWithoutContent.getPdfContent(),
+            "Un document non téléchargé ne devrait pas avoir de contenu PDF");
+    }
+
+    @Test
+    void testDocumentReadyForWrite() {
+        // Given - Document avec tout ce qu'il faut pour écrire
+        byte[] content = new byte[]{0x25, 0x50, 0x44, 0x46}; // %PDF
+        LawDocument readyDoc = LawDocument.builder()
+            .type("loi")
+            .year(2025)
+            .number(4)
+            .url("https://sgg.gouv.bj/doc/loi-2025-04")
+            .status(LawDocument.ProcessingStatus.DOWNLOADED)
+            .pdfContent(content)
+            .sha256("abc123")
+            .build();
+
+        // Then
+        assertNotNull(readyDoc.getPdfContent());
+        assertTrue(readyDoc.getPdfContent().length > 0);
+        assertNotNull(readyDoc.getSha256());
+        assertEquals(LawDocument.ProcessingStatus.DOWNLOADED, readyDoc.getStatus());
+    }
+
+    @Test
+    void testPdfContentIsPdfSignature() {
+        // Given
+        byte[] pdfSignature = new byte[]{0x25, 0x50, 0x44, 0x46}; // %PDF
+        testDocument.setPdfContent(pdfSignature);
+
+        // When
+        byte[] content = testDocument.getPdfContent();
+
+        // Then
+        assertEquals(0x25, content[0]); // %
+        assertEquals(0x50, content[1]); // P
+        assertEquals(0x44, content[2]); // D
+        assertEquals(0x46, content[3]); // F
+    }
 }

@@ -24,6 +24,7 @@ public class FetchedDocumentReader implements ItemReader<LawDocument> {
     private Iterator<LawDocument> iterator;
     private String targetDocumentId;
     private boolean forceMode = false;
+    private Integer maxDocuments;
     
     @Override
     public synchronized LawDocument read() {
@@ -55,6 +56,15 @@ public class FetchedDocumentReader implements ItemReader<LawDocument> {
         log.info("Force mode: {}", force);
     }
     
+    /**
+     * Configure le nombre maximum de documents à télécharger
+     * @param max Nombre maximum (null = pas de limite)
+     */
+    public void setMaxDocuments(Integer max) {
+        this.maxDocuments = max;
+        log.info("Max documents: {}", max != null ? max : "unlimited");
+    }
+    
     private synchronized void initialize() {
         List<LawDocument> toDownload;
         
@@ -74,10 +84,13 @@ public class FetchedDocumentReader implements ItemReader<LawDocument> {
                     }
                     return Integer.compare(b.getNumber(), a.getNumber());
                 })
+                .limit(maxDocuments != null ? maxDocuments : Long.MAX_VALUE)
                 .toList();
         }
         
-        log.info("Found {} documents ready to download (status=FETCHED)", toDownload.size());
+        log.info("Found {} documents ready to download (status=FETCHED){}", 
+                 toDownload.size(),
+                 maxDocuments != null ? " (limited to " + maxDocuments + ")" : "");
         
         iterator = toDownload.iterator();
     }

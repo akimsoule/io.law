@@ -31,6 +31,7 @@ public class CurrentYearLawDocumentReader implements ItemReader<LawDocument> {
     private final AtomicInteger currentIndex = new AtomicInteger(0);
     private String targetDocumentId;
     private boolean forceMode = false;
+    private Integer maxDocuments;
     
     public CurrentYearLawDocumentReader(LawProperties properties,
                                        FetchResultRepository fetchResultRepository,
@@ -76,6 +77,15 @@ public class CurrentYearLawDocumentReader implements ItemReader<LawDocument> {
         log.info("Force mode: {}", force);
     }
     
+    /**
+     * Configure le nombre maximum de documents à fetcher
+     * @param max Nombre maximum (null = pas de limite)
+     */
+    public void setMaxDocuments(Integer max) {
+        this.maxDocuments = max;
+        log.info("Max documents: {}", max != null ? max : "unlimited");
+    }
+    
     private List<LawDocument> generateDocuments() {
         List<LawDocument> docs = new ArrayList<>();
 
@@ -111,6 +121,12 @@ public class CurrentYearLawDocumentReader implements ItemReader<LawDocument> {
                     docs.add(documentFactory.create(type, currentYear, number));
                 }
             }
+        }
+
+        // Appliquer la limite maxDocuments si configurée
+        if (maxDocuments != null && docs.size() > maxDocuments) {
+            docs = docs.subList(0, maxDocuments);
+            log.info("Limited to {} documents (maxDocuments parameter)", maxDocuments);
         }
 
         log.info("Generated {} candidate documents (lois + decrets) for current year {} ({} were already FOUND)", 

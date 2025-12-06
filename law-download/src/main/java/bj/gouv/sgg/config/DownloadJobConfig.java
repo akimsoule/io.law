@@ -38,7 +38,7 @@ public class DownloadJobConfig {
     @Bean
     public Step downloadStep(FetchedDocumentReader reader,
                              DownloadProcessor downloadProcessor,
-                             FileDownloadWriter downloadWriter) {
+                             FileDownloadWriter writer) {
         
         // Le reader ne retourne que les documents FETCHED, donc pas besoin de FetchProcessor
         // On télécharge directement en mono-thread pour éviter les duplicates
@@ -47,14 +47,15 @@ public class DownloadJobConfig {
             .<LawDocument, LawDocument>chunk(1, transactionManager) // Process one document at a time
             .reader(reader)
             .processor(downloadProcessor)
-            .writer(downloadWriter) // Sauvegarde dans download_results
+            .writer(writer) // Sauvegarde dans download_results
             // Pas de taskExecutor = exécution synchrone en mono-thread
             .listener(new org.springframework.batch.core.StepExecutionListener() {
                 @Override
                 public void beforeStep(org.springframework.batch.core.StepExecution stepExecution) {
-                    // Lire les paramètres --documentId et --force depuis JobParameters
+                    // Lire les paramètres --documentId, --force et --maxDocuments depuis JobParameters
                     String doc = stepExecution.getJobParameters().getString("documentId");
                     String force = stepExecution.getJobParameters().getString("force");
+                    String maxDocs = stepExecution.getJobParameters().getString("maxDocuments");
                     
                     if (doc != null && !doc.isEmpty()) {
                         reader.setTargetDocumentId(doc);
@@ -63,7 +64,18 @@ public class DownloadJobConfig {
                     
                     if ("true".equalsIgnoreCase(force)) {
                         reader.setForceMode(true);
+                        downloadProcessor.setForceMode(true);
+                        writer.setForceMode(true); // ✅ Passer aussi au writer
                         log.info("🔄 Force mode enabled");
+                    }
+                    
+                    if (maxDocs != null && !maxDocs.isEmpty()) {
+                        try {
+                            reader.setMaxDocuments(Integer.parseInt(maxDocs));
+                            log.info("📊 Max documents: {}", maxDocs);
+                        } catch (NumberFormatException e) {
+                            log.warn("⚠️ Invalid maxDocuments value: {}", maxDocs);
+                        }
                     }
                 }
             })

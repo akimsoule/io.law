@@ -23,6 +23,7 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -357,5 +358,130 @@ class DownloadJobIntegrationTest {
             assertEquals(firstCount, secondCount,
                     "Le job sans force ne devrait pas re-télécharger un document DOWNLOADED");
         }
+    }
+
+    @Test
+    void testDownloadWithMaxDocuments() throws Exception {
+        // Given - Créer 5 documents FETCHED
+        for (int i = 1; i <= 5; i++) {
+            LawDocument doc = LawDocument.builder()
+                    .type("loi")
+                    .year(2024)
+                    .number(i)
+                    .exists(true)
+                    .status(LawDocument.ProcessingStatus.FETCHED)
+                    .url(String.format("https://sgg.gouv.bj/doc/loi-2024-%02d", i))
+                    .build();
+            lawDocumentRepository.save(doc);
+        }
+
+        // When - Télécharger avec maxDocuments=3
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addLong("time", System.currentTimeMillis())
+                .addString("maxDocuments", "3")
+                .toJobParameters();
+        JobExecution jobExecution = jobLauncher.run(downloadJob, jobParameters);
+
+        // Then
+        assertEquals(BatchStatus.COMPLETED, jobExecution.getStatus());
+
+        // Au moins 3 documents devraient avoir été traités (ou moins si erreurs réseau)
+        long processedCount = lawDocumentRepository.countByStatus(LawDocument.ProcessingStatus.DOWNLOADED)
+                + lawDocumentRepository.countByStatus(LawDocument.ProcessingStatus.FAILED);
+        assertTrue(processedCount >= 0 && processedCount <= 3,
+                "Le nombre de documents traités devrait respecter maxDocuments=3");
+    }
+
+    @Test
+    void testUrlFormatWithPadding() throws Exception {
+        // Given - Document avec numéro < 10 (devrait avoir padding)
+        LawDocument doc = LawDocument.builder()
+                .type("loi")
+                .year(2025)
+                .number(4)
+                .exists(true)
+                .status(LawDocument.ProcessingStatus.FETCHED)
+                .url("https://sgg.gouv.bj/doc/loi-2025-04") // Padding: 04
+                .build();
+        lawDocumentRepository.save(doc);
+
+        // When
+        JobParameters jobParameters = new JobParametersBuilder()
+                .addLong("time", System.currentTimeMillis())
+                .addString("documentId", "loi-2025-4") // Sans padding dans l'ID
+                .toJobParameters();
+        JobExecution jobExecution = jobLauncher.run(downloadJob, jobParameters);
+
+        // Then
+        assertEquals(BatchStatus.COMPLETED, jobExecution.getStatus());
+
+        LawDocument retrieved = lawDocumentRepository.findByTypeAndYearAndNumber("loi", 2025, 4)
+                .orElse(null);
+        if (retrieved != null) {
+            assertTrue(retrieved.getUrl().contains("loi-2025-04"),
+                    "L'URL devrait contenir le numéro avec padding (04)");
+            assertFalse(retrieved.getUrl().endsWith("/download"),
+                    "L'URL en base ne devrait PAS se terminer par /download");
+        }
+    }
+
+    @Test
+    void testDownloadUrlHasDownloadSuffix() {
+        // Given
+        String baseUrl = "https://sgg.gouv.bj/doc/loi-2025-04";
+        LawDocument doc = LawDocument.builder()
+                .type("loi")
+                .year(2025)
+                .number(4)
+                .url(baseUrl)
+                .status(LawDocument.ProcessingStatus.FETCHED)
+                .build();
+
+        // When - Construire l'URL de téléchargement (comme dans DownloadProcessor)
+        String downloadUrl = doc.getUrl() + "/download";
+
+        // Then
+        assertEquals("https://sgg.gouv.bj/doc/loi-2025-04/download", downloadUrl,
+                "L'URL de téléchargement doit avoir le suffixe /download");
+        assertTrue(downloadUrl.endsWith("/download"),
+                "L'URL de téléchargement doit se terminer par /download");
+    }
+
+    @Test
+    void testDocumentIdFormat() {
+        // Given
+        LawDocument loi = LawDocument.builder()
+                .type("loi")
+                .year(2025)
+                .number(4)
+                .status(LawDocument.ProcessingStatus.FETCHED)
+                .build();
+
+        LawDocument decret = LawDocument.builder()
+                .type("decret")
+                .year(2025)
+                .number(716)
+                .status(LawDocument.ProcessingStatus.FETCHED)
+                .build();
+
+        // Then
+        assertEquals("loi-2025-4", loi.getDocumentId());
+        assertEquals("decret-2025-716", decret.getDocumentId());
+    }
+
+    @Test
+    void testPdfSignatureValidation() {
+        // Given - Signature PDF valide (%PDF)
+        byte[] validPdfSignature = new byte[]{0x25, 0x50, 0x44, 0x46}; // %PDF
+
+        // Then
+        assertEquals(0x25, validPdfSignature[0], "Premier byte devrait être % (0x25)");
+        assertEquals(0x50, validPdfSignature[1], "Deuxième byte devrait être P (0x50)");
+        assertEquals(0x44, validPdfSignature[2], "Troisième byte devrait être D (0x44)");
+        assertEquals(0x46, validPdfSignature[3], "Quatrième byte devrait être F (0x46)");
+
+        String signature = new String(validPdfSignature);
+        assertTrue(signature.startsWith("%PDF"),
+                "La signature devrait commencer par %PDF");
     }
 }

@@ -32,7 +32,7 @@ public class FileStorageService {
         validateType(type);
         validateDocumentId(documentId);
         
-        return Paths.get(lawProperties.getDirectories().getBase())
+        return Paths.get(lawProperties.getDirectories().getData())
                 .resolve(lawProperties.getDirectories().getPdfs())
                 .resolve(type)
                 .resolve(documentId + ".pdf");
@@ -45,7 +45,7 @@ public class FileStorageService {
         validateType(type);
         validateDocumentId(documentId);
         
-        return Paths.get(lawProperties.getDirectories().getBase())
+        return Paths.get(lawProperties.getDirectories().getData())
                 .resolve(lawProperties.getDirectories().getOcr())
                 .resolve(type)
                 .resolve(documentId + ".txt");
@@ -58,7 +58,7 @@ public class FileStorageService {
         validateType(type);
         validateDocumentId(documentId);
         
-        return Paths.get(lawProperties.getDirectories().getBase())
+        return Paths.get(lawProperties.getDirectories().getData())
                 .resolve(lawProperties.getDirectories().getArticles())
                 .resolve(type)
                 .resolve(documentId + ".json");

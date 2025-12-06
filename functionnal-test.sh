@@ -19,8 +19,8 @@ OPTS="--spring.main.web-application-type=none"
 
 # === FETCH CURRENT JOB ===
 echo ""
-echo "📄 fetchCurrentJob - scan complet"
-java -jar $JAR --job=fetchCurrentJob $OPTS || exit 1  # ✅ PASSED
+echo "📄 fetchCurrentJob - scan complet (max 5 docs)"
+java -jar $JAR --job=fetchCurrentJob --maxDocuments=5 $OPTS || exit 1  # ✅ PASSED
 
 echo ""
 echo "📄 fetchCurrentJob - ciblé (loi-2024-15)"
@@ -32,8 +32,8 @@ java -jar $JAR --job=fetchCurrentJob --doc=loi-2024-15 --force=true $OPTS || exi
 
 # === FETCH PREVIOUS JOB ===
 echo ""
-echo "📄 fetchPreviousJob - scan années précédentes"
-java -jar $JAR --job=fetchPreviousJob $OPTS || exit 1
+echo "📄 fetchPreviousJob - scan années précédentes (max 5 docs)"
+java -jar $JAR --job=fetchPreviousJob --maxDocuments=5 $OPTS || exit 1
 
 echo ""
 echo "📄 fetchPreviousJob - ciblé (loi-2020-10)"
@@ -45,8 +45,8 @@ java -jar $JAR --job=fetchPreviousJob --doc=loi-2020-10 --force=true $OPTS || ex
 
 # === DOWNLOAD JOB ===
 echo ""
-echo "📥 downloadJob - tous documents FETCHED"
-java -jar $JAR --job=downloadJob $OPTS || exit 1
+echo "📥 downloadJob - tous documents FETCHED (max 5 docs)"
+java -jar $JAR --job=downloadJob --maxDocuments=5 $OPTS || exit 1
 
 echo ""
 echo "📥 downloadJob - ciblé (loi-2024-15)"

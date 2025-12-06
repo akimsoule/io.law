@@ -21,16 +21,35 @@ import java.security.MessageDigest;
 @RequiredArgsConstructor
 public class DownloadProcessor implements ItemProcessor<LawDocument, LawDocument> {
     
+    private boolean forceMode = false;
+    
+    /**
+     * Active le mode force (re-téléchargement même si déjà DOWNLOADED)
+     */
+    public void setForceMode(boolean force) {
+        this.forceMode = force;
+        log.debug("Force mode set: {}", force);
+    }
+    
     @Override
     public LawDocument process(LawDocument document) throws Exception {
-        // Skip if already downloaded (idempotence via status)
-        if (document.getStatus() == LawDocument.ProcessingStatus.DOWNLOADED) {
+        // Skip if already downloaded (idempotence via status), SAUF en mode force
+        if (!forceMode && document.getStatus() == LawDocument.ProcessingStatus.DOWNLOADED) {
             log.debug("⏭️ PDF already downloaded, skipping: {}", document.getDocumentId());
             return null;
         }
         
+        // En mode force, toujours re-télécharger
+        if (forceMode && document.getStatus() == LawDocument.ProcessingStatus.DOWNLOADED) {
+            log.info("🔄 Force re-download: {}", document.getDocumentId());
+        }
+        
         try (CloseableHttpClient client = HttpClients.createDefault()) {
-            HttpGet request = new HttpGet(document.getUrl());
+            // Ajouter /download à l'URL de base
+            String downloadUrl = document.getUrl() + "/download";
+            log.debug("Downloading from: {}", downloadUrl);
+            
+            HttpGet request = new HttpGet(downloadUrl);
             request.setHeader("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36");
 
             try (var response = client.executeOpen(null, request, null)) {

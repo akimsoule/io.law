@@ -52,6 +52,13 @@ public interface LawDocumentRepository extends JpaRepository<LawDocument, Long> 
     boolean existsByTypeAndYearAndNumber(String type, int year, int number);
     
     /**
+     * Trouve un document par son documentId (ex: "loi-2024-15").
+     * Utilisé pour éviter les doublons en mode force.
+     */
+    @Query("SELECT d FROM LawDocument d WHERE CONCAT(d.type, '-', d.year, '-', d.number) = :documentId")
+    Optional<LawDocument> findByDocumentId(@Param("documentId") String documentId);
+    
+    /**
      * Trouve les documents par type, année et statut.
      */
     @Query("SELECT d FROM LawDocument d WHERE d.type = :type AND d.year = :year AND d.status = :status")

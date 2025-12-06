@@ -4,6 +4,7 @@ import bj.gouv.sgg.exception.BatchProcessingException;
 import bj.gouv.sgg.model.FetchResult;
 import bj.gouv.sgg.model.LawDocument;
 import bj.gouv.sgg.repository.FetchResultRepository;
+import bj.gouv.sgg.repository.LawDocumentRepository;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Writer spécialisé pour les fetch results
@@ -25,6 +27,7 @@ import java.util.List;
 public class FetchWriter implements ItemWriter<LawDocument> {
     
     private final FetchResultRepository repository;
+    private final LawDocumentRepository lawDocumentRepository;
     private final EntityManager entityManager;
     private boolean forceMode = false;
     
@@ -124,11 +127,62 @@ public class FetchWriter implements ItemWriter<LawDocument> {
     }
     
     /**
-     * Sauvegarde les résultats en batch
+     * Sauvegarde les résultats en batch dans fetch_results ET law_documents
      */
     private void saveResults(List<FetchResult> results) {
         if (!results.isEmpty()) {
+            // Sauvegarder dans fetch_results (table de tracking)
             repository.saveAll(results);
+            
+            // Sauvegarder aussi dans law_documents (table principale pour downloadJob)
+            List<LawDocument> documents = results.stream()
+                .map(this::convertOrUpdateLawDocument)
+                .toList();
+            lawDocumentRepository.saveAll(documents);
+        }
+    }
+    
+    /**
+     * Convertit FetchResult vers LawDocument OU met à jour document existant.
+     * Évite les doublons en récupérant l'entity existante si présente (conserve l'ID).
+     */
+    private LawDocument convertOrUpdateLawDocument(FetchResult result) {
+        // Mapper le statut de FetchResult vers LawDocument.ProcessingStatus
+        LawDocument.ProcessingStatus status;
+        try {
+            status = LawDocument.ProcessingStatus.valueOf(result.getStatus());
+        } catch (IllegalArgumentException e) {
+            // Si le statut n'existe pas dans LawDocument (ex: UNKNOWN), utiliser PENDING
+            log.warn("⚠️ Unknown status '{}' for document {}, defaulting to PENDING", 
+                     result.getStatus(), result.getDocumentId());
+            status = LawDocument.ProcessingStatus.PENDING;
+        }
+        
+        String documentId = result.getDocumentId();
+        
+        // Chercher entity existante pour éviter création de doublon
+        Optional<LawDocument> existingOpt = lawDocumentRepository.findByDocumentId(documentId);
+        
+        if (existingOpt.isPresent()) {
+            // ✅ UPDATE : Mettre à jour document existant (conserve l'ID)
+            LawDocument existing = existingOpt.get();
+            existing.setUrl(result.getUrl());
+            existing.setExists(result.getExists());
+            existing.setStatus(status);
+            
+            log.debug("✅ Updated existing document: {}", documentId);
+            return existing;
+        } else {
+            // ➕ INSERT : Créer nouveau document
+            log.debug("➕ Creating new document: {}", documentId);
+            return LawDocument.builder()
+                .type(result.getDocumentType())
+                .year(result.getYear())
+                .number(result.getNumber())
+                .url(result.getUrl())
+                .exists(result.getExists())
+                .status(status)
+                .build();
         }
     }
     

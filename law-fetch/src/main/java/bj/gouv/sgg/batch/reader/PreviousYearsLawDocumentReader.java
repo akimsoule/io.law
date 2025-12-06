@@ -35,6 +35,7 @@ public class PreviousYearsLawDocumentReader implements ItemReader<LawDocument> {
     private final AtomicInteger currentIndex = new AtomicInteger(0);
     private String targetDocumentId;
     private boolean forceMode = false;
+    private Integer maxDocuments; // Optional: limite le nombre de documents générés
     
     public PreviousYearsLawDocumentReader(LawProperties properties, 
                                           FetchResultRepository fetchResultRepository,
@@ -61,6 +62,17 @@ public class PreviousYearsLawDocumentReader implements ItemReader<LawDocument> {
     public void setForceMode(boolean force) {
         this.forceMode = force;
         log.info("Force mode: {}", force);
+    }
+    
+    /**
+     * Configure le nombre maximum de documents à générer
+     * @param max Limite de documents (null = utiliser maxItemsToFetchPrevious)
+     */
+    public void setMaxDocuments(Integer max) {
+        this.maxDocuments = max;
+        if (max != null) {
+            log.info("Max documents: {}", max);
+        }
     }
     
     @Override
@@ -142,7 +154,8 @@ public class PreviousYearsLawDocumentReader implements ItemReader<LawDocument> {
      * @return [lastYear, lastNumber, skippedCount]
      */
     private int[] scanDocuments(List<LawDocument> docs, Set<String> verifiedDocuments, int startYear, int startNumber) {
-        int maxItems = properties.getBatch().getMaxItemsToFetchPrevious();
+        // Utiliser maxDocuments si défini, sinon maxItemsToFetchPrevious
+        int maxItems = maxDocuments != null ? maxDocuments : properties.getBatch().getMaxItemsToFetchPrevious();
         int lastYear = startYear;
         int lastNumber = startNumber;
         int skippedCount = 0;

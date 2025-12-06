@@ -13,7 +13,7 @@ Application Spring Batch modulaire pour extraire, traiter et consolider les lois
 - **Maven Multi-Modules** (7 modules)
 - **PDFBox** pour extraction PDF
 - **Tesseract OCR** (via JavaCPP) pour OCR des PDFs scannés
-- **MySQL** pour persistance
+- **MySQL 8.4** (Docker) pour persistance
 - **Ollama** (optionnel) pour parsing IA en local
 - **Groq API** (optionnel) pour parsing IA cloud (fallback)
 
@@ -64,7 +64,7 @@ io.law/
 - **config/** : Configuration Spring
   - `LawProperties` : Properties YAML
   - `GsonConfig` : Configuration Gson
-  - `DatabaseConfig` : Configuration JPA/MySQL
+  - `DatabaseConfig` : Configuration JPA/MySQL (Docker)
   
 - **service/** : Services métier
   - `FileStorageService` : Gestion chemins fichiers (PDF/OCR/JSON paths)
@@ -309,7 +309,7 @@ law:
 - Monitoring : Logs consolidés
 
 #### 5. law-consolidate (Consolidation BD)
-**Responsabilité** : Importer JSON structurés dans MySQL
+**Responsabilité** : Importer JSON structurés dans MySQL (Docker)
 
 **Job** : `consolidationJob`
 
@@ -329,6 +329,10 @@ JSON files → Parse/Validate → Map to entities → Save to DB
 - `Article` (bulk insert)
 - `Signatory` (bulk insert)
 - `Metadata` (update confidence/method)
+
+**Base de données** :
+- MySQL 8.4 dans Docker
+- Commandes : `docker exec -it mysql-law mysql -u root -p law_db`
 
 **Dépendances** :
 ```xml
@@ -1135,6 +1139,64 @@ law:
   groq:
     api-key: ${GROQ_API_KEY:}
 ```
+
+---
+
+## Base de Données MySQL (Docker)
+
+### Démarrage
+```bash
+# Lancer MySQL dans Docker
+docker run -d \
+  --name mysql-law \
+  -e MYSQL_ROOT_PASSWORD=root \
+  -e MYSQL_DATABASE=law_db \
+  -p 3306:3306 \
+  mysql:8.4
+
+# Vérifier le statut
+docker ps | grep mysql-law
+```
+
+### Commandes utiles
+```bash
+# Accéder au shell MySQL
+docker exec -it mysql-law mysql -u root -proot law_db
+
+# Nettoyer les doublons
+docker exec -it mysql-law mysql -u root -proot law_db -e \
+  "DELETE t1 FROM law_documents t1 
+   INNER JOIN law_documents t2 
+   WHERE t1.id > t2.id 
+   AND t1.type = t2.type 
+   AND t1.document_year = t2.document_year 
+   AND t1.number = t2.number;"
+
+# Compter les documents par statut
+docker exec -it mysql-law mysql -u root -proot law_db -e \
+  "SELECT status, COUNT(*) as count 
+   FROM law_documents 
+   GROUP BY status;"
+
+# Lister les documents FETCHED
+docker exec -it mysql-law mysql -u root -proot law_db -e \
+  "SELECT type, document_year, number, status 
+   FROM law_documents 
+   WHERE status='FETCHED' 
+   LIMIT 10;"
+
+# Backup de la base
+docker exec mysql-law mysqldump -u root -proot law_db > backup.sql
+
+# Restore depuis backup
+docker exec -i mysql-law mysql -u root -proot law_db < backup.sql
+
+# Arrêter et supprimer le conteneur
+docker stop mysql-law
+docker rm mysql-law
+```
+
+---
 
 ### Validation Input
 

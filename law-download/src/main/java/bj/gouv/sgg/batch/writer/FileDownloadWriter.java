@@ -24,6 +24,16 @@ public class FileDownloadWriter implements ItemWriter<LawDocument> {
     private final FileStorageService fileStorageService;
     private final DocumentStatusManager statusManager;
     private final DownloadResultRepository downloadResultRepository;
+    
+    private boolean forceMode = false;
+    
+    /**
+     * Active le mode force (re-sauvegarde même si déjà dans download_results)
+     */
+    public void setForceMode(boolean force) {
+        this.forceMode = force;
+        log.debug("Writer force mode set: {}", force);
+    }
 
     @Override
     public void write(Chunk<? extends LawDocument> chunk) throws Exception {
@@ -36,11 +46,22 @@ public class FileDownloadWriter implements ItemWriter<LawDocument> {
                 continue;
             }
             
-            // Vérifier si déjà enregistré (idempotence)
-            if (downloadResultRepository.existsByDocumentId(doc.getDocumentId())) {
+            // Vérifier si déjà enregistré (idempotence), SAUF en mode force
+            if (!forceMode && downloadResultRepository.existsByDocumentId(doc.getDocumentId())) {
                 log.debug("⏭️ Already in download_results, skipping: {}", doc.getDocumentId());
                 skipped++;
                 continue;
+            }
+            
+            // En mode force, supprimer l'ancienne entrée avant de re-sauvegarder
+            if (forceMode && downloadResultRepository.existsByDocumentId(doc.getDocumentId())) {
+                // Chercher et supprimer l'entrée existante
+                downloadResultRepository.findByDocumentId(doc.getDocumentId())
+                    .ifPresent(existing -> {
+                        downloadResultRepository.delete(existing);
+                        downloadResultRepository.flush(); // Force la suppression avant l'insert
+                        log.debug("🔄 Deleted old download_result for: {}", doc.getDocumentId());
+                    });
             }
             
             // Sauvegarder le PDF sur disque

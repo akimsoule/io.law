@@ -67,9 +67,10 @@ public class FetchJobConfiguration {
             .listener(new org.springframework.batch.core.StepExecutionListener() {
                 @Override
                 public void beforeStep(org.springframework.batch.core.StepExecution stepExecution) {
-                    // Lire les paramètres --doc et --force depuis JobParameters
+                    // Lire les paramètres --doc, --force et --maxDocuments depuis JobParameters
                     String doc = stepExecution.getJobParameters().getString(PARAM_DOC);
                     String force = stepExecution.getJobParameters().getString(PARAM_FORCE);
+                    String maxDocs = stepExecution.getJobParameters().getString("maxDocuments");
                     
                     if (doc != null && !doc.isEmpty()) {
                         currentYearReader.setTargetDocumentId(doc);
@@ -80,6 +81,15 @@ public class FetchJobConfiguration {
                         currentYearReader.setForceMode(true);
                         fetchWriter.setForceMode(true);
                         log.info("🔄 Force mode enabled");
+                    }
+                    
+                    if (maxDocs != null && !maxDocs.isEmpty()) {
+                        try {
+                            currentYearReader.setMaxDocuments(Integer.parseInt(maxDocs));
+                            log.info("📊 Max documents: {}", maxDocs);
+                        } catch (NumberFormatException e) {
+                            log.warn("⚠️ Invalid maxDocuments value: {}", maxDocs);
+                        }
                     }
                 }
             })
@@ -114,9 +124,10 @@ public class FetchJobConfiguration {
             .listener(new org.springframework.batch.core.StepExecutionListener() {
                 @Override
                 public void beforeStep(org.springframework.batch.core.StepExecution stepExecution) {
-                    // Lire les paramètres --doc et --force depuis JobParameters
+                    // Lire les paramètres --doc, --force et --maxDocuments depuis JobParameters
                     String doc = stepExecution.getJobParameters().getString(PARAM_DOC);
                     String force = stepExecution.getJobParameters().getString(PARAM_FORCE);
+                    String maxDocs = stepExecution.getJobParameters().getString("maxDocuments");
                     
                     if (doc != null && !doc.isEmpty()) {
                         previousYearsReader.setTargetDocumentId(doc);
@@ -127,6 +138,15 @@ public class FetchJobConfiguration {
                         previousYearsReader.setForceMode(true);
                         fetchWriter.setForceMode(true);
                         log.info("🔄 Force mode enabled");
+                    }
+                    
+                    if (maxDocs != null && !maxDocs.isEmpty()) {
+                        try {
+                            previousYearsReader.setMaxDocuments(Integer.parseInt(maxDocs));
+                            log.info("📊 Max documents: {}", maxDocs);
+                        } catch (NumberFormatException e) {
+                            log.warn("⚠️ Invalid maxDocuments value: {}", maxDocs);
+                        }
                     }
                 }
             })

@@ -3,6 +3,7 @@ package bj.gouv.sgg.batch.writer;
 import bj.gouv.sgg.model.FetchResult;
 import bj.gouv.sgg.model.LawDocument;
 import bj.gouv.sgg.repository.FetchResultRepository;
+import bj.gouv.sgg.repository.LawDocumentRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,16 +30,22 @@ class FetchWriterTest {
     private FetchResultRepository repository;
 
     @Mock
+    private LawDocumentRepository lawDocumentRepository;
+
+    @Mock
     private EntityManager entityManager;
 
     private FetchWriter writer;
 
     @Captor
     private ArgumentCaptor<List<FetchResult>> resultsCaptor;
+    
+    @Captor
+    private ArgumentCaptor<List<LawDocument>> documentsCaptor;
 
     @BeforeEach
     void setUp() {
-        writer = new FetchWriter(repository, entityManager);
+        writer = new FetchWriter(repository, lawDocumentRepository, entityManager);
     }
 
     @Test

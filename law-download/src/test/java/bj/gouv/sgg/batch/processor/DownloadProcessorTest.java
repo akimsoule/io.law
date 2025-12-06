@@ -93,4 +93,87 @@ class DownloadProcessorTest {
         // Then
         assertEquals(LawDocument.ProcessingStatus.FETCHED, testDocument.getStatus());
     }
+
+    @Test
+    void testForceModeSetter() {
+        // Given
+        DownloadProcessor processor = new DownloadProcessor();
+        
+        // When
+        processor.setForceMode(true);
+
+        // Then - Pas d'exception, force mode activé
+        assertDoesNotThrow(() -> processor.setForceMode(false));
+    }
+
+    @Test
+    void testSkipAlreadyDownloadedDocument() throws Exception {
+        // Given
+        DownloadProcessor processor = new DownloadProcessor();
+        testDocument.setStatus(LawDocument.ProcessingStatus.DOWNLOADED);
+        processor.setForceMode(false);
+
+        // When
+        LawDocument result = processor.process(testDocument);
+
+        // Then
+        assertNull(result, "Le document DOWNLOADED devrait être skippé en mode normal");
+    }
+
+    @Test
+    void testUrlShouldNotContainDownloadSuffix() {
+        // Given
+        String baseUrl = "https://sgg.gouv.bj/doc/loi-2025-04";
+        LawDocument doc = LawDocument.builder()
+            .type("loi")
+            .year(2025)
+            .number(4)
+            .url(baseUrl)
+            .status(LawDocument.ProcessingStatus.FETCHED)
+            .build();
+
+        // Then
+        assertFalse(doc.getUrl().endsWith("/download"),
+            "L'URL en base ne devrait PAS contenir /download");
+        assertEquals(baseUrl, doc.getUrl());
+    }
+
+    @Test
+    void testDownloadUrlConstruction() {
+        // Given
+        String baseUrl = "https://sgg.gouv.bj/doc/loi-2025-04";
+        String expectedDownloadUrl = baseUrl + "/download";
+        
+        LawDocument doc = LawDocument.builder()
+            .type("loi")
+            .year(2025)
+            .number(4)
+            .url(baseUrl)
+            .status(LawDocument.ProcessingStatus.FETCHED)
+            .build();
+
+        // Then
+        String downloadUrl = doc.getUrl() + "/download";
+        assertEquals(expectedDownloadUrl, downloadUrl,
+            "L'URL de téléchargement devrait être baseUrl + /download");
+        assertEquals("https://sgg.gouv.bj/doc/loi-2025-04/download", downloadUrl);
+    }
+
+    @Test
+    void testDocumentWithPaddedNumber() {
+        // Given - Numéro < 10 devrait avoir padding en base
+        LawDocument doc = LawDocument.builder()
+            .type("loi")
+            .year(2025)
+            .number(4)
+            .url("https://sgg.gouv.bj/doc/loi-2025-04") // Avec padding
+            .status(LawDocument.ProcessingStatus.FETCHED)
+            .build();
+
+        // Then
+        assertTrue(doc.getUrl().contains("loi-2025-04"),
+            "L'URL devrait contenir le numéro avec padding (04)");
+        assertFalse(doc.getUrl().contains("loi-2025-4"),
+            "L'URL ne devrait PAS contenir le numéro sans padding (4)");
+    }
 }

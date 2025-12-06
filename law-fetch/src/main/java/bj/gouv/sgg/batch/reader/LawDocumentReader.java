@@ -64,7 +64,7 @@ public class LawDocumentReader implements ItemReader<LawDocument> {
     private LawDocument createDocument(String type, int year, int number) {
         // Appliquer le padding pour les numéros 1-9 (ex: 01, 02, ..., 09)
         String numberStr = String.format("%02d", number);
-        String url = String.format("%s/%s-%d-%s/download", 
+        String url = String.format("%s/%s-%d-%s", 
             properties.getBaseUrl(), type, year, numberStr);
         
         return LawDocument.builder()
