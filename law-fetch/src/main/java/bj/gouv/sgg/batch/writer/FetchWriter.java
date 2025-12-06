@@ -46,49 +46,96 @@ public class FetchWriter implements ItemWriter<LawDocument> {
         for (LawDocument document : chunk) {
             boolean exists = repository.existsByDocumentId(document.getDocumentId());
             
-            // Mode normal : INSERT-ONLY (pas d'UPDATE)
-            if (!forceMode && exists) {
-                log.debug("Already fetched, skipping: {}", document.getDocumentId());
+            if (shouldSkipDocument(exists)) {
                 skippedCount++;
                 continue;
             }
             
-            // Mode force : DELETE puis flush AVANT de créer le nouveau record
-            if (forceMode && exists) {
-                repository.deleteByDocumentId(document.getDocumentId());
-                entityManager.flush(); // Force commit immédiat du DELETE
+            if (shouldDeleteExisting(exists)) {
+                deleteExistingDocument(document.getDocumentId());
                 updatedCount++;
-                log.debug("Force mode: deleted existing entry for {}", document.getDocumentId());
             }
             
-            // Créer un nouvel enregistrement (INSERT)
-            FetchResult result = FetchResult.builder()
-                .documentId(document.getDocumentId())
-                .documentType(document.getType())
-                .year(document.getYear())
-                .number(document.getNumber())
-                .url(document.getUrl())
-                .status(document.getStatus() != null ? document.getStatus().name() : "UNKNOWN")
-                .exists(document.isExists())
-                .fetchedAt(LocalDateTime.now())
-                .errorMessage(null)
-                .build();
-            
+            FetchResult result = createFetchResult(document);
             results.add(result);
+            
             if (!exists) {
                 newCount++;
             }
-            log.debug("{} fetch: {} - Status: {} - Exists: {}", 
-                forceMode && exists ? "Updated" : "New",
-                document.getDocumentId(), document.getStatus(), document.isExists());
+            
+            logDocumentProcessed(document, exists);
         }
         
-        // Sauvegarde en batch pour performance
+        saveResults(results);
+        logSummary(newCount, updatedCount, skippedCount);
+    }
+    
+    /**
+     * Vérifie si le document doit être ignoré (mode normal + existe déjà)
+     */
+    private boolean shouldSkipDocument(boolean exists) {
+        if (!forceMode && exists) {
+            log.debug("Already fetched, skipping");
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * Vérifie si l'entrée existante doit être supprimée (mode force + existe)
+     */
+    private boolean shouldDeleteExisting(boolean exists) {
+        return forceMode && exists;
+    }
+    
+    /**
+     * Supprime l'entrée existante et flush
+     */
+    private void deleteExistingDocument(String documentId) {
+        repository.deleteByDocumentId(documentId);
+        entityManager.flush();
+        log.debug("Force mode: deleted existing entry for {}", documentId);
+    }
+    
+    /**
+     * Crée un FetchResult depuis un LawDocument
+     */
+    private FetchResult createFetchResult(LawDocument document) {
+        return FetchResult.builder()
+            .documentId(document.getDocumentId())
+            .documentType(document.getType())
+            .year(document.getYear())
+            .number(document.getNumber())
+            .url(document.getUrl())
+            .status(document.getStatus() != null ? document.getStatus().name() : "UNKNOWN")
+            .exists(document.isExists())
+            .fetchedAt(LocalDateTime.now())
+            .errorMessage(null)
+            .build();
+    }
+    
+    /**
+     * Log le traitement du document
+     */
+    private void logDocumentProcessed(LawDocument document, boolean exists) {
+        log.debug("{} fetch: {} - Status: {} - Exists: {}", 
+            forceMode && exists ? "Updated" : "New",
+            document.getDocumentId(), document.getStatus(), document.isExists());
+    }
+    
+    /**
+     * Sauvegarde les résultats en batch
+     */
+    private void saveResults(List<FetchResult> results) {
         if (!results.isEmpty()) {
             repository.saveAll(results);
         }
-        
-        // Loguer seulement si quelque chose s'est passé
+    }
+    
+    /**
+     * Log le résumé de l'opération
+     */
+    private void logSummary(int newCount, int updatedCount, int skippedCount) {
         if (newCount > 0 || updatedCount > 0 || skippedCount > 0) {
             if (forceMode) {
                 log.info("Saved {} fetch results ({} new, {} updated, {} skipped, FORCE mode)", 

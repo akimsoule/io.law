@@ -146,44 +146,58 @@ public class PreviousYearsLawDocumentReader implements ItemReader<LawDocument> {
         int lastYear = startYear;
         int lastNumber = startNumber;
         int skippedCount = 0;
-        boolean limitReached = false;
         
-        for (int year = startYear; year >= properties.getEndYear() && !limitReached; year--) {
+        for (int year = startYear; year >= properties.getEndYear(); year--) {
             int startNum = (year == startYear) ? startNumber : properties.getMaxNumberPerYear();
             
             for (int number = startNum; number >= 1; number--) {
                 lastYear = year;
                 lastNumber = number;
                 
-                String loiDocId = String.format("%s-%d-%d", TYPE_LOI, year, number);
-                if (!verifiedDocuments.contains(loiDocId)) {
-                    docs.add(documentFactory.create(TYPE_LOI, year, number));
-                    
-                    if (docs.size() >= maxItems) {
-                        log.info("Reached max items limit: {}", maxItems);
-                        limitReached = true;
-                        break;
-                    }
-                } else {
-                    skippedCount++;
-                }
+                skippedCount += processDocumentPair(docs, verifiedDocuments, year, number);
                 
-                String decretDocId = String.format("%s-%d-%d", TYPE_DECRET, year, number);
-                if (!verifiedDocuments.contains(decretDocId)) {
-                    docs.add(documentFactory.create(TYPE_DECRET, year, number));
-                    
-                    if (docs.size() >= maxItems) {
-                        log.info("Reached max items limit: {}", maxItems);
-                        limitReached = true;
-                        break;
-                    }
-                } else {
-                    skippedCount++;
+                if (docs.size() >= maxItems) {
+                    log.info("Reached max items limit: {}", maxItems);
+                    return new int[]{lastYear, lastNumber, skippedCount};
                 }
             }
         }
         
         return new int[]{lastYear, lastNumber, skippedCount};
+    }
+    
+    /**
+     * Traite une paire loi/décret pour une année et numéro donnés
+     * @return nombre de documents skippés (0, 1 ou 2)
+     */
+    private int processDocumentPair(List<LawDocument> docs, Set<String> verifiedDocuments, int year, int number) {
+        int skipped = 0;
+        
+        if (addDocumentIfNeeded(docs, verifiedDocuments, TYPE_LOI, year, number)) {
+            skipped++;
+        }
+        
+        if (addDocumentIfNeeded(docs, verifiedDocuments, TYPE_DECRET, year, number)) {
+            skipped++;
+        }
+        
+        return skipped;
+    }
+    
+    /**
+     * Ajoute un document s'il n'est pas déjà vérifié
+     * @return true si le document était déjà vérifié (skipped), false sinon
+     */
+    private boolean addDocumentIfNeeded(List<LawDocument> docs, Set<String> verifiedDocuments, 
+                                         String docType, int year, int number) {
+        String docId = String.format("%s-%d-%d", docType, year, number);
+        
+        if (verifiedDocuments.contains(docId)) {
+            return true; // Skip
+        }
+        
+        docs.add(documentFactory.create(docType, year, number));
+        return false; // Added
     }
     
     /**
