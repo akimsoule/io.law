@@ -56,15 +56,15 @@ public class LawDocument {
     /**
      * Parse un documentId au format "type-year-number" et retourne les composants.
      * @param documentId le documentId à parser (ex: "loi-2024-15")
-     * @return un tableau [type, year, number] ou null si format invalide
+     * @return un tableau [type, year, number] ou tableau vide si format invalide
      */
     public static String[] parseDocumentId(String documentId) {
         if (documentId == null || documentId.isBlank()) {
-            return null;
+            return new String[0];
         }
         String[] parts = documentId.split("-");
         if (parts.length != 3) {
-            return null;
+            return new String[0];
         }
         return parts; // [type, year, number]
     }

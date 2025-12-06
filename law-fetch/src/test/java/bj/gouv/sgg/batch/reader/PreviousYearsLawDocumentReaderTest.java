@@ -85,7 +85,7 @@ class PreviousYearsLawDocumentReaderTest {
     }
 
     @Test
-    void testReadWithTargetDocument() throws Exception {
+    void testReadWithTargetDocument() {
         // Given
         reader.setTargetDocumentId("loi-2024-15");
         when(fetchResultRepository.existsByDocumentId("loi-2024-15")).thenReturn(false);
@@ -114,7 +114,7 @@ class PreviousYearsLawDocumentReaderTest {
     }
 
     @Test
-    void testReadWithTargetDocumentInForceMode() throws Exception {
+    void testReadWithTargetDocumentInForceMode() {
         // Given
         reader.setTargetDocumentId("loi-2023-10");
         reader.setForceMode(true);
@@ -139,7 +139,7 @@ class PreviousYearsLawDocumentReaderTest {
     }
 
     @Test
-    void testReadWithTargetDocumentAlreadyExists() throws Exception {
+    void testReadWithTargetDocumentAlreadyExists() {
         // Given
         reader.setTargetDocumentId("loi-2024-99");
         reader.setForceMode(false);
@@ -154,7 +154,7 @@ class PreviousYearsLawDocumentReaderTest {
     }
 
     @Test
-    void testReadWithInvalidTargetDocumentId() throws Exception {
+    void testReadWithInvalidTargetDocumentId() {
         // Given
         reader.setTargetDocumentId("invalid-format");
 
@@ -166,7 +166,7 @@ class PreviousYearsLawDocumentReaderTest {
     }
 
     @Test
-    void testReadWithMaxDocumentsLimit() throws Exception {
+    void testReadWithMaxDocumentsLimit() {
         // Given
         reader.setMaxDocuments(2);
         when(fetchResultRepository.findAllDocumentIds()).thenReturn(Collections.emptyList());
@@ -193,7 +193,7 @@ class PreviousYearsLawDocumentReaderTest {
     }
 
     @Test
-    void testReadWithCursorFromDatabase() throws Exception {
+    void testReadWithCursorFromDatabase() {
         // Given
         FetchCursor cursor = FetchCursor.builder()
             .cursorType("fetch-previous")
@@ -223,7 +223,7 @@ class PreviousYearsLawDocumentReaderTest {
     }
 
     @Test
-    void testReadWithNoCursor() throws Exception {
+    void testReadWithNoCursor() {
         // Given
         when(fetchCursorRepository.findByCursorType(anyString())).thenReturn(Optional.empty());
         when(fetchResultRepository.findAllDocumentIds()).thenReturn(Collections.emptyList());
@@ -247,7 +247,7 @@ class PreviousYearsLawDocumentReaderTest {
     }
 
     @Test
-    void testReadSkipsVerifiedDocuments() throws Exception {
+    void testReadSkipsVerifiedDocuments() {
         // Given
         List<String> verifiedDocs = List.of("loi-2024-1", "decret-2024-1");
         when(fetchResultRepository.findAllDocumentIds()).thenReturn(verifiedDocs);
@@ -273,7 +273,7 @@ class PreviousYearsLawDocumentReaderTest {
     }
 
     @Test
-    void testReadInForceModeSkipsNothing() throws Exception {
+    void testReadInForceModeSkipsNothing() {
         // Given
         reader.setForceMode(true);
         reader.setMaxDocuments(2);
@@ -299,7 +299,7 @@ class PreviousYearsLawDocumentReaderTest {
     }
 
     @Test
-    void testReset() throws Exception {
+    void testReset() {
         // Given
         reader.setMaxDocuments(1);
         when(fetchResultRepository.findAllDocumentIds()).thenReturn(Collections.emptyList());

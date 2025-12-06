@@ -28,7 +28,7 @@ public class DocumentStatusManager {
     public void updateStatus(String documentId, String newStatus) {
         try {
             LawDocument.ProcessingStatus status = LawDocument.ProcessingStatus.valueOf(newStatus);
-            updateStatus(documentId, status);
+            updateStatusInternal(documentId, status);
         } catch (IllegalArgumentException e) {
             log.error("❌ Invalid status '{}' for document {}", newStatus, documentId);
             throw new IllegalArgumentException("Invalid status: " + newStatus, e);
@@ -40,8 +40,15 @@ public class DocumentStatusManager {
      */
     @Transactional
     public void updateStatus(String documentId, LawDocument.ProcessingStatus newStatus) {
+        updateStatusInternal(documentId, newStatus);
+    }
+    
+    /**
+     * Méthode interne pour mettre à jour le statut (évite appel transactionnel via this).
+     */
+    private void updateStatusInternal(String documentId, LawDocument.ProcessingStatus newStatus) {
         String[] parts = LawDocument.parseDocumentId(documentId);
-        if (parts == null) {
+        if (parts.length == 0) {
             log.error("❌ Invalid documentId format: {}", documentId);
             return;
         }
@@ -66,7 +73,7 @@ public class DocumentStatusManager {
     @Transactional
     public void recordError(String documentId, String errorMessage) {
         String[] parts = LawDocument.parseDocumentId(documentId);
-        if (parts == null) {
+        if (parts.length == 0) {
             log.error("❌ Invalid documentId format: {}", documentId);
             return;
         }

@@ -1,7 +1,5 @@
 package bj.gouv.sgg.exception;
 
-import bj.gouv.sgg.exception.LawProcessingException;
-
 /**
  * Exception levée lors d'une erreur de traitement OCR.
  */
