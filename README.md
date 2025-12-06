@@ -325,11 +325,18 @@ mvn verify
 ```mermaid
 graph LR
     A[fetchCurrentJob] --> B[downloadJob]
-    B --> C[ocrJob]
-    C --> D[articleExtractionJob]
-    D --> E[consolidationJob]
-    
     F[fetchPreviousJob] --> B
+    
+    B --> C{Stratégie d'extraction}
+    
+    C -->|Voie 1: IA| G[iaExtractionJob]
+    G --> H[Fichiers .json]
+    
+    C -->|Voie 2: OCR| D[ocrJob]
+    D --> E[articleExtractionJob]
+    E --> H
+    
+    H --> I[consolidationJob]
 ```
 
 ### 1. Récupération des métadonnées
@@ -352,23 +359,39 @@ curl -X POST http://localhost:8080/api/jobs/downloadJob/run
 
 **Résultat** : Documents avec statut `DOWNLOADED` + fichiers `.pdf`
 
-### 3. Extraction OCR
+### 3. Extraction du contenu (2 voies possibles)
+
+#### Voie 1 : Extraction directe via IA (prioritaire)
 
 ```bash
+curl -X POST http://localhost:8080/api/jobs/iaExtractionJob/run
+```
+
+**Résultat** : Fichiers `.json` structurés (haute confiance)
+
+**Providers** :
+- **Ollama** (local) : Si disponible et modèles configurés
+- **Groq API** (cloud) : Fallback si Ollama indisponible
+
+#### Voie 2 : Extraction via OCR + Parsing (fallback)
+
+```bash
+# Étape 2a : Extraction OCR
 curl -X POST http://localhost:8080/api/jobs/ocrJob/run
 ```
 
 **Résultat** : Documents avec statut `EXTRACTED` + fichiers `.txt`
 
-### 4. Parsing en JSON
-
 ```bash
+# Étape 2b : Parsing OCR → JSON
 curl -X POST http://localhost:8080/api/jobs/articleExtractionJob/run
 ```
 
-**Résultat** : Fichiers `.json` structurés
+**Résultat** : Fichiers `.json` structurés (confiance moyenne)
 
-### 5. Consolidation en base
+**Note** : La voie IA ne réécrit jamais un JSON existant si sa confiance est inférieure. La meilleure extraction est toujours conservée.
+
+### 4. Consolidation en base
 
 ```bash
 curl -X POST http://localhost:8080/api/jobs/consolidationJob/run
