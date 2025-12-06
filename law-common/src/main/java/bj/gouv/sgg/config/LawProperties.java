@@ -25,6 +25,10 @@ public class LawProperties {
     public static class Directories {
         private String database;
         private String data;
+        private String base = "data"; // Répertoire de base pour les fichiers
+        private String pdfs = "pdfs"; // Sous-répertoire pour les PDFs
+        private String ocr = "ocr";   // Sous-répertoire pour les OCR
+        private String articles = "articles"; // Sous-répertoire pour les JSON
     }
     
     @Data

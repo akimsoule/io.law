@@ -33,7 +33,7 @@ public class FetchResult {
     @Column(nullable = false)
     private String documentType;
 
-    @Column(nullable = false)
+    @Column(name = "document_year", nullable = false)  // "year" est un mot réservé SQL
     private Integer year;
 
     @Column(nullable = false)

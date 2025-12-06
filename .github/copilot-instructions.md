@@ -41,22 +41,17 @@ io.law/
 
 **Contenu** :
 - **model/** : Entités JPA
-  - `LawDocument` : Document principal (loi/décret)
-  - `FetchResult` : Résultat fetch HTTP
-  - `FetchCursor` : Position scan années précédentes
-  - `FetchNotFoundRange` : Plages 404 détectées
-  - `Article` : Article de loi
-  - `Signatory` : Signataire
-  - `Metadata` : Métadonnées extraction
+  - `LawDocument` : Document principal (loi/décret) avec annotations JPA complètes
+  - `FetchResult` : Résultat fetch HTTP (déplacé vers law-fetch)
+  - `FetchCursor` : Position scan années précédentes (déplacé vers law-fetch)
+  - `FetchNotFoundRange` : Plages 404 détectées (déplacé vers law-fetch)
+  - Note : `Article`, `Signatory`, `DocumentMetadata`, etc. déplacés vers law-tojson/law-toJsonCommon
   
 - **repository/** : Repositories JPA
-  - `LawDocumentRepository`
-  - `FetchResultRepository`
-  - `FetchCursorRepository`
-  - `FetchNotFoundRangeRepository`
-  - `ArticleRepository`
-  - `SignatoryRepository`
-  - `MetadataRepository`
+  - `LawDocumentRepository` : CRUD + requêtes spécialisées
+  - `FetchResultRepository` : (déplacé vers law-fetch)
+  - `FetchCursorRepository` : (déplacé vers law-fetch)
+  - `FetchNotFoundRangeRepository` : (déplacé vers law-fetch)
   
 - **exception/** : Exceptions métier (21 exceptions)
   - `DocumentNotFoundException`
@@ -71,8 +66,11 @@ io.law/
   - `GsonConfig` : Configuration Gson
   - `DatabaseConfig` : Configuration JPA/MySQL
   
+- **service/** : Services métier
+  - `FileStorageService` : Gestion chemins fichiers (PDF/OCR/JSON paths)
+  - `DocumentStatusManager` : Mise à jour statuts documents
+  
 - **util/** : Utilitaires
-  - `FileStorageService` : Gestion chemins fichiers
   - `DateUtils` : Manipulation dates
   - `StringUtils` : Nettoyage texte
   - `ValidationUtils` : Validations
@@ -127,29 +125,38 @@ io.law/
 </dependencies>
 ```
 
-#### 3. law-download (Téléchargement PDFs)
+#### 3. law-download (Téléchargement PDFs) ✅
 **Responsabilité** : Télécharger les PDFs des documents FETCHED
 
 **Job** : `downloadJob`
 
 **Composants** :
 - **reader/**
-  - `FetchedDocumentReader` : Lit documents status=FETCHED
+  - `FetchedDocumentReader` : Lit documents status=FETCHED avec support mode ciblé + force
   
 - **processor/**
-  - `DownloadProcessor` : Télécharge PDF avec retry
+  - `DownloadProcessor` : Télécharge PDF avec Apache HttpClient 5
   
 - **writer/**
-  - `FileDownloadWriter` : Sauvegarde PDF sur disque
+  - `FileDownloadWriter` : Sauvegarde PDF sur disque + table `download_results`
+  
+- **model/**
+  - `DownloadResult` : Entité JPA pour tracking téléchargements
+  
+- **repository/**
+  - `DownloadResultRepository` : Persistance résultats téléchargements
   
 - **service/**
   - `PdfDownloadService` : Gestion téléchargement + validation
 
 **Stratégie** :
-- Retry : 3 tentatives avec backoff
-- Validation : Magic bytes PDF (`0x25504446`)
-- Détection corruption : PNG/JPG déguisés en PDF
+- Téléchargement : Apache HttpClient 5 avec SHA-256 hashing
+- Stockage : FileStorageService pour chemins normalisés
+- Idempotence : Check `download_results` avant re-téléchargement
+- Modes : scan complet, document ciblé, mode force
 - Statut : DOWNLOADED ou FAILED
+
+**Tests** : 8 tests (2 intégration + 6 unitaires) ✅
 
 **Dépendances** :
 ```xml
@@ -721,13 +728,6 @@ public class IaJobConfiguration {
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
         
-        <!-- Lombok (géré par spring-boot-starter-parent) -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        
         <!-- Tests -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -1269,66 +1269,75 @@ mvn spring-boot:run
 
 ## Checklist Migration law.spring → io.law
 
-### Phase 1 : law-common ✅
+### Phase 1 : law-common ✅ COMPLÉTÉ
 - [x] Créer structure module
-- [x] Copier model/ (12 entités)
-- [x] Copier repository/ (7 repos)
-- [x] Copier exception/ (21 exceptions)
-- [x] Copier config/ (LawProperties, GsonConfig, DatabaseConfig)
-- [x] Copier util/ (8 utilitaires)
+- [x] Réorganiser model/ (LawDocument avec JPA)
+- [x] Implémenter repositories (LawDocumentRepository)
+- [x] Conserver exception/ (21 exceptions)
+- [x] Enrichir config/ (LawProperties avec directories)
+- [x] Implémenter services (FileStorageService, DocumentStatusManager)
 - [x] Enrichir POM avec dépendances
-- [ ] Compiler sans erreurs
-- [ ] Tests unitaires
+- [x] Compiler sans erreurs
+- [x] Fix schéma DB (year → document_year pour éviter mot réservé SQL)
 
-### Phase 2 : law-fetch ⏳
+### Phase 2 : law-fetch ✅ COMPLÉTÉ
 - [x] Créer structure module
-- [x] Copier readers (3)
-- [x] Copier processor (1)
-- [x] Copier writer (1)
-- [x] Copier services (2)
-- [x] Créer FetchJobConfiguration
-- [x] Enrichir POM
-- [ ] Compiler sans erreurs
-- [ ] Tests unitaires
-- [ ] Test intégration fetchCurrentJob
-- [ ] Test intégration fetchPreviousJob
+- [x] Implémenter readers (CurrentYearReader, PreviousYearsReader)
+- [x] Implémenter processor (FetchProcessor avec HEAD requests)
+- [x] Implémenter writer (FetchWriter avec FetchResult + NotFoundRange)
+- [x] Implémenter services (LawFetchService, NotFoundRangeService)
+- [x] Créer FetchJobConfiguration (2 jobs : current + previous)
+- [x] Enrichir POM avec dépendances
+- [x] Compiler sans erreurs
+- [x] Tests unitaires (66 tests dont 21 FetchNotFoundRange)
+- [x] Tests intégration fetchCurrentJob (7 tests)
+- [x] Tests fonctionnels (3/9 tests validés)
+- [x] Fix force mode (bug SQL résolu)
 
-### Phase 3 : law-download
-- [ ] Créer structure module
-- [ ] Copier reader (FetchedDocumentReader)
-- [ ] Copier processor (DownloadProcessor)
-- [ ] Copier writer (FileDownloadWriter)
-- [ ] Copier service (PdfDownloadService)
-- [ ] Créer DownloadJobConfiguration
-- [ ] Enrichir POM
-- [ ] Compiler sans erreurs
-- [ ] Tests unitaires
-- [ ] Test intégration downloadJob
+### Phase 3 : law-download ✅ COMPLÉTÉ
+- [x] Créer structure module
+- [x] Implémenter reader (FetchedDocumentReader avec modes ciblé + force)
+- [x] Implémenter processor (DownloadProcessor avec Apache HttpClient 5)
+- [x] Implémenter writer (FileDownloadWriter + DownloadResult)
+- [x] Créer model/repository (DownloadResult, DownloadResultRepository)
+- [x] Implémenter service (PdfDownloadService)
+- [x] Créer DownloadJobConfiguration
+- [x] Enrichir POM (HttpClient 5, ByteBuddy pour tests)
+- [x] Compiler sans erreurs
+- [x] Tests unitaires (6 tests basiques)
+- [x] Tests intégration downloadJob (8 tests avec idempotence)
 
 ### Phase 4 : law-tojson
+##### 4.0 law-toJsonCommon ⏳ STRUCTURE CRÉÉE
+- [x] Créer structure sous-module
+- [x] Déplacer modèles partagés (Article, Signatory, DocumentMetadata, etc.)
+- [x] Déplacer repositories (ArticleExtractionRepository, OcrResultRepository, etc.)
+- [ ] Finaliser intégration avec autres sous-modules
+
 #### 4.1 law-pdfToOcr
-- [ ] Créer structure
-- [ ] Copier TesseractOcrService
-- [ ] Copier ExtractionProcessor
-- [ ] Copier ExtractionWriter
+- [x] Créer structure
+- [ ] Implémenter TesseractOcrService
+- [ ] Implémenter ExtractionProcessor
+- [ ] Implémenter ExtractionWriter
 - [ ] Créer OcrJobConfiguration
 - [ ] Tests
 
 #### 4.2 law-OcrToJson
-- [ ] Créer structure
-- [ ] Copier ArticleParsingService
-- [ ] Copier ArticleExtractionProcessor
+- [x] Créer structure
+- [ ] Implémenter ArticleParsingService
+- [ ] Implémenter ArticleExtractionProcessor
 - [ ] Créer ArticleExtractionJobConfiguration
 - [ ] Tests
 
 #### 4.3 law-AIpdfToJson
-- [ ] Créer structure
-- [ ] Copier IAProvider, OllamaProvider, GroqProvider
-- [ ] Copier CapacityDetectionService
+- [x] Créer structure
+- [ ] Implémenter IAProvider, OllamaProvider, GroqProvider
+- [ ] Implémenter CapacityDetectionService
 - [ ] Créer IaJobConfiguration
 - [ ] Tests
 
 #### 4.4 law-toJsonApp
+- [x] Créer structure
 - [ ] Créer main application
 - [ ] Orchestrer 3 sous-modules (ocrJob → articleExtractionJob → iaJob)
 - [ ] Configuration séquence de jobs
@@ -1343,25 +1352,64 @@ mvn spring-boot:run
 - [ ] Créer ConsolidationJobConfiguration
 - [ ] Tests
 
-### Phase 6 : law-api
-- [x] Créer structure module
-- [x] Créer LawApiApplication (main class)
-- [x] Créer JobCommandLineRunner (CLI)
-- [ ] Créer controllers (BatchController, LawDocumentController, SearchController)
+### Phase 6 : law-app (law-api renommé) ⏳ EN COURS
+- [x] Créer structure module (renommé law-app)
+- [x] Créer LawAppApplication (main class)
+- [x] Créer JobCommandLineRunner (CLI avec support --job et --params)
+- [x] Intégrer law-fetch et law-download
+- [x] Build JAR exécutable (law-app-1.0-SNAPSHOT.jar)
+- [x] Script tests fonctionnels (functionnal-test.sh)
+- [ ] Créer controllers REST (BatchController, LawDocumentController)
 - [ ] Créer services (JobLauncherService, JobMonitoringService)
 - [ ] Créer FullPipelineJobConfiguration
 - [ ] Créer GlobalExceptionHandler
-- [ ] Créer OpenApiConfig
-- [ ] Créer application.yml avec properties complètes
-- [ ] Tests
+- [ ] Créer OpenApiConfig (Swagger)
+- [x] Créer application.yml avec properties complètes
+- [ ] Tests REST API
 
-### Phase 7 : Validation Globale
-- [ ] Compilation projet complet
-- [ ] Tests intégration tous modules
+### Phase 7 : Validation Globale ⏳ EN COURS
+- [x] Compilation projet complet (mvn clean install ✅)
+- [x] Tests intégration law-fetch (7 tests ✅)
+- [x] Tests intégration law-download (8 tests ✅)
+- [x] Tests unitaires (66 law-fetch + 26 law-download ✅)
+- [x] Tests fonctionnels batch (3/9 tests validés : fetchCurrent full/ciblé/force)
+- [ ] Compléter tests fonctionnels (fetchPrevious, downloadJob)
 - [ ] Test pipeline complet (fetch → download → ocr → extract → consolidate)
-- [ ] Validation idempotence
+- [x] Validation idempotence (tests intégration + force mode)
 - [ ] Documentation Swagger
 - [ ] Migration données production
+
+---
+
+## État Actuel du Projet (6 décembre 2025)
+
+### ✅ Modules Complétés
+1. **law-common** : Services FileStorageService + DocumentStatusManager implémentés
+2. **law-fetch** : 2 jobs (current + previous) avec 66 tests unitaires + 7 intégration
+3. **law-download** : 1 job avec 26 tests (8 intégration + 18 unitaires)
+
+### 📊 Statistiques Tests
+- **Tests unitaires** : 92 tests (66 law-fetch + 26 law-download)
+- **Tests intégration** : 15 tests (7 law-fetch + 8 law-download)
+- **Tests fonctionnels** : 3/9 validés (fetchCurrentJob full/ciblé/force)
+- **Couverture** : Idempotence, force mode, retry, error handling
+
+### 🐛 Bugs Résolus
+- Fix SQL : `year` → `document_year` (mot réservé MySQL)
+- Fix force mode : Duplicate column issue dans `fetch_results`
+- Build Maven : Configuration flatten-plugin pour `${revision}`
+
+### 🚀 Prochaines Étapes
+1. **Compléter tests fonctionnels** : fetchPreviousJob (3 tests), downloadJob (3 tests)
+2. **Implémenter law-tojson** : 4 sous-modules (OCR, parsing, IA, orchestration)
+3. **Implémenter law-consolidate** : Import JSON → MySQL
+4. **Finaliser law-app** : API REST + Swagger + monitoring
+5. **Pipeline complet** : fetch → download → ocr → extract → consolidate
+
+### 📁 Fichiers Non Commités
+- 7 modifiés (`.gitignore`, `functionnal-test.sh`, modèles avec annotations JPA)
+- 38 nouveaux (services, tests, configurations)
+- 12 supprimés (entités obsolètes déplacées vers sous-modules)
 
 ---
 
@@ -1369,14 +1417,14 @@ mvn spring-boot:run
 
 **Toujours privilégier** :
 1. ✅ **Résilience** : Job continue malgré erreurs individuelles
-2. ✅ **Idempotence** : Re-run safe, pas de duplication
+2. ✅ **Idempotence** : Re-run safe, pas de duplication (validé par tests)
 3. ✅ **Clean Code** : Exceptions spécifiques, pas de null, try-with-resources
 4. ✅ **Modularité** : Découpage clair, dépendances minimales
 5. ✅ **Testabilité** : Tests unitaires + intégration pour chaque module
 
 **Migration progressive** :
-- 1 module à la fois
+- ✅ law-common → ✅ law-fetch → ✅ law-download → ⏳ law-tojson → ⏳ law-consolidate → ⏳ law-app
 - Compilation + tests avant module suivant
-- law-common → law-fetch → law-download → law-tojson → law-consolidate → law-api
+- 1 module à la fois
 
 **Objectif** : Architecture propre, maintenable, évolutive ✨

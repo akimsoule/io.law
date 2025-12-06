@@ -14,9 +14,9 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "fetch_not_found_ranges", 
-    uniqueConstraints = @UniqueConstraint(columnNames = {"document_type", "year", "numberMin", "numberMax"}),
+    uniqueConstraints = @UniqueConstraint(columnNames = {"document_type", "document_year", "numberMin", "numberMax"}),
     indexes = {
-        @Index(name = "idx_type_year", columnList = "document_type,year"),
+        @Index(name = "idx_type_year", columnList = "document_type,document_year"),
         @Index(name = "idx_updated_at", columnList = "updatedAt")
     }
 )
@@ -33,7 +33,7 @@ public class FetchNotFoundRange {
     @Column(name = "document_type", nullable = false, length = 20)
     private String documentType; // "loi" ou "decret"
     
-    @Column(nullable = false)
+    @Column(name = "document_year", nullable = false)  // "year" est un mot réservé SQL
     private Integer year;
     
     @Column(nullable = false)
