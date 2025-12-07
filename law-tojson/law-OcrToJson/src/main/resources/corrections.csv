@@ -1,0 +1,255 @@
+# Corrections OCR pour les lois béninoises
+# Format: erreur,correction
+
+# Dates et nombres
+le 1€',le 1er
+1FF,1er
+1e",1er
+Article 1e",Article 1er
+Article 1ë,Article 1er
+Article 1ë',Article 1er
+Article 1€",Article 1er
+Article 1e',Article 1er
+
+# Erreurs de mots courants
+adopté à Sirasbourg,adopté à Strasbourg
+({France),(France)
+REPUBLIQUE,RÉPUBLIQUE
+BENIN,BÉNIN
+étalolisement,établissement
+siructure,structure
+vile ,ville 
+faîtières,faîtières
+résillente,résiliente
+prépondéron"re,prépondérante
+dev&5',des
+carière,carrière
+du fond,de fond
+ternitoire,territoire
+atiribués,attribués
+Yvôn,Yves
+grand-moaître,grand-maître
+contriloutions,contributions
+médaailles,médailles
+d'acfiviîé,d'activité
+l'éTronger,l'étranger
+Présiçenî,Président
+Patricé,Patrice
+parle Président,par le Président
+Patrice TALON.,Patrice TALON
+José TONATO,José DIDAGBE
+
+# Chiffres romains mal reconnus
+livre |I,livre II
+livre |l,livre II
+livre I|,livre II
+chapitre I|,chapitre II
+chapitre II!,chapitre III
+chapitre |I,chapitre II
+
+# Caractères spéciaux mal reconnus
+e'r;ç/,et
+OÙ Une,où une
+qQui,qui
+\_}JÏ:«LÏL'/—\"—/,
+æ;—,
+
+# Erreurs sur caractères spéciaux (pipe au lieu de L/l)
+|a ,la 
+|'adhésion,l'adhésion
+|la ,la 
+|'Assemblée,l'Assemblée
+|'établissement,l'établissement
+|'exploitation,l'exploitation
+|'initiative,l'initiative
+|'implantation,l'implantation
+|a reconstruction,la reconstruction
+|a mise,la mise
+pendant|a,pendant la
+pour |a,pour la
+|a censure,la censure
+et|a,et la
+président de |,président de l
+|e,le
+|es organismes,les organismes
+|les dommages,les dommages
+loi dont |a,loi dont la
+|les domaines,les domaines
+
+# Préfixes aéro mal reconnus
+dérodrome,aérodrome
+géroclub,aéroclub
+déronef,aéronef
+daéronef,aéronef
+cerlifié,certifié
+
+# Apostrophes doubles
+l'',l'
+d'',d'
+
+# Espaces mal placés
+parla ,par la 
+d'Une ,d'une 
+Un certificat,un certificat
+assure,assurer
+
+# Mots avec œ
+œuvre,oeuvre
+œuvrent,oeuvrent
+
+# Erreurs de casse
+ARTICLE,Article
+
+# Erreurs OCR sur "Article" (détectées le 6 décembre 2025)
+Articfe ,Article 
+Articlc ,Article 
+Arlicle ,Article 
+Arlicle premier,Article premier
+
+# Erreurs OCR sur "République" (détectées le 6 décembre 2025)
+REPUBLIOU,REPUBLIQUE
+REPUBLIOUE,REPUBLIQUE
+Parto-Novo,Porto-Novo
+Arlicle,Article
+
+# Variantes OCR ville Cotonou (détectées le 6 décembre 2025 - phase 27)
+C01ON01I,COTONOU
+coToNou,Cotonou
+Foit,Fait
+féyriér,février
+SePtentbre,Septembre
+PRESIDENT,Président
+CHEF,Chef
+grand-Croix,grand-croix
+
+# Erreurs OCR sur mois (détectées le 6 décembre 2025 - itération 2)
+jonvier,janvier
+tr'évrier,février
+F évrier,février
+mors,mars
+odvril,avril
+mol,mai
+oout,août
+oût,août
+sepiembre,septembre
+oclobre,octobre
+novembie,novembre
+décembie,décembre
+
+# Erreurs OCR sur mots courants (détectées le 6 décembre 2025 - itération 2)
+lo ,la 
+ lo , la 
+por ,par 
+ por , par 
+dons ,dans 
+ dons , dans 
+outorisée,autorisée
+outorisé,autorisé
+Cotonov,Cotonou
+lndonésie,Indonésie
+lnternotionol,International
+froncs,francs
+dollors,dollars
+finoncement,financement
+rotificotion,ratification
+Présidenl,Président
+montont,montant
+étrongères,étrangères
+étronger,étranger
+outorité,autorité
+octivité,activité
+ô ,à 
+è ,à 
+notionole,nationale
+notionol,national
+noiionole,nationale
+noiionol,national
+finoncières,financières
+finoncier,financier
+informotions,informations
+troitement,traitement
+blonchiment,blanchiment
+tenorisme,terrorisme
+confidentiolité,confidentialité
+judicioire,judiciaire
+extrodition,extradition
+soisie,saisie
+confiscotion,confiscation
+Réhobilitolion,Réhabilitation
+Béroubouoy,Bérouboua
+Molonville,Malanville
+occord,accord
+codre,cadre
+séonce,séance
+odopté,adopté
+so ,sa 
+vingtquotre,vingt-quatre
+sait,soit
+milliords,milliards
+toux,taux
+indicotif,indicatif
+Boli,Bali
+Dévelappement,Développement
+partiel,partiel
+Molanville,Malanville
+Niomey,Niamey
+lai,loi
+sero,sera
+Foit,Fait
+Gorde,Garde
+Sceoux,Sceaux
+Minisire,Ministre
+Législation,Législation
+Finonces,Finances
+lnfrostructures,Infrastructures
+Tro orts,Transports
+Alossone,Alassane
+
+# Corrections apostrophes I' → l' (génériques)
+I',l'
+de I' ,de l' 
+ I' , l' 
+
+# Corrections majuscules début de phrase (détectées le 6 décembre 2025 - itération 3)
+Lo ,La 
+Por le,Par le
+Etot,État
+responsobililé,responsabilité
+responsobil,responsabil
+offociureur,affactureur
+offocturoge,affacturage
+noiifiée,notifiée
+débiieur,débiteur
+olinéo,alinéa
+engogée,engagée
+controires,contraires
+publiée,publiée
+Journol,Journal
+officiel,officiel
+loules,toutes
+bose,base
+récepteur,récepteur
+provenonce,provenance
+destinoiion,destination
+outre,autre
+produits,produits
+dérivés,dérivés
+régit,régit
+visée,visée
+ci-dessus,ci-dessus
+
+# Espaces en trop
+,  , ,
+Article  ,Article 
+République  du,République du
+
+# Corrections auto-générées à partir de l'OCR (2025-12-01)
+AMP|IATIONS,AMPlIATIONS
+Article 1e,Article 1er
+Artic|e,Article
+P|iE,PliE
+article 1e,Article 1er
+exc|usion,exclusion
+e|le,elle
+le 1e,le 1er
+le 1€,le 1er

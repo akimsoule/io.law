@@ -1,0 +1,34 @@
+{
+  "type": "loi",
+  "year": 2019,
+  "number": 1,
+  "_metadata": {
+    "confidence": 0.46455108280254775,
+    "method": "OCR",
+    "timestamp": "2025-12-06T23:21:51.405032"
+  },
+  "promulgationDate": "2019-01-01",
+  "promulgationCity": "Cotonou",
+  "articles": [
+    {
+      "number": "1",
+      "content": "Article premier\nEst autorisée la ratification, par le Président de la République, de l\u0027accord de\nprêt d\u0027un montant de vingt-quatre millions (24 000 000) de dollars US, soit treize milliards\ndeux cent millions (.l3 200 000 000) de francs CFA environ, ou taux indicatif de un (01)\ndollar \u003d 550 F CFA, signé à Bali en Indonésie, le lI octobre 2018, entre la République\ndu Bénin et le Fonds de l\u0027OPEP pour le Développement International (OFID), dans le\ncadre du financement partiel du Projet de Réhabilitation de la section Bérouboua-\nMalanville du corridor Cotonou-Niamey (,l69,4 km)."
+    },
+    {
+      "number": "2",
+      "content": "Article 2\nLa présente loi sera exécutée comme loi de l\u0027État.-\nFait à Cotonou, le 17 janvier 201 9"
+    }
+  ],
+  "signatories": [
+    {
+      "name": "Alassane SEIDOU",
+      "title": "Ministre de l\u0027Intérieur et de la Sécurité publique",
+      "order": 1
+    },
+    {
+      "name": "Yvon DETCHENOU",
+      "title": "Ministre de la Justice et de la Législation",
+      "order": 2
+    }
+  ]
+}

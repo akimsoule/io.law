@@ -19,6 +19,7 @@ public class LawProperties {
     private Http http = new Http();
     private Ocr ocr = new Ocr();
     private Batch batch = new Batch();
+    private Capacity capacity = new Capacity();
 
 
     @Data
@@ -49,6 +50,7 @@ public class LawProperties {
         private int maxThreads;
         private int throttleLimit;
         private int maxItemsToFetchPrevious = 100; // Limite d'items par exécution pour fetchPreviousJob
+        private int maxDocumentsToExtract = 50;    // Limite d'items pour extraction OCR
         
         /**
          * Retourne le nombre de threads optimal basé sur les CPU disponibles
@@ -65,5 +67,13 @@ public class LawProperties {
             
             return Math.max(1, calculatedThreads); // Au minimum 1 thread
         }
+    }
+    
+    @Data
+    public static class Capacity {
+        private int ia = 4;              // Score minimum pour IA (16GB+ RAM, 4+ CPU)
+        private int ocr = 2;             // Score minimum pour OCR (4GB+ RAM, 2+ CPU)
+        private String ollamaUrl = "http://localhost:11434";
+        private String ollamaModelsRequired = "qwen2.5:7b";
     }
 }

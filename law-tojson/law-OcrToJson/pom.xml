@@ -17,8 +17,21 @@
     <dependencies>
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
-            <artifactId>law-common</artifactId>
+            <artifactId>law-toJsonCommon</artifactId>
             <version>${revision}</version>
+        </dependency>
+        
+        <!-- Module pdfToOcr pour DownloadedDocumentReader -->
+        <dependency>
+            <groupId>bj.gouv.sgg</groupId>
+            <artifactId>law-pdfToOcr</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        
+        <!-- Gson -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
         </dependency>
     </dependencies>
 </project>

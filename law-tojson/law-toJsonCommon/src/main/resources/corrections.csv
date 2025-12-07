@@ -1,0 +1,120 @@
+# Corrections OCR pour les lois béninoises
+# Format: erreur,correction
+
+# Dates et nombres
+le 1€',le 1er
+1FF,1er
+1e",1er
+Article 1e",Article 1er
+Article 1ë,Article 1er
+Article 1ë',Article 1er
+Article 1€",Article 1er
+Article 1e',Article 1er
+
+# Erreurs de mots courants
+adopté à Sirasbourg,adopté à Strasbourg
+({France),(France)
+REPUBLIQUE,RÉPUBLIQUE
+BENIN,BÉNIN
+étalolisement,établissement
+siructure,structure
+vile ,ville 
+faîtières,faîtières
+résillente,résiliente
+prépondéron"re,prépondérante
+dev&5',des
+carière,carrière
+du fond,de fond
+ternitoire,territoire
+atiribués,attribués
+Yvôn,Yves
+grand-moaître,grand-maître
+contriloutions,contributions
+médaailles,médailles
+d'acfiviîé,d'activité
+l'éTronger,l'étranger
+Présiçenî,Président
+Patricé,Patrice
+parle Président,par le Président
+Patrice TALON.,Patrice TALON
+José TONATO,José DIDAGBE
+
+# Chiffres romains mal reconnus
+livre |I,livre II
+livre |l,livre II
+livre I|,livre II
+chapitre I|,chapitre II
+chapitre II!,chapitre III
+chapitre |I,chapitre II
+
+# Caractères spéciaux mal reconnus
+e'r;ç/,et
+OÙ Une,où une
+qQui,qui
+\_}JÏ:«LÏL'/—\"—/,
+æ;—,
+
+# Erreurs sur caractères spéciaux (pipe au lieu de L/l)
+|a ,la 
+|'adhésion,l'adhésion
+|la ,la 
+|'Assemblée,l'Assemblée
+|'établissement,l'établissement
+|'exploitation,l'exploitation
+|'initiative,l'initiative
+|'implantation,l'implantation
+|a reconstruction,la reconstruction
+|a mise,la mise
+pendant|a,pendant la
+pour |a,pour la
+|a censure,la censure
+et|a,et la
+président de |,président de l
+|es organismes,les organismes
+|les dommages,les dommages
+loi dont |a,loi dont la
+|les domaines,les domaines
+
+# Préfixes aéro mal reconnus
+dérodrome,aérodrome
+géroclub,aéroclub
+déronef,aéronef
+daéronef,aéronef
+cerlifié,certifié
+
+# Apostrophes doubles
+l'',l'
+d'',d'
+
+# Espaces mal placés
+parla ,par la 
+d'Une ,d'une 
+Un certificat,un certificat
+assure,assurer
+
+# Mots avec œ
+œuvre,oeuvre
+œuvrent,oeuvrent
+
+# Erreurs de casse
+ARTICLE,Article
+Arlicle,Article
+PRESIDENT,Président
+CHEF,Chef
+grand-Croix,grand-croix
+
+# Espaces en trop
+,  , ,
+Article  ,Article 
+République  du,République du
+
+# Corrections auto-générées à partir de l'OCR (2025-12-01)
+AMP|IATIONS,AMPlIATIONS
+Article 1e,Article 1er
+Artic|e,Article
+P|iE,PliE
+article 1e,Article 1er
+exc|usion,exclusion
+e|le,elle
+le 1e,le 1er
+le 1€,le 1er

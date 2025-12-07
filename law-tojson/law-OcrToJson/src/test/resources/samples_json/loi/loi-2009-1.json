@@ -1,0 +1,22 @@
+{
+  "type": "loi",
+  "year": 2009,
+  "number": 1,
+  "_metadata": {
+    "confidence": 0.45978323353293415,
+    "method": "OCR",
+    "timestamp": "2025-12-06T23:21:51.190641"
+  },
+  "promulgationDate": "2009-01-12",
+  "promulgationCity": "Cotonou",
+  "articles": [
+    {
+      "number": "1",
+      "content": "Article 1\": Esi autorisée, la ratification, par le President de la Répubtique,\nChef de l\u0027Etat, Chef du Gouvernement, de l\u0027Accord de prêt d\u0027un montant d\u0027un\nmilliard deux cent cinquante millions (1 250000 000) de francs CFA, signé le\n09 octobre 2007 entre la République du Bénin et la Banque Ouest Africaine de\nDéveloppement (BOAD) dans le cadre du fin~ncement p~rtiel du projet cie\nmicro créclit aux plus pauvres pour la promotion cl\u0027activités génératrices cie\nrevenus en République clu Bénin,"
+    },
+    {
+      "number": "2",
+      "content": "Article 2 : La présente Lai sera exécutée comme Lai de l\u0027Etat."
+    }
+  ]
+}

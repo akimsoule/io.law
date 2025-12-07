@@ -1,0 +1,28 @@
+{
+  "type": "loi",
+  "year": 2020,
+  "number": 1,
+  "_metadata": {
+    "confidence": 0.3936778947368421,
+    "method": "OCR",
+    "timestamp": "2025-12-06T23:21:51.407127"
+  },
+  "promulgationCity": "Cotonou",
+  "articles": [
+    {
+      "number": "1",
+      "content": "Article premier.\nEst autorisée, l\u0027odhésion du Bénin à la Convention d\u0027UNIDROIT sur les biens\nculturels volés ou illiciiement expartés, adoptée à Rome le 24juin 19gs."
+    },
+    {
+      "number": "2",
+      "content": "Article 2\nLa présente loi sera exécutée comme loi de l\u0027Étot\nFait ù Cotonou ,le 04 févrie"
+    }
+  ],
+  "signatories": [
+    {
+      "name": "Yvon DETCHENOU",
+      "title": "Ministre de la Justice et de la Législation",
+      "order": 1
+    }
+  ]
+}
