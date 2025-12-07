@@ -1,0 +1,22 @@
+{
+  "type": "loi",
+  "year": 2001,
+  "number": 1,
+  "_metadata": {
+    "confidence": 0.46254285714285714,
+    "method": "OCR",
+    "timestamp": "2025-12-06T23:21:51.157004"
+  },
+  "promulgationDate": "2000-07-26",
+  "promulgationCity": "Cotonou",
+  "articles": [
+    {
+      "number": "1",
+      "content": "Article 1errr : Est autorisée la ratification, par le Président de la République,\nChef de l\u0027Etat, Chef du Gouvernement, de l\u0027accord de crédit nO 3397-BEN\nsigné le 26 juillet 2000 entre la République du Bénin et l\u0027Assaciation\nInternationale de Développement (AID) dans le cadre du financement partiel\ndu projet d\u0027appui au dévelappement de la formation professionnelle continue\npour un montant de trois millions huit cent mille (3 800 000) DTS soit environ\ntrois milliards deux cent quarante trois millions trois cent mille\n( 3 243 300 000) F CFA."
+    },
+    {
+      "number": "2",
+      "content": "Article 2: La présente Lai sera exécutée comme Lai de l\u0027Etat.\nFait à Cotonou, le 29 janvier 2001"
+    }
+  ]
+}

@@ -45,6 +45,9 @@ public class LawDocument {
     @Transient  // Ne pas persister en base (trop volumineux)
     private byte[] pdfContent;  // Contenu PDF téléchargé
     
+    @Transient  // Ne pas persister en base (trop volumineux)
+    private String ocrContent;  // Contenu OCR extrait
+    
     public String getDocumentId() {
         return String.format("%s-%d-%d", type, year, number);
     }

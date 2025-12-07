@@ -1,0 +1,22 @@
+{
+  "type": "loi",
+  "year": 2010,
+  "number": 1,
+  "_metadata": {
+    "confidence": 0.5084912500000001,
+    "method": "OCR",
+    "timestamp": "2025-12-06T23:21:51.191928"
+  },
+  "promulgationDate": "2010-01-05",
+  "promulgationCity": "Cotonou",
+  "articles": [
+    {
+      "number": "1",
+      "content": "Article 1\"\u0027: En application de l\u0027article 69 alinéa 2 de la constitution du 11\noecernure rs90, le déloi au terme duquel le Président de la République ne\nneut olus Drendre des mesures exceptionnelles en vertu des dispositions de\n[;;;Ëàii; ta constitution, mises en æuvre te 31 décembre 2009, est fixé au\nmardi 05 janvier 2010 à minuit."
+    },
+    {
+      "number": "2",
+      "content": "Article 2 : La présente loi sera promulguée en procédure d\u0027urgence et\nexécutée comme Lai de l\u0027Etat.\nFait à Cotonou, le 08 janvier 2010\u0027"
+    }
+  ]
+}

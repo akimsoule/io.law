@@ -1,0 +1,22 @@
+{
+  "type": "loi",
+  "year": 2005,
+  "number": 10,
+  "_metadata": {
+    "confidence": 0.4573442105263158,
+    "method": "OCR",
+    "timestamp": "2025-12-06T23:21:51.162659"
+  },
+  "promulgationDate": "2004-11-29",
+  "promulgationCity": "Cotonou",
+  "articles": [
+    {
+      "number": "1",
+      "content": "Article 1°” : Est autorisée la ratification, par le Président de la République, de\nl’\u0027Accord de prêt d\u0027un montant de sept millions huit cent mille (7. 800 .000)\nUnités de compte, soit environ six milliards cent trente sept millions deux cent °\nsaixante quatorze mille (6.137.274.000) francs CFA signé le 29 novembre\n2004 entre le Fonds Africain de Développement (FAD) et la République du\nBénin dans le cadre du financement du projet de réhabilitation de la route\nPobà-Kétou-Illara"
+    },
+    {
+      "number": "2",
+      "content": "Article 2 : La présente loi sera exécutée comme loi de l\u0027Etat.\nFait à Cotonou, le 02 mars 2005, ; \u0027"
+    }
+  ]
+}

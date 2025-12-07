@@ -22,12 +22,4 @@
         <module>law-toJsonApp</module>
         <module>law-toJsonCommon</module>
     </modules>
-
-    <dependencies>
-        <dependency>
-            <groupId>bj.gouv.sgg</groupId>
-            <artifactId>law-common</artifactId>
-            <version>${revision}</version>
-        </dependency>
-    </dependencies>
 </project>
