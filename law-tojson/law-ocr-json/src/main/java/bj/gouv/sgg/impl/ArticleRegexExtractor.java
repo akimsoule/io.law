@@ -44,46 +44,54 @@ public class ArticleRegexExtractor implements OcrExtractionService {
             
             for (String line : lines) {
                 boolean isStart = isArticleStart(line);
-                boolean isEnd = isArticleEnd(line);
                 
-                // Si on détecte un début/fin ET qu'on est déjà dans un article, on sauve l'article précédent
-                if ((isStart || isEnd) && inArticle && !currentArticle.isEmpty()) {
-                    saveArticleIfValid(articles, expectedNumber, currentArticle);
-                    currentArticle.setLength(0);
-                    inArticle = false;
-                }
-                
-                // Début d'un nouvel article
+                // Début potentiel d'un article
                 if (isStart) {
-                    // Extraire le numéro de l'article détecté
                     Integer detectedNumber = extractArticleNumber(line);
                     
                     if (detectedNumber != null && detectedNumber == expectedNumber) {
-                        // ✅ Numéro cohérent avec la séquence
-                        inArticle = true;
-                        expectedNumber++; // Préparer pour le prochain
-                        log.debug("📋 Article {} détecté (séquence valide)", detectedNumber);
-                    } else if (detectedNumber != null) {
-                        // ⚠️ Numéro incohérent → probablement un article cité
-                        log.debug("⏭️ Article {} ignoré (attendu: {})", detectedNumber, expectedNumber);
-                        inArticle = false;
-                        continue;
-                    } else {
-                        // Pattern détecté mais numéro non extrait → on accepte par défaut
+                        // ✅ Numéro correspond à la séquence attendue
+                        // → Sauvegarder l'article précédent et démarrer le nouveau
+                        
+                        if (inArticle && !currentArticle.isEmpty()) {
+                            saveArticleIfValid(articles, expectedNumber - 1, currentArticle);
+                            currentArticle.setLength(0);
+                        }
+                        
                         inArticle = true;
                         expectedNumber++;
+                        currentArticle.append(line).append("\n");
+                        log.debug("📋 Article {} détecté (séquence valide)", detectedNumber);
+                        
+                    } else if (inArticle) {
+                        // ❌ Numéro ne correspond pas à la séquence
+                        // → C'est un article cité, on continue l'enregistrement
+                        currentArticle.append(line).append("\n");
+                        
+                        if (detectedNumber != null) {
+                            log.debug("📝 Article {} cité (inclus dans contenu)", detectedNumber);
+                        }
+                    } else {
+                        // Pas dans un article et numéro incohérent → ignorer
+                        log.debug("⏭️ Ligne ignorée (hors article)");
                     }
-                }
-                
-                // Accumuler les lignes de l'article courant
-                if (inArticle) {
+                    
+                } else if (inArticle) {
+                    // Ligne normale dans un article
                     currentArticle.append(line).append("\n");
+                    
+                    // Si c'est une fin d'article (Fait à, signataires, etc.)
+                    if (isArticleEnd(line)) {
+                        saveArticleIfValid(articles, expectedNumber - 1, currentArticle);
+                        currentArticle.setLength(0);
+                        inArticle = false;
+                    }
                 }
             }
             
             // Dernier article
             if (inArticle && !currentArticle.isEmpty()) {
-                saveArticleIfValid(articles, expectedNumber, currentArticle);
+                saveArticleIfValid(articles, expectedNumber - 1, currentArticle);
             }
             
             if (articles.isEmpty()) {
