@@ -39,66 +39,52 @@ public class ArticleRegexExtractor implements OcrExtractionService {
         try {
             String[] lines = text.split("\n");
             StringBuilder currentArticle = new StringBuilder();
-            int expectedNumber = 1; // Numéro attendu : 1, 2, 3...
+            int index = 0;
             boolean inArticle = false;
             
             for (String line : lines) {
                 boolean isStart = isArticleStart(line);
                 
-                // Début potentiel d'un article
                 if (isStart) {
                     Integer detectedNumber = extractArticleNumber(line);
                     
-                    if (detectedNumber != null && detectedNumber == expectedNumber) {
-                        // ✅ Numéro correspond à la séquence attendue
-                        // → Sauvegarder l'article précédent et démarrer le nouveau
-                        
-                        if (inArticle && !currentArticle.isEmpty()) {
-                            saveArticleIfValid(articles, expectedNumber - 1, currentArticle);
+                    // Si le numéro correspond à l'ordre attendu → nouvel article
+                    if (detectedNumber != null && detectedNumber == index + 1) {
+                        // Sauvegarder l'article précédent
+                        if (inArticle && currentArticle.length() > 0) {
+                            saveArticle(articles, index, currentArticle);
                             currentArticle.setLength(0);
                         }
                         
                         inArticle = true;
-                        expectedNumber++;
+                        index++;
                         currentArticle.append(line).append("\n");
                         log.debug("📋 Article {} détecté (séquence valide)", detectedNumber);
                         
                     } else if (inArticle) {
-                        // ❌ Numéro ne correspond pas à la séquence
-                        // → C'est un article cité, on continue l'enregistrement
+                        // Sinon, si on est dans un article → article cité
                         currentArticle.append(line).append("\n");
-                        
                         if (detectedNumber != null) {
-                            log.debug("📝 Article {} cité (inclus dans contenu)", detectedNumber);
+                            log.debug("📝 Article {} cité (inclus dans Article {})", detectedNumber, index);
                         }
-                    } else {
-                        // Pas dans un article et numéro incohérent → ignorer
-                        log.debug("⏭️ Ligne ignorée (hors article)");
                     }
                     
                 } else if (inArticle) {
-                    // Ligne normale dans un article
+                    // Ligne normale d'un article
                     currentArticle.append(line).append("\n");
-                    
-                    // Si c'est une fin d'article (Fait à, signataires, etc.)
-                    if (isArticleEnd(line)) {
-                        saveArticleIfValid(articles, expectedNumber - 1, currentArticle);
-                        currentArticle.setLength(0);
-                        inArticle = false;
-                    }
                 }
             }
             
             // Dernier article
-            if (inArticle && !currentArticle.isEmpty()) {
-                saveArticleIfValid(articles, expectedNumber - 1, currentArticle);
+            if (inArticle && currentArticle.length() > 0) {
+                saveArticle(articles, index, currentArticle);
             }
             
             if (articles.isEmpty()) {
                 throw new OcrExtractionException("No articles found in OCR text (text length: " + text.length() + " chars)");
             }
             
-            log.info("✅ Extracted {} articles via regex with sequence validation", articles.size());
+            log.info("✅ Extracted {} articles via regex", articles.size());
             
         } catch (OcrExtractionException e) {
             throw e;
@@ -112,15 +98,12 @@ public class ArticleRegexExtractor implements OcrExtractionService {
     
     /**
      * Extrait le numéro d'un article depuis une ligne.
-     * Retourne null si non trouvé.
-     * 
      * Exemples:
      * - "Article 1er : ..." → 1
-     * - "Article 2: ..." → 2
-     * - "Article 72: ..." → 72
+     * - "Article 2 : ..." → 2
+     * - "Article 72 nouveau : ..." → 72
      */
     private Integer extractArticleNumber(String line) {
-        // Pattern pour extraire le numéro
         Pattern numberPattern = Pattern.compile("Article\\s+(?:(1er)|(\\d+))", Pattern.CASE_INSENSITIVE);
         Matcher matcher = numberPattern.matcher(line);
         
@@ -128,7 +111,7 @@ public class ArticleRegexExtractor implements OcrExtractionService {
             if (matcher.group(1) != null) {
                 return 1; // "1er"
             } else if (matcher.group(2) != null) {
-                return Integer.parseInt(matcher.group(2)); // Chiffre
+                return Integer.parseInt(matcher.group(2));
             }
         }
         
@@ -219,19 +202,14 @@ public class ArticleRegexExtractor implements OcrExtractionService {
         return config.getArticleStart().matcher(line).find();
     }
     
-    private boolean isArticleEnd(String line) {
-        return config.getArticleEndAny().matcher(line).find();
-    }
-    
-    private void saveArticleIfValid(List<Article> articles, int expectedNumber, StringBuilder currentArticle) {
+    private void saveArticle(List<Article> articles, int index, StringBuilder currentArticle) {
         String content = currentArticle.toString().trim();
         if (content.length() > 10) {
-            int index = articles.size() + 1;
             articles.add(Article.builder()
                 .index(index)
                 .content(content)
                 .build());
-            log.debug("✅ Article {} saved: {} chars (expected: {})", index, content.length(), expectedNumber);
+            log.debug("Article {} extracted: {} chars", index, content.length());
         }
     }
 }

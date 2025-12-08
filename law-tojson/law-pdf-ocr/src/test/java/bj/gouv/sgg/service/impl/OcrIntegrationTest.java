@@ -171,10 +171,8 @@ class OcrIntegrationTest {
         // Given: PDF source simple
         File pdfFile = createSimpleTextPdf("Test OCR avec fichier output.");
         
-        // Créer fichier output dans samples_ocr
-        Path samplesOcrDir = Path.of("src/test/resources/samples_ocr");
-        Files.createDirectories(samplesOcrDir);
-        File ocrOutputFile = samplesOcrDir.resolve("test_simple_ocr.txt").toFile();
+        // Créer fichier output dans tempDir
+        File ocrOutputFile = tempDir.resolve("test_simple_ocr.txt").toFile();
         
         // Exécuter OCR
         ocrService.performOcr(pdfFile, ocrOutputFile);
@@ -194,8 +192,8 @@ class OcrIntegrationTest {
         // Given: PDF source et chemin output imbriqué
         File pdfFile = createSimpleTextPdf("Test répertoires imbriqués.");
         
-        // Créer répertoires parents dans samples_ocr
-        Path outputDir = Path.of("src/test/resources/samples_ocr/subdir1/subdir2");
+        // Créer répertoires parents dans tempDir
+        Path outputDir = tempDir.resolve("subdir1/subdir2");
         Files.createDirectories(outputDir);
         File ocrOutputFile = outputDir.resolve("test_nested_dirs.txt").toFile();
         
@@ -212,9 +210,7 @@ class OcrIntegrationTest {
     void givenSamePdfAndOutputWhenPerformOcrTwiceThenProducesIdenticalResults() throws IOException {
         // Given: PDF source pour test idempotence
         File pdfFile = createSimpleTextPdf("Test idempotence OCR.");
-        Path samplesOcrDir = Path.of("src/test/resources/samples_ocr");
-        Files.createDirectories(samplesOcrDir);
-        File ocrOutputFile = samplesOcrDir.resolve("test_idempotent.txt").toFile();
+        File ocrOutputFile = tempDir.resolve("test_idempotent.txt").toFile();
         
         // 1ère exécution
         ocrService.performOcr(pdfFile, ocrOutputFile);
@@ -241,35 +237,32 @@ class OcrIntegrationTest {
         byte[] invalidBytes = "This is not a PDF".getBytes();
         
         // Devrait lever exception
-        assertThrows(IOException.class, () -> {
-            ocrService.extractText(invalidBytes);
-        }, "Bytes invalides devraient lever IOException");
+        assertThrows(IOException.class, () -> ocrService.extractText(invalidBytes),
+                "Bytes invalides devraient lever IOException");
     }
     
     @Test
     void givenNullInputsWhenPerformOcrThenThrowsException() throws IOException {
         // Given: Entrées null (PDF ou output null)
-        assertThrows(NullPointerException.class, () -> {
-            ocrService.performOcr(null, tempDir.resolve("out.txt").toFile());
-        }, "PDF null devrait lever NullPointerException");
+        assertThrows(NullPointerException.class,
+                () -> ocrService.performOcr(null, tempDir.resolve("out.txt").toFile()),
+                "PDF null devrait lever NullPointerException");
         
         // Null output - L'implémentation wrappe dans FileOperationException via ErrorHandlingUtils
         File validPdf = createSimpleTextPdf("test");
-        assertThrows(FileOperationException.class, () -> {
-            ocrService.performOcr(validPdf, null);
-        }, "Output null devrait lever FileOperationException (wrappée par ErrorHandlingUtils)");
+        assertThrows(FileOperationException.class, () -> ocrService.performOcr(validPdf, null),
+                "Output null devrait lever FileOperationException (wrappée par ErrorHandlingUtils)");
     }
     
     @Test
     void givenNonExistentPdfFileWhenPerformOcrThenThrowsFileOperationException() {
         // Given: Fichier PDF inexistant
-        File nonExistentPdf = new File("/nonexistent/file.pdf");
+        File nonExistentPdf = tempDir.resolve("nonexistent.pdf").toFile();
         File ocrOutput = tempDir.resolve("output.txt").toFile();
         
         // L'implémentation wrappe les erreurs I/O dans FileOperationException
-        assertThrows(FileOperationException.class, () -> {
-            ocrService.performOcr(nonExistentPdf, ocrOutput);
-        }, "PDF inexistant devrait lever FileOperationException");
+        assertThrows(FileOperationException.class, () -> ocrService.performOcr(nonExistentPdf, ocrOutput),
+                "PDF inexistant devrait lever FileOperationException");
     }
     
     // ==================== Helpers - Génération PDFs Test ====================
@@ -278,7 +271,7 @@ class OcrIntegrationTest {
      * Crée un PDF simple avec une ligne de texte.
      */
     private File createSimpleTextPdf(String text) throws IOException {
-        File pdfFile = tempDir.resolve("test_" + System.nanoTime() + ".pdf").toFile();
+        File pdfFile = tempDir.resolve("test.pdf").toFile();
         
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage();
@@ -302,7 +295,7 @@ class OcrIntegrationTest {
      * Crée un PDF avec texte multiligne.
      */
     private File createMultilineTextPdf(String text) throws IOException {
-        File pdfFile = tempDir.resolve("multiline_" + System.nanoTime() + ".pdf").toFile();
+        File pdfFile = tempDir.resolve("multiline.pdf").toFile();
         
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage();
@@ -337,7 +330,7 @@ class OcrIntegrationTest {
      * Crée un PDF multi-pages.
      */
     private File createMultiPagePdf(String[] pageContents) throws IOException {
-        File pdfFile = tempDir.resolve("multipage_" + System.nanoTime() + ".pdf").toFile();
+        File pdfFile = tempDir.resolve("multipage.pdf").toFile();
         
         try (PDDocument document = new PDDocument()) {
             for (String content : pageContents) {
@@ -363,7 +356,7 @@ class OcrIntegrationTest {
      * Crée un PDF vide (aucune page ou page blanche).
      */
     private File createEmptyPdf() throws IOException {
-        File pdfFile = tempDir.resolve("empty_" + System.nanoTime() + ".pdf").toFile();
+        File pdfFile = tempDir.resolve("empty.pdf").toFile();
         
         try (PDDocument document = new PDDocument()) {
             PDPage page = new PDPage();
