@@ -12,8 +12,8 @@
     </parent>
 
     <artifactId>law-common</artifactId>
-    <name>Law Common Module</name>
-    <description>Module commun : modèles, repositories, exceptions, configuration</description>
+    <name>Law Common</name>
+    <description>Common module: models, repositories, exceptions, and configuration</description>
 
     <dependencies>
         <!-- Lombok (doit être en premier pour l'annotation processing) -->

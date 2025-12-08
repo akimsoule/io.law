@@ -1,0 +1,22 @@
+{
+  "type": "loi",
+  "year": 2006,
+  "number": 1,
+  "_metadata": {
+    "confidence": 0.45557176470588234,
+    "method": "OCR",
+    "timestamp": "2025-12-07T21:57:05.213635"
+  },
+  "promulgationDate": "2005-11-03",
+  "promulgationCity": "Cotonou",
+  "articles": [
+    {
+      "number": "1",
+      "content": "Article 1er\n: Est autorisée la ratification par le Président de la République,\nde l\u0027Accord de crédit d\u0027un montant de vingt quatre miliions (24.000.000) de\ndroit de tirages spéciaux équivalant à trente cinq millions de Dollars des Etats­\nUnis d\u0027Amérique, soit environ dix huit milliards neuf cent quatre vingt trois\nmillions (18.983.000.000) de francs CFA, signé le 03 novembre 2005 à\nColumbia (Washington) aux Etats-Unis d\u0027Amérique entre la République du\nBénin et l\u0027Assaciation Internationale de Développement (AID) dans le cadre\ndu financement partiel du deuxiàme projet de gestion urbaine décentralisée\n(PGUD-2)."
+    },
+    {
+      "number": "2",
+      "content": "Article 2 : La présente loi sera exécutée comme loi de l\u0027Etat.\nFait à Cotonou, le 16 janvier 2006:"
+    }
+  ]
+}

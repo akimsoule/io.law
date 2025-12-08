@@ -4,7 +4,6 @@ import bj.gouv.sgg.model.FetchResult;
 import bj.gouv.sgg.model.LawDocument;
 import bj.gouv.sgg.repository.FetchResultRepository;
 import bj.gouv.sgg.repository.LawDocumentRepository;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,9 +31,6 @@ class FetchWriterTest {
     @Mock
     private LawDocumentRepository lawDocumentRepository;
 
-    @Mock
-    private EntityManager entityManager;
-
     private FetchWriter writer;
 
     @Captor
@@ -45,12 +41,12 @@ class FetchWriterTest {
 
     @BeforeEach
     void setUp() {
-        writer = new FetchWriter(repository, lawDocumentRepository, entityManager);
+        writer = new FetchWriter(repository, lawDocumentRepository);
     }
 
     @Test
-    void testWriteNewDocuments() throws Exception {
-        // Given
+    void givenNewDocumentWhenWriteThenSavesToRepository() throws Exception {
+        // Given: 1 document nouveau (pas encore dans fetch_results)
         LawDocument doc = LawDocument.builder()
             .type("loi")
             .year(2024)
@@ -60,43 +56,50 @@ class FetchWriterTest {
             .build();
 
         Chunk<LawDocument> chunk = new Chunk<>(List.of(doc));
-        when(repository.existsByDocumentId("loi-2024-15")).thenReturn(false);
+        when(repository.findByDocumentId("loi-2024-15")).thenReturn(java.util.Optional.empty());
 
-        // When
+        // When: Écriture du chunk
         writer.write(chunk);
 
-        // Then
+        // Then: FetchResult sauvegardé avec les bonnes informations
         verify(repository).saveAll(resultsCaptor.capture());
         List<FetchResult> saved = resultsCaptor.getValue();
-        assertEquals(1, saved.size());
-        assertEquals("loi-2024-15", saved.get(0).getDocumentId());
-        assertEquals("loi", saved.get(0).getDocumentType());
+        assertEquals(1, saved.size(), "1 FetchResult devrait être sauvegardé");
+        assertEquals("loi-2024-15", saved.get(0).getDocumentId(), 
+                "DocumentId devrait être loi-2024-15");
+        assertEquals("loi", saved.get(0).getDocumentType(),
+                "Type devrait être loi");
     }
 
     @Test
-    void testWriteSkipsExistingInNormalMode() throws Exception {
-        // Given
+    void givenExistingDocumentWhenWriteInNormalModeThenSkips() throws Exception {
+        // Given: 1 document existant déjà dans fetch_results, mode normal (force=false)
         LawDocument doc = LawDocument.builder()
             .type("loi")
             .year(2024)
             .number(15)
             .build();
 
+        FetchResult existingResult = FetchResult.builder()
+            .id(1L)
+            .documentId("loi-2024-15")
+            .build();
+
         Chunk<LawDocument> chunk = new Chunk<>(List.of(doc));
-        when(repository.existsByDocumentId("loi-2024-15")).thenReturn(true);
+        when(repository.findByDocumentId("loi-2024-15")).thenReturn(java.util.Optional.of(existingResult));
         writer.setForceMode(false);
 
-        // When
+        // When: Écriture du chunk en mode normal
         writer.write(chunk);
 
-        // Then
+        // Then: Aucune sauvegarde, aucune suppression (document skippé)
         verify(repository, never()).saveAll(anyList());
         verify(repository, never()).deleteByDocumentId(anyString());
     }
 
     @Test
-    void testWriteDeletesAndRecreatesInForceMode() throws Exception {
-        // Given
+    void givenExistingDocumentWhenWriteInForceModeThenUpdatesViaUpsert() throws Exception {
+        // Given: 1 document existant dans fetch_results, mode force activé
         LawDocument doc = LawDocument.builder()
             .type("loi")
             .year(2024)
@@ -105,26 +108,35 @@ class FetchWriterTest {
             .exists(true)
             .build();
 
+        FetchResult existingResult = FetchResult.builder()
+            .id(1L)
+            .documentId("loi-2024-15")
+            .documentType("loi")
+            .year(2024)
+            .number(15)
+            .build();
+
         Chunk<LawDocument> chunk = new Chunk<>(List.of(doc));
-        when(repository.existsByDocumentId("loi-2024-15")).thenReturn(true);
+        when(repository.findByDocumentId("loi-2024-15")).thenReturn(java.util.Optional.of(existingResult));
         writer.setForceMode(true);
 
-        // When
+        // When: Écriture du chunk en mode force
         writer.write(chunk);
 
-        // Then
-        verify(repository).deleteByDocumentId("loi-2024-15");
-        verify(entityManager).flush();
+        // Then: ✅ UPSERT - Pas de delete, juste update via save()
+        verify(repository, never()).deleteByDocumentId(anyString());
         verify(repository).saveAll(resultsCaptor.capture());
         
         List<FetchResult> saved = resultsCaptor.getValue();
-        assertEquals(1, saved.size());
-        assertEquals("loi-2024-15", saved.get(0).getDocumentId());
+        assertEquals(1, saved.size(), "1 FetchResult devrait être sauvegardé");
+        assertEquals("loi-2024-15", saved.get(0).getDocumentId(),
+                "DocumentId devrait être loi-2024-15");
+        assertEquals(1L, saved.get(0).getId(), "ID devrait être conservé (UPDATE, pas INSERT)");
     }
 
     @Test
-    void testWriteMultipleDocuments() throws Exception {
-        // Given
+    void givenMultipleDocumentsWhenWriteThenSavesAll() throws Exception {
+        // Given: 2 documents nouveaux (1 loi + 1 décret)
         LawDocument doc1 = LawDocument.builder()
             .type("loi")
             .year(2024)
@@ -142,35 +154,36 @@ class FetchWriterTest {
             .build();
 
         Chunk<LawDocument> chunk = new Chunk<>(List.of(doc1, doc2));
-        when(repository.existsByDocumentId(anyString())).thenReturn(false);
+        when(repository.findByDocumentId(anyString())).thenReturn(java.util.Optional.empty());
 
-        // When
+        // When: Écriture du chunk contenant 2 documents
         writer.write(chunk);
 
-        // Then
+        // Then: Les 2 FetchResults sont sauvegardés
         verify(repository).saveAll(resultsCaptor.capture());
         List<FetchResult> saved = resultsCaptor.getValue();
-        assertEquals(2, saved.size());
+        assertEquals(2, saved.size(), "2 FetchResults devraient être sauvegardés");
     }
 
     @Test
-    void testWriteEmptyChunk() throws Exception {
-        // Given
+    void givenEmptyChunkWhenWriteThenDoesNothing() throws Exception {
+        // Given: Chunk vide (aucun document)
         Chunk<LawDocument> chunk = new Chunk<>(List.of());
 
-        // When
+        // When: Écriture du chunk vide
         writer.write(chunk);
 
-        // Then
+        // Then: Aucune sauvegarde
         verify(repository, never()).saveAll(anyList());
     }
 
     @Test
-    void testSetForceMode() {
-        // When
+    void givenWriterWhenSetForceModesThenNoException() {
+        // When: Activation puis désactivation du mode force
         writer.setForceMode(true);
 
-        // Then - Ne devrait pas lever d'exception
-        assertDoesNotThrow(() -> writer.setForceMode(false));
+        // Then: Aucune exception levée
+        assertDoesNotThrow(() -> writer.setForceMode(false),
+                "Le changement de mode force ne devrait pas lever d'exception");
     }
 }

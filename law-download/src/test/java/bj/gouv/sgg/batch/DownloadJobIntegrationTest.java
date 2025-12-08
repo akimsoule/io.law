@@ -69,16 +69,16 @@ class DownloadJobIntegrationTest {
     }
 
     @Test
-    void testDownloadJobWithNoFetchedDocuments() throws Exception {
-        // Given - Aucun document FETCHED
+    void givenNoFetchedDocumentsWhenRunDownloadJobThenCompletesSuccessfully() throws Exception {
+        // Given: Aucun document FETCHED dans la base de données
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLong("time", System.currentTimeMillis())
                 .toJobParameters();
 
-        // When
+        // When: Exécution du downloadJob sans documents à traiter
         JobExecution jobExecution = jobLauncher.run(downloadJob, jobParameters);
 
-        // Then
+        // Then: Job complété avec succès, aucun document créé
         assertEquals(BatchStatus.COMPLETED, jobExecution.getStatus(),
                 "Le job devrait se terminer avec succès même sans documents à traiter");
         
@@ -87,8 +87,8 @@ class DownloadJobIntegrationTest {
     }
 
     @Test
-    void testDownloadJobWithFetchedDocuments() throws Exception {
-        // Given - Créer des documents FETCHED
+    void givenFetchedDocumentsWhenRunDownloadJobThenDownloadsAll() throws Exception {
+        // Given: 2 documents FETCHED (1 loi + 1 décret) dans la base
         LawDocument doc1 = LawDocument.builder()
                 .type("loi")
                 .year(2024)
@@ -114,10 +114,10 @@ class DownloadJobIntegrationTest {
                 .addLong("time", System.currentTimeMillis())
                 .toJobParameters();
 
-        // When
+        // When: Exécution du downloadJob
         JobExecution jobExecution = jobLauncher.run(downloadJob, jobParameters);
 
-        // Then
+        // Then: Job complété et 2 documents traités (DOWNLOADED ou FAILED)
         assertEquals(BatchStatus.COMPLETED, jobExecution.getStatus(),
                 "Le job devrait se terminer avec succès");
 
@@ -132,8 +132,8 @@ class DownloadJobIntegrationTest {
     }
 
     @Test
-    void testDownloadJobIdempotence() throws Exception {
-        // Given - Créer un document FETCHED
+    void givenJobAlreadyExecutedWhenRunAgainThenIdempotent() throws Exception {
+        // Given: 1 document FETCHED dans la base
         LawDocument doc = LawDocument.builder()
                 .type("loi")
                 .year(2024)
@@ -144,7 +144,7 @@ class DownloadJobIntegrationTest {
                 .build();
         lawDocumentRepository.save(doc);
 
-        // When - Premier run
+        // When: Premier run puis second run du downloadJob
         JobParameters jobParameters1 = new JobParametersBuilder()
                 .addLong("time", System.currentTimeMillis())
                 .toJobParameters();
@@ -153,7 +153,6 @@ class DownloadJobIntegrationTest {
         long countAfterFirst = lawDocumentRepository.count();
         LawDocument.ProcessingStatus statusAfterFirst = lawDocumentRepository.findAll().get(0).getStatus();
 
-        // Second run
         JobParameters jobParameters2 = new JobParametersBuilder()
                 .addLong("time", System.currentTimeMillis() + 1000)
                 .toJobParameters();
@@ -162,9 +161,11 @@ class DownloadJobIntegrationTest {
         long countAfterSecond = lawDocumentRepository.count();
         LawDocument.ProcessingStatus statusAfterSecond = lawDocumentRepository.findAll().get(0).getStatus();
 
-        // Then
-        assertEquals(BatchStatus.COMPLETED, firstExecution.getStatus());
-        assertEquals(BatchStatus.COMPLETED, secondExecution.getStatus());
+        // Then: Les deux runs sont complétés avec même nombre de documents et même statut (idempotence)
+        assertEquals(BatchStatus.COMPLETED, firstExecution.getStatus(),
+                "Le premier run devrait se terminer avec succès");
+        assertEquals(BatchStatus.COMPLETED, secondExecution.getStatus(),
+                "Le second run devrait se terminer avec succès");
         assertEquals(countAfterFirst, countAfterSecond,
                 "Le job devrait être idempotent - même nombre de documents après 2 runs");
         assertEquals(statusAfterFirst, statusAfterSecond,
@@ -172,8 +173,8 @@ class DownloadJobIntegrationTest {
     }
 
     @Test
-    void testDownloadedDocumentsHaveUrl() throws Exception {
-        // Given
+    void givenFetchedDocumentWhenDownloadedThenPreservesUrl() throws Exception {
+        // Given: 1 document FETCHED avec URL valide
         LawDocument doc = LawDocument.builder()
                 .type("loi")
                 .year(2024)
@@ -188,10 +189,10 @@ class DownloadJobIntegrationTest {
                 .addLong("time", System.currentTimeMillis())
                 .toJobParameters();
 
-        // When
+        // When: Téléchargement du document
         jobLauncher.run(downloadJob, jobParameters);
 
-        // Then
+        // Then: L'URL du document est préservée après téléchargement
         LawDocument updatedDoc = lawDocumentRepository.findAll().get(0);
         assertTrue(updatedDoc.getUrl() != null && !updatedDoc.getUrl().isEmpty(),
                 "Le document devrait conserver son URL");
@@ -200,8 +201,8 @@ class DownloadJobIntegrationTest {
     }
 
     @Test
-    void testDownloadSpecificLawDocument() throws Exception {
-        // Given - Créer une loi spécifique FETCHED
+    void givenSpecificLawIdWhenRunDownloadJobThenDownloadsTargetedLaw() throws Exception {
+        // Given: 1 loi spécifique FETCHED (loi-2024-15)
         LawDocument doc = LawDocument.builder()
                 .type("loi")
                 .year(2024)
@@ -217,10 +218,10 @@ class DownloadJobIntegrationTest {
                 .addString("documentId", "loi-2024-15")
                 .toJobParameters();
 
-        // When
+        // When: Exécution du downloadJob avec document ciblé
         JobExecution jobExecution = jobLauncher.run(downloadJob, jobParameters);
 
-        // Then
+        // Then: Job complété et document ciblé téléchargé ou en erreur
         assertEquals(BatchStatus.COMPLETED, jobExecution.getStatus(),
                 "Le job devrait se terminer avec succès pour un document ciblé");
 
@@ -236,8 +237,8 @@ class DownloadJobIntegrationTest {
     }
 
     @Test
-    void testDownloadSpecificDecretDocument() throws Exception {
-        // Given - Créer un décret spécifique FETCHED
+    void givenSpecificDecretIdWhenRunDownloadJobThenDownloadsTargetedDecret() throws Exception {
+        // Given: 1 décret spécifique FETCHED (decret-2025-716)
         LawDocument doc = LawDocument.builder()
                 .type("decret")
                 .year(2025)
@@ -253,10 +254,10 @@ class DownloadJobIntegrationTest {
                 .addString("documentId", "decret-2025-716")
                 .toJobParameters();
 
-        // When
+        // When: Exécution du downloadJob avec décret ciblé
         JobExecution jobExecution = jobLauncher.run(downloadJob, jobParameters);
 
-        // Then
+        // Then: Job complété et décret ciblé téléchargé ou en erreur
         assertEquals(BatchStatus.COMPLETED, jobExecution.getStatus(),
                 "Le job devrait se terminer avec succès pour un décret ciblé");
 
@@ -272,8 +273,8 @@ class DownloadJobIntegrationTest {
     }
 
     @Test
-    void testDownloadWithForceMode() throws Exception {
-        // Given - Premier run pour télécharger un document
+    void givenDownloadedDocumentWhenRunWithForceThenRedownloadsWithoutDuplicates() throws Exception {
+        // Given: 1 document FETCHED puis téléchargé (statut DOWNLOADED)
         LawDocument doc = LawDocument.builder()
                 .type("loi")
                 .year(2024)
@@ -289,13 +290,14 @@ class DownloadJobIntegrationTest {
                 .addString("documentId", "loi-2024-15")
                 .toJobParameters();
         JobExecution firstExecution = jobLauncher.run(downloadJob, jobParameters1);
-        assertEquals(BatchStatus.COMPLETED, firstExecution.getStatus());
+        assertEquals(BatchStatus.COMPLETED, firstExecution.getStatus(),
+                "Le premier run devrait se terminer avec succès");
 
         // Simuler un document déjà DOWNLOADED
         LawDocument existingDoc = lawDocumentRepository.findByTypeAndYearAndNumber("loi", 2024, 15)
                 .orElse(null);
         if (existingDoc != null && existingDoc.getStatus() == LawDocument.ProcessingStatus.DOWNLOADED) {
-            // When - Second run avec force=true (devrait re-télécharger)
+            // When: Second run avec force=true pour re-télécharger
             JobParameters jobParameters2 = new JobParametersBuilder()
                     .addLong("time", System.currentTimeMillis() + 1000)
                     .addString("documentId", "loi-2024-15")
@@ -303,7 +305,7 @@ class DownloadJobIntegrationTest {
                     .toJobParameters();
             JobExecution secondExecution = jobLauncher.run(downloadJob, jobParameters2);
 
-            // Then
+            // Then: Job complété sans duplication de documents
             assertEquals(BatchStatus.COMPLETED, secondExecution.getStatus(),
                     "Le job avec force=true devrait se terminer avec succès");
 
@@ -315,8 +317,8 @@ class DownloadJobIntegrationTest {
     }
 
     @Test
-    void testDownloadWithoutForceSkipsDownloaded() throws Exception {
-        // Given - Premier run pour télécharger un document
+    void givenDownloadedDocumentWhenRunWithoutForceThenSkipsDocument() throws Exception {
+        // Given: 1 document FETCHED puis téléchargé (statut DOWNLOADED)
         LawDocument doc = LawDocument.builder()
                 .type("loi")
                 .year(2024)
@@ -332,7 +334,8 @@ class DownloadJobIntegrationTest {
                 .addString("documentId", "loi-2024-15")
                 .toJobParameters();
         JobExecution firstExecution = jobLauncher.run(downloadJob, jobParameters1);
-        assertEquals(BatchStatus.COMPLETED, firstExecution.getStatus());
+        assertEquals(BatchStatus.COMPLETED, firstExecution.getStatus(),
+                "Le premier run devrait se terminer avec succès");
 
         // Marquer le document comme DOWNLOADED
         LawDocument downloaded = lawDocumentRepository.findByTypeAndYearAndNumber("loi", 2024, 15)
@@ -343,14 +346,14 @@ class DownloadJobIntegrationTest {
 
             long firstCount = downloadResultRepository.count();
 
-            // When - Second run SANS force (devrait skip)
+            // When: Second run SANS force (devrait skip le document DOWNLOADED)
             JobParameters jobParameters2 = new JobParametersBuilder()
                     .addLong("time", System.currentTimeMillis() + 1000)
                     .addString("documentId", "loi-2024-15")
                     .toJobParameters();
             JobExecution secondExecution = jobLauncher.run(downloadJob, jobParameters2);
 
-            // Then
+            // Then: Job complété, document skippé, pas de nouveau téléchargement
             assertEquals(BatchStatus.COMPLETED, secondExecution.getStatus(),
                     "Le job sans force devrait se terminer avec succès");
 
@@ -361,8 +364,8 @@ class DownloadJobIntegrationTest {
     }
 
     @Test
-    void testDownloadWithMaxDocuments() throws Exception {
-        // Given - Créer 5 documents FETCHED
+    void givenFiveDocumentsWhenRunWithMaxThreeThenProcessesOnlyThree() throws Exception {
+        // Given: 5 documents FETCHED dans la base
         for (int i = 1; i <= 5; i++) {
             LawDocument doc = LawDocument.builder()
                     .type("loi")
@@ -375,15 +378,16 @@ class DownloadJobIntegrationTest {
             lawDocumentRepository.save(doc);
         }
 
-        // When - Télécharger avec maxDocuments=3
+        // When: Exécution du downloadJob avec limite maxDocuments=3
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLong("time", System.currentTimeMillis())
                 .addString("maxDocuments", "3")
                 .toJobParameters();
         JobExecution jobExecution = jobLauncher.run(downloadJob, jobParameters);
 
-        // Then
-        assertEquals(BatchStatus.COMPLETED, jobExecution.getStatus());
+        // Then: Job complété avec au maximum 3 documents traités
+        assertEquals(BatchStatus.COMPLETED, jobExecution.getStatus(),
+                "Le job devrait se terminer avec succès");
 
         // Au moins 3 documents devraient avoir été traités (ou moins si erreurs réseau)
         long processedCount = lawDocumentRepository.countByStatus(LawDocument.ProcessingStatus.DOWNLOADED)
@@ -393,8 +397,8 @@ class DownloadJobIntegrationTest {
     }
 
     @Test
-    void testUrlFormatWithPadding() throws Exception {
-        // Given - Document avec numéro < 10 (devrait avoir padding)
+    void givenDocumentWithSingleDigitNumberWhenDownloadedThenUrlHasPaddedNumber() throws Exception {
+        // Given: 1 document avec numéro < 10 ayant un padding dans l'URL (04)
         LawDocument doc = LawDocument.builder()
                 .type("loi")
                 .year(2025)
@@ -405,15 +409,16 @@ class DownloadJobIntegrationTest {
                 .build();
         lawDocumentRepository.save(doc);
 
-        // When
+        // When: Téléchargement du document via son ID sans padding
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLong("time", System.currentTimeMillis())
                 .addString("documentId", "loi-2025-4") // Sans padding dans l'ID
                 .toJobParameters();
         JobExecution jobExecution = jobLauncher.run(downloadJob, jobParameters);
 
-        // Then
-        assertEquals(BatchStatus.COMPLETED, jobExecution.getStatus());
+        // Then: Job complété, URL préservée avec padding, pas de suffixe /download en base
+        assertEquals(BatchStatus.COMPLETED, jobExecution.getStatus(),
+                "Le job devrait se terminer avec succès");
 
         LawDocument retrieved = lawDocumentRepository.findByTypeAndYearAndNumber("loi", 2025, 4)
                 .orElse(null);
@@ -426,8 +431,8 @@ class DownloadJobIntegrationTest {
     }
 
     @Test
-    void testDownloadUrlHasDownloadSuffix() {
-        // Given
+    void givenDocumentBaseUrlWhenBuildingDownloadUrlThenAddsDownloadSuffix() {
+        // Given: URL de base d'un document (sans suffixe /download)
         String baseUrl = "https://sgg.gouv.bj/doc/loi-2025-04";
         LawDocument doc = LawDocument.builder()
                 .type("loi")
@@ -437,10 +442,10 @@ class DownloadJobIntegrationTest {
                 .status(LawDocument.ProcessingStatus.FETCHED)
                 .build();
 
-        // When - Construire l'URL de téléchargement (comme dans DownloadProcessor)
+        // When: Construction de l'URL de téléchargement (comme dans DownloadProcessor)
         String downloadUrl = doc.getUrl() + "/download";
 
-        // Then
+        // Then: L'URL de téléchargement a le suffixe /download
         assertEquals("https://sgg.gouv.bj/doc/loi-2025-04/download", downloadUrl,
                 "L'URL de téléchargement doit avoir le suffixe /download");
         assertTrue(downloadUrl.endsWith("/download"),
@@ -448,8 +453,8 @@ class DownloadJobIntegrationTest {
     }
 
     @Test
-    void testDocumentIdFormat() {
-        // Given
+    void givenLawAndDecretDocumentsWhenGettingIdsThenFormattedCorrectly() {
+        // Given: 1 loi et 1 décret avec type, année et numéro
         LawDocument loi = LawDocument.builder()
                 .type("loi")
                 .year(2025)
@@ -464,17 +469,19 @@ class DownloadJobIntegrationTest {
                 .status(LawDocument.ProcessingStatus.FETCHED)
                 .build();
 
-        // Then
-        assertEquals("loi-2025-4", loi.getDocumentId());
-        assertEquals("decret-2025-716", decret.getDocumentId());
+        // Then: IDs formatés selon le pattern type-year-number
+        assertEquals("loi-2025-4", loi.getDocumentId(),
+                "L'ID de la loi devrait être loi-2025-4");
+        assertEquals("decret-2025-716", decret.getDocumentId(),
+                "L'ID du décret devrait être decret-2025-716");
     }
 
     @Test
-    void testPdfSignatureValidation() {
-        // Given - Signature PDF valide (%PDF)
+    void givenPdfMagicBytesWhenValidatingThenRecognizedAsPdfSignature() {
+        // Given: Signature PDF valide (%PDF) sous forme de bytes
         byte[] validPdfSignature = new byte[]{0x25, 0x50, 0x44, 0x46}; // %PDF
 
-        // Then
+        // Then: Chaque byte correspond au magic number PDF
         assertEquals(0x25, validPdfSignature[0], "Premier byte devrait être % (0x25)");
         assertEquals(0x50, validPdfSignature[1], "Deuxième byte devrait être P (0x50)");
         assertEquals(0x44, validPdfSignature[2], "Troisième byte devrait être D (0x44)");

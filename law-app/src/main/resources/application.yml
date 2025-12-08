@@ -6,10 +6,18 @@ spring:
     web-application-type: none
   
   datasource:
-    url: jdbc:mysql://localhost:3306/law_db?useUnicode=true&characterEncoding=UTF-8&createDatabaseIfNotExist=true
+    url: jdbc:mysql://localhost:3306/law_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${DATABASE_USERNAME:root}
     password: ${DATABASE_PASSWORD:root}
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+      keepalive-time: 300000
+      connection-test-query: SELECT 1
   
   jpa:
     hibernate:
@@ -17,45 +25,55 @@ spring:
     show-sql: false
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.MySQLDialect
         format_sql: true
+    open-in-view: false
   
   batch:
+    job:
+      enabled: false  # Disable auto-run on startup
     jdbc:
       initialize-schema: always
-    job:
-      enabled: false
 
+server:
+  port: 8080
+
+# Application specific configuration
 law:
   base-url: https://sgg.gouv.bj/doc
   user-agent: Mozilla/5.0 (compatible; LawBatchBot/1.0)
-  start-year: 1960
   end-year: 1960
   max-number-per-year: 2000
   
   directories:
-    database: /tmp/law-db
-    data: /tmp/law-data
+    data: /Volumes/FOLDER/dev/projects/io.law/data
+    pdfs: pdfs
+    ocr: ocr
+    articles: articles
   
   http:
     timeout: 30000
-    max-retries: 3
   
   ocr:
     language: fra
     dpi: 300
-    quality-threshold: 0.7
+    quality-threshold: 0.70
   
   batch:
     chunk-size: 10
     max-threads: 0  # Si ≤ 0 : calcul automatique min(10, availableProcessors * 2). Sinon, valeur fixe.
-    throttle-limit: 100
     max-items-to-fetch-previous: 100
+  
+  capacity:
+    ia: 4
+    ocr: 2
+    ollama-url: http://localhost:11434
+    ollama-models-required: gemma:2b
 
 logging:
   level:
     root: INFO
     bj.gouv.sgg: DEBUG
     org.springframework.batch: INFO
+    org.springframework.batch.core.configuration.annotation.BatchObservabilityBeanPostProcessor: WARN
   pattern:
-    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

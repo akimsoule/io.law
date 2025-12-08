@@ -5,7 +5,6 @@ import bj.gouv.sgg.model.FetchResult;
 import bj.gouv.sgg.model.LawDocument;
 import bj.gouv.sgg.repository.FetchResultRepository;
 import bj.gouv.sgg.repository.LawDocumentRepository;
-import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.Chunk;
@@ -18,8 +17,9 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Writer spécialisé pour les fetch results
- * INSERT-ONLY : ne fait jamais d'UPDATE (conforme à law.io.v2)
+ * Writer spécialisé pour les fetch results avec pattern UPSERT.
+ * Utilise findByDocumentId().orElse() + save() pour éviter les duplicate entry errors.
+ * Supporte mode force pour re-traiter les documents existants.
  */
 @Slf4j
 @Component
@@ -28,7 +28,6 @@ public class FetchWriter implements ItemWriter<LawDocument> {
     
     private final FetchResultRepository repository;
     private final LawDocumentRepository lawDocumentRepository;
-    private final EntityManager entityManager;
     private boolean forceMode = false;
     
     /**
@@ -47,22 +46,35 @@ public class FetchWriter implements ItemWriter<LawDocument> {
         int skippedCount = 0;
         
         for (LawDocument document : chunk) {
-            boolean exists = repository.existsByDocumentId(document.getDocumentId());
+            String docId = document.getDocumentId();
+            Optional<FetchResult> existingOpt = repository.findByDocumentId(docId);
+            boolean exists = existingOpt.isPresent();
             
             if (shouldSkipDocument(exists)) {
                 skippedCount++;
                 continue;
             }
             
-            if (shouldDeleteExisting(exists)) {
-                deleteExistingDocument(document.getDocumentId());
-                updatedCount++;
-            }
+            // ✅ UPSERT: récupérer existant ou créer nouveau
+            FetchResult result = existingOpt.orElse(FetchResult.builder()
+                .documentId(docId)
+                .build());
             
-            FetchResult result = createFetchResult(document);
+            // Mettre à jour tous les champs
+            result.setDocumentType(document.getType());
+            result.setYear(document.getYear());
+            result.setNumber(document.getNumber());
+            result.setUrl(document.getUrl());
+            result.setStatus(document.getStatus() != null ? document.getStatus().name() : "UNKNOWN");
+            result.setExists(document.isExists());
+            result.setFetchedAt(LocalDateTime.now());
+            result.setErrorMessage(null);
+            
             results.add(result);
             
-            if (!exists) {
+            if (exists) {
+                updatedCount++;
+            } else {
                 newCount++;
             }
             
@@ -85,37 +97,10 @@ public class FetchWriter implements ItemWriter<LawDocument> {
     }
     
     /**
-     * Vérifie si l'entrée existante doit être supprimée (mode force + existe)
+     * Note: Les méthodes shouldDeleteExisting(), deleteExistingDocument() et createFetchResult()
+     * ont été supprimées car remplacées par le pattern UPSERT dans write().
+     * L'UPSERT évite les duplicate entry errors en faisant UPDATE au lieu de DELETE+INSERT.
      */
-    private boolean shouldDeleteExisting(boolean exists) {
-        return forceMode && exists;
-    }
-    
-    /**
-     * Supprime l'entrée existante et flush
-     */
-    private void deleteExistingDocument(String documentId) {
-        repository.deleteByDocumentId(documentId);
-        entityManager.flush();
-        log.debug("Force mode: deleted existing entry for {}", documentId);
-    }
-    
-    /**
-     * Crée un FetchResult depuis un LawDocument
-     */
-    private FetchResult createFetchResult(LawDocument document) {
-        return FetchResult.builder()
-            .documentId(document.getDocumentId())
-            .documentType(document.getType())
-            .year(document.getYear())
-            .number(document.getNumber())
-            .url(document.getUrl())
-            .status(document.getStatus() != null ? document.getStatus().name() : "UNKNOWN")
-            .exists(document.isExists())
-            .fetchedAt(LocalDateTime.now())
-            .errorMessage(null)
-            .build();
-    }
     
     /**
      * Log le traitement du document
@@ -195,7 +180,8 @@ public class FetchWriter implements ItemWriter<LawDocument> {
                 log.info("Saved {} fetch results ({} new, {} updated, {} skipped, FORCE mode)", 
                     newCount + updatedCount, newCount, updatedCount, skippedCount);
             } else {
-                log.info("Saved {} new fetch results ({} skipped, INSERT-ONLY)", newCount, skippedCount);
+                log.info("Saved {} fetch results ({} new, {} updated via UPSERT, {} skipped)", 
+                    newCount + updatedCount, newCount, updatedCount, skippedCount);
             }
         }
     }

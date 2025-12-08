@@ -30,7 +30,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testToRangeString_withMultipleNumbers() {
+    void givenMultipleNumberRangeWhenToRangeStringThenReturnsFormattedRange() {
         // Given - une plage de 10 à 20
         // When
         String result = range.toRangeString();
@@ -41,7 +41,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testToRangeString_withSingleNumber() {
+    void givenSingleNumberRangeWhenToRangeStringThenReturnsNumberWithoutDash() {
         // Given - une plage d'un seul numéro
         range.setNumberMin(15);
         range.setNumberMax(15);
@@ -55,7 +55,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testToRangeString_withDecret() {
+    void givenDecretRangeWhenToRangeStringThenReturnsDecretFormattedRange() {
         // Given - un décret
         range.setDocumentType("decret");
         range.setYear(2024);
@@ -71,7 +71,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testContains_numberInRange() {
+    void givenNumbersInRangeWhenContainsThenReturnsTrue() {
         // Given - plage 10-20
         // When/Then
         assertTrue(range.contains(10), "Le numéro 10 (min) devrait être dans la plage");
@@ -80,7 +80,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testContains_numberOutsideRange() {
+    void givenNumbersOutsideRangeWhenContainsThenReturnsFalse() {
         // Given - plage 10-20
         // When/Then
         assertFalse(range.contains(9), "Le numéro 9 devrait être hors de la plage");
@@ -90,7 +90,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testCanMergeWith_adjacentRanges() {
+    void givenAdjacentRangesWhenCanMergeWithThenReturnsTrue() {
         // Given - plage1: 10-20, plage2: 21-30 (adjacentes)
         FetchNotFoundRange other = FetchNotFoundRange.builder()
                 .documentType("loi")
@@ -109,7 +109,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testCanMergeWith_overlappingRanges() {
+    void givenOverlappingRangesWhenCanMergeWithThenReturnsTrue() {
         // Given - plage1: 10-20, plage2: 15-25 (chevauchement)
         FetchNotFoundRange other = FetchNotFoundRange.builder()
                 .documentType("loi")
@@ -126,7 +126,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testCanMergeWith_gapBetweenRanges() {
+    void givenRangesWithGapWhenCanMergeWithThenReturnsFalse() {
         // Given - plage1: 10-20, plage2: 22-30 (gap de 1)
         FetchNotFoundRange other = FetchNotFoundRange.builder()
                 .documentType("loi")
@@ -143,7 +143,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testCanMergeWith_differentTypes() {
+    void givenDifferentDocumentTypesWhenCanMergeWithThenReturnsFalse() {
         // Given - plage1: loi, plage2: decret
         FetchNotFoundRange other = FetchNotFoundRange.builder()
                 .documentType("decret")
@@ -160,7 +160,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testCanMergeWith_differentYears() {
+    void givenDifferentYearsWhenCanMergeWithThenReturnsFalse() {
         // Given - plage1: 2025, plage2: 2024
         FetchNotFoundRange other = FetchNotFoundRange.builder()
                 .documentType("loi")
@@ -177,7 +177,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testCanMergeWith_completelyDisjoint() {
+    void givenCompletelyDisjointRangesWhenCanMergeWithThenReturnsFalse() {
         // Given - plage1: 10-20, plage2: 50-60 (très éloignées)
         FetchNotFoundRange other = FetchNotFoundRange.builder()
                 .documentType("loi")
@@ -194,7 +194,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testMergeWith_adjacentRanges() {
+    void givenAdjacentRangesWhenMergeWithThenExtendsToIncludeBoth() {
         // Given - plage1: 10-20, plage2: 21-30
         FetchNotFoundRange other = FetchNotFoundRange.builder()
                 .documentType("loi")
@@ -218,7 +218,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testMergeWith_overlappingRanges() {
+    void givenOverlappingRangesWhenMergeWithThenMergesAndUpdatesCounts() {
         // Given - plage1: 10-20, plage2: 15-25
         FetchNotFoundRange other = FetchNotFoundRange.builder()
                 .documentType("loi")
@@ -238,7 +238,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testMergeWith_otherRangeIsSmaller() {
+    void givenSmallerOtherRangeWhenMergeWithThenExtendsCurrentRange() {
         // Given - plage1: 10-30, plage2: 15-20 (contenue dans plage1)
         FetchNotFoundRange other = FetchNotFoundRange.builder()
                 .documentType("loi")
@@ -260,7 +260,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testMergeWith_otherRangeIsLarger() {
+    void givenLargerOtherRangeWhenMergeWithThenAdoptsLargerBounds() {
         // Given - plage1: 15-20, plage2: 10-30 (contient plage1)
         range.setNumberMin(15);
         range.setNumberMax(20);
@@ -283,7 +283,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testMergeWith_reverseOrder() {
+    void givenReverseOrderRangesWhenMergeWithThenMergesCorrectly() {
         // Given - plage1: 20-30, plage2: 10-19 (l'autre est avant)
         range.setNumberMin(20);
         range.setNumberMax(30);
@@ -306,7 +306,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testBuilder() {
+    void givenRangeDataWhenBuildFetchNotFoundRangeThenCreatesValidInstance() {
         // Given/When - construction via builder
         FetchNotFoundRange newRange = FetchNotFoundRange.builder()
                 .id(1L)
@@ -331,7 +331,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testSettersAndGetters() {
+    void givenExistingRangeWhenSetAndGetPropertiesThenUpdatesAndReturnsValues() {
         // Given - nouvelle instance
         FetchNotFoundRange newRange = new FetchNotFoundRange();
         LocalDateTime testTime = LocalDateTime.of(2025, 6, 1, 10, 0);
@@ -358,7 +358,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testEquals_sameValues() {
+    void givenTwoRangesWithSameValuesWhenEqualsThenReturnsTrue() {
         // Given - deux plages identiques (sauf id)
         FetchNotFoundRange range1 = FetchNotFoundRange.builder()
                 .documentType("loi")
@@ -386,7 +386,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testEquals_differentValues() {
+    void givenTwoRangesWithDifferentValuesWhenEqualsThenReturnsFalse() {
         // Given - deux plages différentes
         FetchNotFoundRange range1 = FetchNotFoundRange.builder()
                 .documentType("loi")
@@ -407,7 +407,7 @@ class FetchNotFoundRangeTest {
     }
 
     @Test
-    void testToString() {
+    void givenRangeWhenToStringThenReturnsFormattedRepresentation() {
         // Given
         range.setId(123L);
 

@@ -48,53 +48,53 @@ class LawFetchServiceTest {
     }
 
     @Test
-    void testFetchSingleDocumentSuccess() {
-        // Given
+    void givenNewDocumentWhenFetchSingleDocumentThenReturnsDownloadedResult() {
+        // Given: Un document loi-2024-15 non existant en BD, serveur répond HTTP 200
         when(repository.findByDocumentId("loi-2024-15")).thenReturn(Optional.empty());
         when(restTemplate.headForHeaders(anyString())).thenReturn(null);
 
-        // When
+        // When: Fetch du document
         FetchResult result = service.fetchSingleDocument("loi", 2024, 15);
 
-        // Then
-        assertNotNull(result);
-        assertEquals("loi-2024-15", result.getDocumentId());
-        assertEquals("DOWNLOADED", result.getStatus());
-        assertEquals("loi", result.getDocumentType());
-        assertEquals(2024, result.getYear());
-        assertEquals(15, result.getNumber());
-        assertNotNull(result.getFetchedAt());
+        // Then: Résultat créé avec status DOWNLOADED et métadonnées complètes
+        assertNotNull(result, "Le résultat ne devrait pas être null");
+        assertEquals("loi-2024-15", result.getDocumentId(), "L'ID document devrait être loi-2024-15");
+        assertEquals("DOWNLOADED", result.getStatus(), "Le status devrait être DOWNLOADED");
+        assertEquals("loi", result.getDocumentType(), "Le type devrait être loi");
+        assertEquals(2024, result.getYear(), "L'année devrait être 2024");
+        assertEquals(15, result.getNumber(), "Le numéro devrait être 15");
+        assertNotNull(result.getFetchedAt(), "La date de fetch devrait être définie");
 
         verify(repository).save(resultCaptor.capture());
         FetchResult saved = resultCaptor.getValue();
-        assertEquals("loi-2024-15", saved.getDocumentId());
-        assertEquals("DOWNLOADED", saved.getStatus());
+        assertEquals("loi-2024-15", saved.getDocumentId(), "Le document sauvegardé devrait avoir l'ID loi-2024-15");
+        assertEquals("DOWNLOADED", saved.getStatus(), "Le status sauvegardé devrait être DOWNLOADED");
     }
 
     @Test
-    void testFetchSingleDocumentNotFound() {
-        // Given
+    void givenNonExistentDocumentWhenFetchSingleDocumentThenReturnsNotFoundResult() {
+        // Given: Un document loi-1960-999 inexistant, serveur répond HTTP 404
         when(repository.findByDocumentId("loi-1960-999")).thenReturn(Optional.empty());
         when(restTemplate.headForHeaders(anyString()))
             .thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
 
-        // When
+        // When: Tentative de fetch du document
         FetchResult result = service.fetchSingleDocument("loi", 1960, 999);
 
-        // Then
-        assertNotNull(result);
-        assertEquals("loi-1960-999", result.getDocumentId());
-        assertEquals("NOT_FOUND", result.getStatus());
-        assertEquals("404 Not Found", result.getErrorMessage());
+        // Then: Résultat avec status NOT_FOUND et message d'erreur 404
+        assertNotNull(result, "Le résultat ne devrait pas être null même pour document introuvable");
+        assertEquals("loi-1960-999", result.getDocumentId(), "L'ID document devrait être loi-1960-999");
+        assertEquals("NOT_FOUND", result.getStatus(), "Le status devrait être NOT_FOUND");
+        assertEquals("404 Not Found", result.getErrorMessage(), "Le message d'erreur devrait être 404 Not Found");
 
         verify(repository).save(resultCaptor.capture());
         FetchResult saved = resultCaptor.getValue();
-        assertEquals("NOT_FOUND", saved.getStatus());
+        assertEquals("NOT_FOUND", saved.getStatus(), "Le status sauvegardé devrait être NOT_FOUND");
     }
 
     @Test
-    void testFetchSingleDocumentUpdateExisting() {
-        // Given
+    void givenExistingPendingDocumentWhenFetchSingleDocumentThenUpdatesStatusToDownloaded() {
+        // Given: Un document loi-2024-15 existant avec status PENDING en BD
         FetchResult existing = FetchResult.builder()
             .documentId("loi-2024-15")
             .documentType("loi")
@@ -106,25 +106,26 @@ class LawFetchServiceTest {
         when(repository.findByDocumentId("loi-2024-15")).thenReturn(Optional.of(existing));
         when(restTemplate.headForHeaders(anyString())).thenReturn(null);
 
-        // When
+        // When: Re-fetch du document existant
         FetchResult result = service.fetchSingleDocument("loi", 2024, 15);
 
-        // Then
-        assertEquals("DOWNLOADED", result.getStatus());
-        assertNull(result.getErrorMessage());
+        // Then: Status mis à jour à DOWNLOADED, errorMessage effacé
+        assertEquals("DOWNLOADED", result.getStatus(), "Le status devrait être mis à jour à DOWNLOADED");
+        assertNull(result.getErrorMessage(), "Le message d'erreur devrait être null après succès");
         verify(repository).save(existing);
     }
 
     @Test
-    void testBuildCorrectUrl() {
-        // Given
+    void givenDecretParametersWhenFetchSingleDocumentThenBuildsCorrectUrl() {
+        // Given: Paramètres d'un décret (type decret, année 2025, numéro 716)
         when(repository.findByDocumentId("decret-2025-716")).thenReturn(Optional.empty());
         when(restTemplate.headForHeaders(anyString())).thenReturn(null);
 
-        // When
+        // When: Fetch du décret
         FetchResult result = service.fetchSingleDocument("decret", 2025, 716);
 
-        // Then
-        assertEquals("https://sgg.gouv.bj/doc/decret-2025-716", result.getUrl());
+        // Then: URL construite au format base/type-year-number
+        assertEquals("https://sgg.gouv.bj/doc/decret-2025-716", result.getUrl(),
+                    "L'URL devrait suivre le format base/type-year-number");
     }
 }

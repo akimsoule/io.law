@@ -35,7 +35,7 @@ class NotFoundRangeServiceTest {
     private ArgumentCaptor<FetchNotFoundRange> rangeCaptor;
 
     @Test
-    void testAddNotFoundDocumentCreatesNewRange() {
+    void givenNewNotFoundDocumentWhenAddNotFoundDocumentThenCreatesNewRange() {
         // Given
         LawDocument doc = LawDocument.builder()
             .type("loi")
@@ -61,7 +61,7 @@ class NotFoundRangeServiceTest {
     }
 
     @Test
-    void testAddNotFoundDocumentMergesWithExistingRange() {
+    void givenAdjacentRangeWhenAddNotFoundDocumentThenMergesRanges() {
         // Given
         LawDocument doc = LawDocument.builder()
             .type("loi")
@@ -95,7 +95,7 @@ class NotFoundRangeServiceTest {
     }
 
     @Test
-    void testIsInNotFoundRange() {
+    void givenDocumentNumbersWhenIsInNotFoundRangeThenReturnsCorrectStatus() {
         // Given
         when(repository.isInNotFoundRange("loi", 2024, 999)).thenReturn(true);
         when(repository.isInNotFoundRange("loi", 2024, 1)).thenReturn(false);
@@ -106,7 +106,7 @@ class NotFoundRangeServiceTest {
     }
 
     @Test
-    void testAddNotFoundDocumentsFiltersExistingDocs() {
+    void givenMixedDocumentsWhenAddNotFoundDocumentsThenFiltersExistingOnes() {
         // Given
         LawDocument existing = LawDocument.builder()
             .type("loi")
@@ -134,7 +134,7 @@ class NotFoundRangeServiceTest {
     }
 
     @Test
-    void testAddNotFoundDocumentsEmptyList() {
+    void givenEmptyListWhenAddNotFoundDocumentsThenPerformsNoSave() {
         // When
         service.addNotFoundDocuments(Collections.emptyList());
 

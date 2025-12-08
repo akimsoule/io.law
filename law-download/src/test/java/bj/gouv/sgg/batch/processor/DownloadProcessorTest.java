@@ -1,10 +1,15 @@
 package bj.gouv.sgg.batch.processor;
 
 import bj.gouv.sgg.model.LawDocument;
+import bj.gouv.sgg.service.FileStorageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 /**
  * Tests unitaires basiques pour DownloadProcessor
@@ -13,10 +18,14 @@ import static org.junit.jupiter.api.Assertions.*;
  */
 class DownloadProcessorTest {
 
+    @Mock
+    private FileStorageService fileStorageService;
+    
     private LawDocument testDocument;
 
     @BeforeEach
     void setUp() {
+        MockitoAnnotations.openMocks(this);
         testDocument = LawDocument.builder()
             .type("loi")
             .year(2025)
@@ -27,17 +36,20 @@ class DownloadProcessorTest {
     }
 
     @Test
-    void testDocumentIdGeneration() {
-        // When
+    void givenLawDocumentWhenGetIdThenFormattedCorrectly() {
+        // Given: Document loi avec année 2025 et numéro 17 (défini dans setUp)
+
+        // When: Récupération de l'ID du document
         String documentId = testDocument.getDocumentId();
 
-        // Then
-        assertEquals("loi-2025-17", documentId);
+        // Then: ID formaté selon le pattern loi-year-number
+        assertEquals("loi-2025-17", documentId,
+                "L'ID du document devrait être loi-2025-17");
     }
 
     @Test
-    void testDecretDocumentId() {
-        // Given
+    void givenDecretDocumentWhenGetIdThenFormattedCorrectly() {
+        // Given: Document décret avec année 2025 et numéro 716
         LawDocument decret = LawDocument.builder()
             .type("decret")
             .year(2025)
@@ -45,11 +57,12 @@ class DownloadProcessorTest {
             .status(LawDocument.ProcessingStatus.FETCHED)
             .build();
 
-        // When
+        // When: Récupération de l'ID du décret
         String documentId = decret.getDocumentId();
 
-        // Then
-        assertEquals("decret-2025-716", documentId);
+        // Then: ID formaté selon le pattern decret-year-number
+        assertEquals("decret-2025-716", documentId,
+                "L'ID du décret devrait être decret-2025-716");
     }
 
     @Test
@@ -97,7 +110,7 @@ class DownloadProcessorTest {
     @Test
     void testForceModeSetter() {
         // Given
-        DownloadProcessor processor = new DownloadProcessor();
+        DownloadProcessor processor = new DownloadProcessor(fileStorageService);
         
         // When
         processor.setForceMode(true);
@@ -109,15 +122,18 @@ class DownloadProcessorTest {
     @Test
     void testSkipAlreadyDownloadedDocument() throws Exception {
         // Given
-        DownloadProcessor processor = new DownloadProcessor();
+        DownloadProcessor processor = new DownloadProcessor(fileStorageService);
         testDocument.setStatus(LawDocument.ProcessingStatus.DOWNLOADED);
         processor.setForceMode(false);
+        
+        // Mock: PDF existe sur le disque
+        when(fileStorageService.pdfExists(anyString(), anyString())).thenReturn(true);
 
         // When
         LawDocument result = processor.process(testDocument);
 
         // Then
-        assertNull(result, "Le document DOWNLOADED devrait être skippé en mode normal");
+        assertNull(result, "Le document DOWNLOADED avec PDF existant devrait être skippé");
     }
 
     @Test

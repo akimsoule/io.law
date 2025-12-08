@@ -11,6 +11,7 @@ import org.springframework.batch.item.Chunk;
 import org.springframework.batch.item.ItemWriter;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.time.LocalDateTime;
 
 /**
@@ -36,7 +37,7 @@ public class FileDownloadWriter implements ItemWriter<LawDocument> {
     }
 
     @Override
-    public void write(Chunk<? extends LawDocument> chunk) throws Exception {
+    public void write(Chunk<? extends LawDocument> chunk) throws IOException {
         int saved = 0;
         int skipped = 0;
         
@@ -60,10 +61,19 @@ public class FileDownloadWriter implements ItemWriter<LawDocument> {
             return true;
         }
         
-        // Vérifier si déjà enregistré (idempotence), SAUF en mode force
-        if (!forceMode && downloadResultRepository.existsByDocumentId(doc.getDocumentId())) {
-            log.debug("⏭️ Already in download_results, skipping: {}", doc.getDocumentId());
+        String docId = doc.getDocumentId();
+        boolean existsInDb = downloadResultRepository.existsByDocumentId(docId);
+        boolean fileExists = fileStorageService.pdfExists(doc.getType(), docId);
+        
+        // Skip si déjà en base ET fichier présent, SAUF en mode force
+        if (!forceMode && existsInDb && fileExists) {
+            log.debug("⏭️ [{}] Already in DB and file exists, skipping", docId);
             return true;
+        }
+        
+        // Si en base mais fichier manquant, on ne skip pas (re-sauvegarde)
+        if (existsInDb && !fileExists) {
+            log.info("💾 [{}] In DB but PDF missing on disk → re-saving file", docId);
         }
         
         return false;
@@ -72,29 +82,24 @@ public class FileDownloadWriter implements ItemWriter<LawDocument> {
     /**
      * Traite et sauvegarde un document.
      */
-    private void processDocument(LawDocument doc) throws Exception {
-        // En mode force, supprimer l'ancienne entrée avant de re-sauvegarder
-        if (forceMode && downloadResultRepository.existsByDocumentId(doc.getDocumentId())) {
-            downloadResultRepository.findByDocumentId(doc.getDocumentId())
-                .ifPresent(existing -> {
-                    downloadResultRepository.delete(existing);
-                    downloadResultRepository.flush();
-                    log.debug("🔄 Deleted old download_result for: {}", doc.getDocumentId());
-                });
-        }
+    private void processDocument(LawDocument doc) throws IOException {
+        String docId = doc.getDocumentId();
         
         // Sauvegarder le PDF sur disque
-        fileStorageService.savePdf(doc.getType(), doc.getDocumentId(), doc.getPdfContent());
+        fileStorageService.savePdf(doc.getType(), docId, doc.getPdfContent());
         
-        // Persister dans download_results
-        DownloadResult downloadResult = DownloadResult.builder()
-            .documentId(doc.getDocumentId())
-            .url(doc.getUrl())
-            .pdfPath(fileStorageService.pdfPath(doc.getType(), doc.getDocumentId()).toString())
-            .sha256(doc.getSha256())
-            .fileSize((long) doc.getPdfContent().length)
-            .downloadedAt(LocalDateTime.now())
-            .build();
+        // Mettre à jour ou créer l'entrée dans download_results
+        DownloadResult downloadResult = downloadResultRepository.findByDocumentId(docId)
+            .orElse(DownloadResult.builder()
+                .documentId(docId)
+                .build());
+        
+        // Mettre à jour les infos
+        downloadResult.setUrl(doc.getUrl());
+        downloadResult.setPdfPath(fileStorageService.pdfPath(doc.getType(), docId).toString());
+        downloadResult.setSha256(doc.getSha256());
+        downloadResult.setFileSize((long) doc.getPdfContent().length);
+        downloadResult.setDownloadedAt(LocalDateTime.now());
         
         downloadResultRepository.save(downloadResult);
         

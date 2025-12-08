@@ -12,8 +12,8 @@
     </parent>
 
     <artifactId>law-fetch</artifactId>
-    <name>Law Fetch Module</name>
-    <description>Module pour récupérer les métadonnées des lois depuis sgg.gouv.bj</description>
+    <name>Law Fetch</name>
+    <description>HTTP metadata fetching from sgg.gouv.bj website</description>
 
     <dependencies>
         <!-- Dépendance au module commun -->

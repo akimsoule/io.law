@@ -31,7 +31,7 @@ class PdfDownloadServiceTest {
     }
 
     @Test
-    void testBuildPdfUrl() {
+    void givenLoiDocumentWhenBuildPdfUrlThenReturnsCorrectUrl() {
         // Given
         LawDocument document = LawDocument.builder()
             .type("loi")
@@ -47,7 +47,7 @@ class PdfDownloadServiceTest {
     }
 
     @Test
-    void testBuildDecretPdfUrl() {
+    void givenDecretDocumentWhenBuildPdfUrlThenReturnsCorrectUrl() {
         // Given
         LawDocument document = LawDocument.builder()
             .type("decret")
@@ -63,7 +63,7 @@ class PdfDownloadServiceTest {
     }
 
     @Test
-    void testDocumentWithUrl() {
+    void givenDocumentWithUrlWhenGetUrlThenReturnsExpectedUrl() {
         // Given
         String expectedUrl = "https://sgg.gouv.bj/doc/loi-2024-15";
         LawDocument document = LawDocument.builder()
@@ -78,7 +78,7 @@ class PdfDownloadServiceTest {
     }
 
     @Test
-    void testPdfFilenameGeneration() {
+    void givenDocumentWhenGetPdfFilenameThenReturnsCorrectFormat() {
         // Given
         LawDocument document = LawDocument.builder()
             .type("loi")

@@ -12,7 +12,8 @@
     </parent>
 
     <artifactId>law-app</artifactId>
-    <name>Law Api Module</name>
+    <name>Law Application</name>
+    <description>REST API, CLI orchestration, and Spring Batch job scheduler</description>
 
     <dependencies>
         <!-- Modules internes -->
@@ -42,7 +43,26 @@
         
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
-            <artifactId>law-toJsonApp</artifactId>
+            <artifactId>law-json-config</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        
+        <!-- Modules law-tojson -->
+        <dependency>
+            <groupId>bj.gouv.sgg</groupId>
+            <artifactId>law-pdf-ocr</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>bj.gouv.sgg</groupId>
+            <artifactId>law-ocr-json</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>bj.gouv.sgg</groupId>
+            <artifactId>law-ai-pdf-json</artifactId>
             <version>${revision}</version>
         </dependency>
         

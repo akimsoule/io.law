@@ -52,14 +52,17 @@ public class DownloadJobConfig {
             .listener(new org.springframework.batch.core.StepExecutionListener() {
                 @Override
                 public void beforeStep(org.springframework.batch.core.StepExecution stepExecution) {
-                    // Lire les paramètres --documentId, --force et --maxDocuments depuis JobParameters
-                    String doc = stepExecution.getJobParameters().getString("documentId");
+                    // Lire les paramètres --doc ou --documentId (équivalents), --force et --maxDocuments depuis JobParameters
+                    String doc = stepExecution.getJobParameters().getString("doc");
+                    String documentId = stepExecution.getJobParameters().getString("documentId");
                     String force = stepExecution.getJobParameters().getString("force");
                     String maxDocs = stepExecution.getJobParameters().getString("maxDocuments");
                     
-                    if (doc != null && !doc.isEmpty()) {
-                        reader.setTargetDocumentId(doc);
-                        log.info("📄 Target document: {}", doc);
+                    // Accepter --doc ou --documentId comme équivalents
+                    String targetDoc = (doc != null && !doc.isEmpty()) ? doc : documentId;
+                    if (targetDoc != null && !targetDoc.isEmpty()) {
+                        reader.setTargetDocumentId(targetDoc);
+                        log.info("📄 Target document: {}", targetDoc);
                     }
                     
                     if ("true".equalsIgnoreCase(force)) {

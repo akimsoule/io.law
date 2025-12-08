@@ -10,6 +10,7 @@ import org.springframework.web.client.RestTemplate;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.net.URI;
 
 /**
@@ -51,7 +52,7 @@ public class PdfDownloadService {
 
         } catch (EmptyPdfException e) {
             throw e;
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.error("Failed to download PDF: {}", e.getMessage());
             // Correction : formater le message pour inclure documentId et url
             String errorMsg = String.format("Failed to download PDF %s from %s", document.getDocumentId(), url);

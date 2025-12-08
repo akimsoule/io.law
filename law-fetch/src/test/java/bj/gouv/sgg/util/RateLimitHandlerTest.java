@@ -18,7 +18,7 @@ class RateLimitHandlerTest {
     }
 
     @Test
-    void testInitialization() {
+    void givenNewInstanceWhenCreateRateLimitHandlerThenInitializesSuccessfully() {
         // Given & When
         RateLimitHandler newHandler = new RateLimitHandler();
 
@@ -27,19 +27,19 @@ class RateLimitHandlerTest {
     }
 
     @Test
-    void testBeforeRequestDoesNotThrow() {
+    void givenInitializedHandlerWhenBeforeRequestThenDoesNotThrow() {
         // When & Then
         assertDoesNotThrow(() -> handler.beforeRequest());
     }
 
     @Test
-    void testOn429DoesNotThrow() {
+    void givenRateLimitErrorWhenOn429ThenDoesNotThrow() {
         // When & Then
         assertDoesNotThrow(() -> handler.on429("https://sgg.gouv.bj/doc/loi-2024-15"));
     }
 
     @Test
-    void testMultiple429CallsAdaptDelay() {
+    void givenMultipleRateLimitsWhenOn429ThenAdaptsDelay() {
         // Given & When - Simuler plusieurs 429
         handler.on429("url1");
         handler.on429("url2");
@@ -50,7 +50,7 @@ class RateLimitHandlerTest {
     }
 
     @Test
-    void testRequestsDoNotBlockIndefinitely() {
+    void givenMultipleRequestsWhenBeforeRequestThenCompletesInReasonableTime() {
         // Given & When
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < 5; i++) {
@@ -63,7 +63,7 @@ class RateLimitHandlerTest {
     }
 
     @Test
-    void testMultipleCalls() {
+    void givenManyCallsWhenBeforeRequestThenAllSucceed() {
         // When & Then - Plusieurs appels ne doivent pas échouer
         for (int i = 0; i < 10; i++) {
             assertDoesNotThrow(() -> handler.beforeRequest());
@@ -71,7 +71,7 @@ class RateLimitHandlerTest {
     }
 
     @Test
-    void testConsecutiveOn429Calls() {
+    void givenConsecutiveRateLimitsWhenOn429ThenRemainsFunctional() {
         // Given & When - Appels consécutifs de 429
         for (int i = 0; i < 10; i++) {
             handler.on429("https://sgg.gouv.bj/doc/loi-2024-" + i);

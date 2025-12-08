@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 
+         http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>bj.gouv.sgg</groupId>
+        <artifactId>law-tojson</artifactId>
+        <version>${revision}</version>
+    </parent>
+
+    <artifactId>law-ocr-json</artifactId>
+    <name>Law OCR to JSON</name>
+    <description>OCR text parsing to structured JSON with regex patterns</description>
+
+    <dependencies>
+        <!-- law-common pour entités et repositories -->
+        <dependency>
+            <groupId>bj.gouv.sgg</groupId>
+            <artifactId>law-common</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        
+        <!-- Module pdfToOcr pour DownloadedDocumentReader -->
+        <dependency>
+            <groupId>bj.gouv.sgg</groupId>
+            <artifactId>law-pdf-ocr</artifactId>
+            <version>${revision}</version>
+        </dependency>
+        
+        <!-- Gson -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+        </dependency>
+    </dependencies>
+</project>
