@@ -1,6 +1,7 @@
 package bj.gouv.sgg.batch.processor;
 
 import bj.gouv.sgg.model.LawDocument;
+import bj.gouv.sgg.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
@@ -10,8 +11,10 @@ import org.springframework.batch.item.ItemProcessor;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 /**
  * Processor qui télécharge le PDF d'un document
@@ -21,6 +24,7 @@ import java.security.MessageDigest;
 @RequiredArgsConstructor
 public class DownloadProcessor implements ItemProcessor<LawDocument, LawDocument> {
     
+    private final FileStorageService fileStorageService;
     private boolean forceMode = false;
     
     /**
@@ -32,16 +36,24 @@ public class DownloadProcessor implements ItemProcessor<LawDocument, LawDocument
     }
     
     @Override
-    public LawDocument process(LawDocument document) throws Exception {
-        // Skip if already downloaded (idempotence via status), SAUF en mode force
-        if (!forceMode && document.getStatus() == LawDocument.ProcessingStatus.DOWNLOADED) {
-            log.debug("⏭️ PDF already downloaded, skipping: {}", document.getDocumentId());
+    public LawDocument process(LawDocument document) throws IOException, NoSuchAlgorithmException {
+        String docId = document.getDocumentId();
+        boolean pdfExists = fileStorageService.pdfExists(document.getType(), docId);
+        boolean isDownloaded = document.getStatus() == LawDocument.ProcessingStatus.DOWNLOADED;
+        
+        // Skip si déjà téléchargé ET fichier présent, SAUF en mode force
+        if (!forceMode && isDownloaded && pdfExists) {
+            log.debug("⏭️ [{}] PDF already downloaded and file exists, skipping", docId);
             return null;
         }
         
-        // En mode force, toujours re-télécharger
-        if (forceMode && document.getStatus() == LawDocument.ProcessingStatus.DOWNLOADED) {
-            log.info("🔄 Force re-download: {}", document.getDocumentId());
+        // Log les différents cas de téléchargement
+        if (forceMode) {
+            log.info("🔄 [{}] Force mode: re-downloading", docId);
+        } else if (isDownloaded && !pdfExists) {
+            log.info("📥 [{}] Status DOWNLOADED but PDF missing on disk → re-downloading", docId);
+        } else {
+            log.debug("📥 [{}] Downloading PDF", docId);
         }
         
         try (CloseableHttpClient client = HttpClients.createDefault()) {
@@ -91,7 +103,7 @@ public class DownloadProcessor implements ItemProcessor<LawDocument, LawDocument
                     return null;
                 }
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.error("Error downloading {}: {}", document.getDocumentId(), e.getMessage());
             throw e;
         }

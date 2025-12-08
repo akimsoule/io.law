@@ -1,0 +1,28 @@
+{
+  "type": "loi",
+  "year": 2016,
+  "number": 1,
+  "_metadata": {
+    "confidence": 0.3792546564885496,
+    "method": "OCR",
+    "timestamp": "2025-12-07T21:57:05.349200"
+  },
+  "promulgationCity": "Cotonou",
+  "articles": [
+    {
+      "number": "1",
+      "content": "Article 1\"\u0027: Sont ratifi6s, tes cr6dits ouverts au moyen du d6cret n\u00272015-455 du27\nao0t 2015 partant majoration et annutation de cr6dits i titre d\u0027avance sur te\nREPUBL:QUE DU BÉNIN\nFratern:t`‐ Justice‐ Traval:\nPRESIDENCE DE LA RÉPUBLIQUE\n3, 4 et 5 de l\u0027articte 4 du d6cret\net annutation de cr6dits i titre\nLe Garde des Sceaux, Ministre\nJ. tu Justice, de ta L6gistation\net des Droits de [\u0027Homme\u0027"
+    },
+    {
+      "number": "2",
+      "content": "Article 3:La pr6sente 10i Sё ra ex6cutさ e c6mme tOi de t\u0027Etat。"
+    }
+  ],
+  "signatories": [
+    {
+      "name": "Yvon DETCHENOU",
+      "title": "Ministre de la Justice et de la Législation",
+      "order": 1
+    }
+  ]
+}

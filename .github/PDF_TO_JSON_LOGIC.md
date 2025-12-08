@@ -33,9 +33,7 @@ law-tojson/
 ```
 PDF téléchargé (status=DOWNLOADED)
     ↓
-OcrService (interface)
-    ↓
-TesseractOcrServiceImpl (implémentation)
+TesseractOcrService
     ↓
     ├─ Extraction directe (PDFBox) → Qualité >= seuil ? ✓ Terminé
     ├─ Sinon OCR via Tesseract :
@@ -49,25 +47,8 @@ TesseractOcrServiceImpl (implémentation)
          → Status = CORRUPTED
 ```
 
-**Architecture Interface → Impl** :
-```java
-// Interface (bj.gouv.sgg.service)
-public interface OcrService {
-    String extractText(byte[] pdfBytes) throws IOException;
-    void performOcr(File pdfFile, File ocrFile);
-    double calculateTextQuality(String text);
-}
-
-// Implémentation (bj.gouv.sgg.impl)
-@Service
-public class TesseractOcrServiceImpl implements OcrService {
-    // Implémentation avec Tesseract
-}
-```
-
 **Fichiers clés** :
-- `OcrService.java` : Interface service OCR (contrat)
-- `TesseractOcrServiceImpl.java` : Implémentation Tesseract
+- `TesseractOcrService.java` : Service OCR Tesseract
 - `ExtractionProcessor.java` : Processor batch (PDF → OCR)
 - `DownloadedDocumentReader.java` : Lit documents status=DOWNLOADED
 - `ExtractionWriter.java` : Sauvegarde fichiers .txt
@@ -536,7 +517,7 @@ law:
   
   # Configuration OCR
   ocr:
-    quality-threshold: 0.5  # Seuil qualité extraction directe (abaissé à 0.5)
+    quality-threshold: 0.7  # Seuil qualité extraction directe
     dpi: 300                # Résolution images OCR
     language: fra           # Langue Tesseract
   
@@ -551,18 +532,6 @@ law:
     pdf-dir: pdfs
     ocr-dir: ocr
     json-dir: articles
-```
-
-**Configuration Tests** (`application-test.yml`) :
-```yaml
-law:
-  ocr:
-    quality-threshold: 0.5
-    dpi: 300
-    language: fra
-  
-  storage:
-    base-path: src/test/resources/test-data
 ```
 
 ---
@@ -776,13 +745,10 @@ log.info("""
 <dependencies>
     <dependency>law-common</dependency>
     <dependency>spring-boot-starter-batch</dependency>
-    <dependency>pdfbox (3.0.1)</dependency>
+    <dependency>pdfbox (3.0.0)</dependency>
     <dependency>tesseract-platform (5.3.3-1.5.10)</dependency>
-    <dependency>spring-boot-starter-test (scope: test)</dependency>
 </dependencies>
 ```
-
-**Tests** : 21 tests (7 unitaires + 14 intégration) ✅
 
 ### law-AIpdfToJson
 
@@ -852,19 +818,11 @@ return document;  // Continue avec document suivant
 ## 📝 Checklist Migration
 
 ### law-pdfToOcr ✅
-- [x] OcrService.java (interface)
-- [x] TesseractOcrServiceImpl.java (implémentation)
+- [x] TesseractOcrService.java
 - [x] ExtractionProcessor.java
 - [x] DownloadedDocumentReader.java
 - [x] ExtractionWriter.java
 - [x] OcrJobConfig.java
-- [x] Tests unitaires (7 tests - OcrServiceTest)
-- [x] Tests intégration (14 tests - OcrIntegrationTest + SamplePdfOcrIntegrationTest)
-  - Génération PDFs programmatique (PDFBox)
-  - Extraction texte (simple, legal doc, multi-page, empty)
-  - performOcr (File → File)
-  - Gestion erreurs (null inputs, invalid bytes, nonexistent files)
-  - Traitement PDFs réels samples_pdf → samples_ocr
 
 ### law-OcrToJson ⏳
 - [ ] ArticleExtractorService.java
@@ -894,109 +852,14 @@ return document;  // Continue avec document suivant
 
 ---
 
-## 🧪 Tests et Validation
-
-### Structure Tests law-pdfToOcr
-
-```
-src/test/java/
-└── bj/gouv/sgg/service/impl/
-    ├── OcrServiceTest.java                    (7 tests unitaires)
-    ├── OcrIntegrationTest.java                (11 tests intégration)
-    └── SamplePdfOcrIntegrationTest.java       (3 tests PDFs réels)
-
-src/test/resources/
-├── application-test.yml                        (Configuration tests)
-├── samples_pdf/                                (PDFs réels)
-│   ├── loi-2025-7.pdf  (1.8M, 3 pages)
-│   ├── loi-2025-8.pdf  (1.9M, 3 pages)
-│   └── loi-2025-9.pdf  (9.4M, 17 pages)
-└── samples_ocr/                                (Résultats OCR)
-    ├── loi-2025-7.txt  (5.6K, 128 lignes)
-    ├── loi-2025-8.txt  (5.9K, 132 lignes)
-    ├── loi-2025-9.txt  (32K, 931 lignes)
-    ├── test_simple_ocr.txt
-    ├── test_idempotent.txt
-    └── subdir1/subdir2/test_nested_dirs.txt
-```
-
-### Tests Unitaires (OcrServiceTest) ✅
-
-**7 tests** sur `calculateTextQuality()` :
-- Texte vide → 0.0
-- Texte 100% alphanumérique → 1.0
-- Texte 50% alphanumérique → 0.5
-- Texte avec caractères spéciaux
-- Texte avec espaces/ponctuation
-- Texte null → exception
-- Cas limites (1 char, etc.)
-
-### Tests Intégration (OcrIntegrationTest) ✅
-
-**11 tests** avec génération PDFs programmatique (PDFBox) :
-
-**Groupe 1 - Extraction directe (4 tests)** :
-- `testExtractText_SimplePdfWithText` : PDF simple 1 ligne
-- `testExtractText_LegalDocument` : Document légal structuré (Articles 1-3)
-- `testExtractText_MultiPagePdf` : PDF 3 pages
-- `testExtractText_EmptyPdf` : PDF vide (page blanche)
-
-**Groupe 2 - Qualité (1 test)** :
-- `testExtractText_HighQualityText` : Vérif qualité >= 0.5
-
-**Groupe 3 - performOcr (3 tests)** :
-- `testPerformOcr_CreateOutputFile` : Création fichier OCR
-- `testPerformOcr_CreatesNestedDirectories` : Répertoires imbriqués
-- `testPerformOcr_Idempotent` : Idempotence (2 exécutions = même résultat)
-
-**Groupe 4 - Gestion erreurs (3 tests)** :
-- `testExtractText_InvalidPdfBytes` : Bytes invalides → IOException
-- `testPerformOcr_NullInputs` : Null inputs → NullPointerException/FileOperationException
-- `testPerformOcr_NonExistentPdfFile` : Fichier inexistant → FileOperationException
-
-### Tests PDFs Réels (SamplePdfOcrIntegrationTest) ✅
-
-**3 tests** sur PDFs réels dans `samples_pdf` :
-- `testProcessAllSamplePdfs` : Traite les 3 PDFs (loi-2025-7/8/9)
-  - Total : 23 pages OCR en ~83 secondes
-  - Détection "AMPLIATIONS" pour arrêt OCR
-- `testProcessSpecificLawPdf` : Test spécifique loi-2025-7
-  - Vérifications mots-clés légaux (LOI, Article, etc.)
-- `testOcrOutputsAreReadable` : Validation qualité fichiers OCR
-  - Vérif contenu alphanumérique (> 10 chars)
-
-**Temps exécution** :
-- OcrServiceTest : ~0.03s (tests rapides)
-- OcrIntegrationTest : ~3s (11 tests avec Tesseract)
-- SamplePdfOcrIntegrationTest : ~83s (3 PDFs réels, 23 pages)
-- **Total** : ~90s pour 21 tests
-
-### Commandes Maven
-
-```bash
-# Tous les tests
-mvn test
-
-# Tests spécifiques
-mvn test -Dtest=OcrServiceTest
-mvn test -Dtest=OcrIntegrationTest
-mvn test -Dtest=SamplePdfOcrIntegrationTest
-
-# Sans tests (build rapide)
-mvn clean install -DskipTests
-```
-
----
-
 ## 🚀 Rappel Final
 
 **Priorités** :
 1. ✅ **Idempotence** : Ne jamais écraser sans justification
 2. ✅ **Résilience** : Fallback IA → OCR automatique
 3. ✅ **Performance** : Détection capacités machine
-4. ✅ **Qualité** : Confiance >= 0.5 (seuil ajusté)
+4. ✅ **Qualité** : Confiance >= 0.7 recommandée
 5. ✅ **Monitoring** : Logs standardisés avec emojis
-6. ✅ **Tests** : 21 tests (7 unitaires + 14 intégration) couvrant tous les scénarios
 
 **Workflow Idéal** :
 ```
@@ -1010,10 +873,3 @@ consolidationJob (JSON → Base de données)
 ```
 
 **Règle d'Or** : **Relancer N fois = même résultat que 1 fois** ✨
-
-**État Actuel** :
-- ✅ law-pdfToOcr : COMPLET (interface + impl + 21 tests)
-- ⏳ law-OcrToJson : EN COURS
-- ⏳ law-AIpdfToJson : EN COURS
-- ⏳ law-toJsonCommon : EN COURS
-- ⏳ law-toJsonApp : EN COURS

@@ -1,0 +1,33 @@
+{
+  "type": "loi",
+  "year": 2002,
+  "number": 1,
+  "_metadata": {
+    "confidence": 0.5716556962025316,
+    "method": "OCR",
+    "timestamp": "2025-12-07T21:57:05.208821"
+  },
+  "promulgationDate": "2002-01-31",
+  "promulgationCity": "Cotonou",
+  "articles": [
+    {
+      "number": "1",
+      "content": "Article 1er\n: En application de l\u0027article 69 alinéa 2 de la Constitution du Il\ndécembre 1990, le déloi au terme duquel le Président de la République ne peut\nplus prendre des mesures exceptionnelles en vertu des dispositions de l\u0027article\n68 de la Constitution du Il décembre 1990, mises en oeuvre le 31 janvier 2002,\nest fixé au lundi II février 2002 à 18 heures 00."
+    },
+    {
+      "number": "2",
+      "content": "Article 2: La promulgation de la présente loi sera faite selan la procédure\nd\u0027urgence prévue à l\u0027article 57 alinéa 3 de la Constitution."
+    },
+    {
+      "number": "3",
+      "content": "Article 3 : La présente loi, sera exécutée comme loi de l\u0027Etat et publiée au\nJournal Officiel.\nFait à Cotonou, le 12 février 2002"
+    }
+  ],
+  "signatories": [
+    {
+      "name": "Yvon DETCHENOU",
+      "title": "Ministre de la Justice et de la Législation",
+      "order": 1
+    }
+  ]
+}

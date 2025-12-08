@@ -22,13 +22,27 @@ import java.util.Arrays;
  *   java -jar law-api.jar --job=fetchCurrentJob --force
  *   java -jar law-api.jar --job=fetchCurrentJob --doc=loi-2025-17 --force
  *   java -jar law-api.jar --job=downloadJob --year=2024
+ *   java -jar law-api.jar --job=pdfToJsonJob
+ *   java -jar law-api.jar --job=pdfToJsonJob --doc=loi-2024-15
+ *   java -jar law-api.jar --job=pdfToJsonJob --force --maxDocuments=20
  *   java -jar law-api.jar --spring.main.web-application-type=none --job=ocrJob
  * 
  * Arguments supportés:
- *   --job=<jobName>         : Nom du job à exécuter
- *   --doc=<documentId>      : Fetch un seul document spécifique (ex: loi-2025-17)
- *   --force                 : Force l'écrasement des données existantes
- *   --params=<key>=<value>  : Paramètres additionnels (peut être répété)
+ *   --job=<jobName>          : Nom du job à exécuter
+ *   --doc=<documentId>       : Traite un seul document spécifique (ex: loi-2025-17)
+ *   --force                  : Force le re-traitement du document spécifié (--doc requis)
+ *   --maxDocuments=<number>  : Nombre max de documents à traiter (défaut: 10 pour pdfToJsonJob)
+ *   --params=<key>=<value>   : Paramètres additionnels (peut être répété)
+ * 
+ * Jobs supportés avec paramètres:
+ *   - fetchCurrentJob       : --doc, --force
+ *   - fetchPreviousJob      : --force
+ *   - downloadJob           : --doc, --force, --maxDocuments
+ *   - pdfToJsonJob          : --doc, --doc + --force, --maxDocuments (défaut: 10)
+ *   - ocrJob                : (tous documents DOWNLOADED)
+ *   - consolidationJob      : (tous documents EXTRACTED)
+ * 
+ * Note: --force nécessite --doc pour pdfToJsonJob (force + document spécifique)
  */
 @Slf4j
 @Component

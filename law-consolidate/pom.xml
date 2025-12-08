@@ -12,7 +12,8 @@
     </parent>
 
     <artifactId>law-consolidate</artifactId>
-    <name>Law Consolidate Module</name>
+    <name>Law Consolidate</name>
+    <description>JSON data consolidation into MySQL database</description>
 
     <dependencies>
         <dependency>

@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class FetchResultTest {
 
     @Test
-    void testBuilderPattern() {
+    void givenDocumentDataWhenBuildFetchResultThenCreatesValidInstance() {
         // Given & When
         LocalDateTime now = LocalDateTime.now();
         FetchResult result = FetchResult.builder()
@@ -39,7 +39,7 @@ class FetchResultTest {
     }
 
     @Test
-    void testSetters() {
+    void givenExistingResultWhenSetStatusAndExistsThenUpdatesValues() {
         // Given
         FetchResult result = FetchResult.builder()
             .documentId("loi-2024-15")
@@ -58,7 +58,7 @@ class FetchResultTest {
     }
 
     @Test
-    void testNotFoundStatus() {
+    void givenNotFoundDocumentWhenBuildResultThenSetsNotFoundStatus() {
         // Given & When
         FetchResult result = FetchResult.builder()
             .documentId("loi-1960-999")
@@ -74,7 +74,7 @@ class FetchResultTest {
     }
 
     @Test
-    void testDecretDocument() {
+    void givenDecretParametersWhenBuildResultThenCreatesDecretResult() {
         // Given & When
         FetchResult result = FetchResult.builder()
             .documentId("decret-2025-716")

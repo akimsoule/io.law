@@ -13,13 +13,13 @@
 
     <artifactId>law-tojson</artifactId>
     <packaging>pom</packaging>
-    <name>Law ToJson Parent Module</name>
+    <name>Law To JSON Parent</name>
+    <description>PDF to JSON extraction pipeline (OCR + AI)</description>
 
     <modules>
-        <module>law-AIpdfToJson</module>
-        <module>law-pdfToOcr</module>
-        <module>law-OcrToJson</module>
-        <module>law-toJsonApp</module>
-        <module>law-toJsonCommon</module>
+        <module>law-ai-pdf-json</module>
+        <module>law-pdf-ocr</module>
+        <module>law-ocr-json</module>
+        <module>law-json-config</module>
     </modules>
 </project>

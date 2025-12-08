@@ -10,7 +10,6 @@ import org.springframework.stereotype.Component;
 public class LawProperties {
     
     private String baseUrl;
-    private int startYear;
     private int maxNumberPerYear;
     private String userAgent;
     private int endYear;
@@ -24,7 +23,6 @@ public class LawProperties {
 
     @Data
     public static class Directories {
-        private String database = "/tmp/law-db"; // Base de données (pas utilisé actuellement)
         private String data = "data";            // Répertoire de base pour les fichiers (PDF, OCR, JSON)
         private String pdfs = "pdfs";            // Sous-répertoire pour les PDFs
         private String ocr = "ocr";              // Sous-répertoire pour les OCR
@@ -34,7 +32,6 @@ public class LawProperties {
     @Data
     public static class Http {
         private int timeout;
-        private int maxRetries;
     }
     
     @Data
@@ -48,9 +45,7 @@ public class LawProperties {
     public static class Batch {
         private int chunkSize;
         private int maxThreads;
-        private int throttleLimit;
         private int maxItemsToFetchPrevious = 100; // Limite d'items par exécution pour fetchPreviousJob
-        private int maxDocumentsToExtract = 50;    // Limite d'items pour extraction OCR
         
         /**
          * Retourne le nombre de threads optimal basé sur les CPU disponibles

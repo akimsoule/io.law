@@ -26,39 +26,46 @@ class FetchProcessorTest {
     }
 
     @Test
-    void testDocumentIdGeneration() {
-        // When
+    void givenLawDocumentWhenGetDocumentIdThenFormattedCorrectly() {
+        // Given: Document loi avec année 2025 et numéro 17 (défini dans setUp)
+
+        // When: Récupération de l'ID du document
         String documentId = testDocument.getDocumentId();
 
-        // Then
-        assertEquals("loi-2025-17", documentId);
+        // Then: ID formaté selon le pattern loi-year-number
+        assertEquals("loi-2025-17", documentId,
+                "L'ID du document devrait être loi-2025-17");
     }
 
     @Test
-    void testDecretDocumentId() {
-        // Given
+    void givenDecretDocumentWhenGetDocumentIdThenFormattedCorrectly() {
+        // Given: Document décret avec année 2025 et numéro 716
         LawDocument decret = LawDocument.builder()
             .type("decret")
             .year(2025)
             .number(716)
             .build();
 
-        // When
+        // When: Récupération de l'ID du décret
         String documentId = decret.getDocumentId();
 
-        // Then
-        assertEquals("decret-2025-716", documentId);
+        // Then: ID formaté selon le pattern decret-year-number
+        assertEquals("decret-2025-716", documentId,
+                "L'ID du décret devrait être decret-2025-716");
     }
 
     @Test
-    void testUrlConstruction() {
-        // Then
-        assertEquals("https://sgg.gouv.bj/doc/loi-2025-17", testDocument.getUrl());
+    void givenLawDocumentWhenGetUrlThenConstructedCorrectly() {
+        // Given: Document loi-2025-17 (défini dans setUp)
+
+        // Then: URL construite selon le pattern base-url/type-year-number
+        assertEquals("https://sgg.gouv.bj/doc/loi-2025-17", testDocument.getUrl(),
+                "L'URL devrait être https://sgg.gouv.bj/doc/loi-2025-17");
     }
 
     @Test
-    void testDocumentBuilderPattern() {
-        // Given & When
+    void givenBuilderParametersWhenBuildDocumentThenAllFieldsSet() {
+        // Given & When: Construction d'un document via builder
         LawDocument doc = LawDocument.builder()
             .type("loi")
             .year(2024)
@@ -66,11 +73,12 @@ class FetchProcessorTest {
             .url("https://sgg.gouv.bj/doc/loi-2024-15")
             .build();
 
-        // Then
-        assertNotNull(doc);
-        assertEquals("loi", doc.getType());
-        assertEquals(2024, doc.getYear());
-        assertEquals(15, doc.getNumber());
-        assertEquals("loi-2024-15", doc.getDocumentId());
+        // Then: Tous les champs sont correctement initialisés
+        assertNotNull(doc, "Le document ne devrait pas être null");
+        assertEquals("loi", doc.getType(), "Le type devrait être loi");
+        assertEquals(2024, doc.getYear(), "L'année devrait être 2024");
+        assertEquals(15, doc.getNumber(), "Le numéro devrait être 15");
+        assertEquals("loi-2024-15", doc.getDocumentId(),
+                "L'ID généré devrait être loi-2024-15");
     }
 }

@@ -57,5 +57,23 @@ java -jar $JAR --job=downloadJob --documentId=loi-2024-15 $OPTS || exit 1  # ✅
 echo ""
 echo "📥 downloadJob - ciblé avec --force"
 java -jar $JAR --job=downloadJob --documentId=loi-2024-15 --force=true $OPTS || exit 1  # ✅ PASSED
+
+# === PDF TO JSON JOB ===
+echo ""
+echo "📄 pdfToJsonJob - tous documents DOWNLOADED (max 5 docs)"
+java -jar $JAR --job=pdfToJsonJob --maxDocuments=5 $OPTS || exit 1
+
+echo ""
+echo "📄 pdfToJsonJob - ciblé (loi-2024-15)"
+java -jar $JAR --job=pdfToJsonJob --documentId=loi-2024-15 $OPTS || exit 1
+
+echo ""
+echo "📄 pdfToJsonJob - ciblé avec --force (re-traite si confiance supérieure)"
+java -jar $JAR --job=pdfToJsonJob --documentId=loi-2024-15 --force=true $OPTS || exit 1
+
+echo ""
+echo "📄 pdfToJsonJob - avec limite personnalisée (max 10 docs)"
+java -jar $JAR --job=pdfToJsonJob --maxDocuments=10 $OPTS || exit 1
+
 echo ""
 echo "🎉 Tous les tests passés avec succès !"

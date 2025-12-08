@@ -1,0 +1,29 @@
+{
+  "type": "loi",
+  "year": 2014,
+  "number": 1,
+  "_metadata": {
+    "confidence": 0.4473327659574468,
+    "method": "OCR",
+    "timestamp": "2025-12-07T21:57:05.346075"
+  },
+  "promulgationDate": "2014-01-02",
+  "promulgationCity": "Cotonou",
+  "articles": [
+    {
+      "number": "1",
+      "content": "Article 1\"\u0027: Est ratifiée l\u0027ordonnance n\u0027 2014-01 du 02 janvier 2014 partant\nfinance pour la gestion 2014."
+    },
+    {
+      "number": "2",
+      "content": "Article 2 : La présente loi sera exécutée comme loi de l\u0027Etat.\nFait à Cotonou, le 23 janvier 2014\nDr Boni YAYI.-\nLe Ministre d\u0027Etat Char nseignement Supérieur\net de la Re he Scientifique,c\ndt\nFrancois Adebavo ABIOLA.-\nLe Ministre de l\u0027Economie\net des Finances,\nGarde des Sceaux, Ministre de la Justice,\nde la Législation\net des Droits de l\u0027Homme,\nJonas GBIAN ou.-\nAMPLIATIONS : PR 10 AN 6 CS 2 CC 2 CES 2 HAAC 2 HCJ 2 MECESRS 2 MEF 2 GSMJLDH SGG 4\nMINISTERES 24 )O L,\nI irql\n\u0026"
+    }
+  ],
+  "signatories": [
+    {
+      "name": "Yvon DETCHENOU",
+      "title": "Ministre de la Justice et de la Législation",
+      "order": 1
+    }
+  ]
+}

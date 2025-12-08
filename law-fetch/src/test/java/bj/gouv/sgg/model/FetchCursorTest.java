@@ -12,7 +12,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class FetchCursorTest {
 
     @Test
-    void testBuilderPattern() {
+    void givenCursorDataWhenBuildFetchCursorThenCreatesValidInstance() {
         // Given & When
         LocalDateTime now = LocalDateTime.now();
         FetchCursor cursor = FetchCursor.builder()
@@ -33,7 +33,7 @@ class FetchCursorTest {
     }
 
     @Test
-    void testSetters() {
+    void givenExistingCursorWhenSetCurrentNumberAndYearThenUpdatesValues() {
         // Given
         FetchCursor cursor = FetchCursor.builder()
             .cursorType("fetch-current")
@@ -53,7 +53,7 @@ class FetchCursorTest {
     }
 
     @Test
-    void testDecretCursor() {
+    void givenDecretParametersWhenBuildCursorThenCreatesDecretCursor() {
         // Given & When
         FetchCursor cursor = FetchCursor.builder()
             .cursorType("fetch-previous")
@@ -70,7 +70,7 @@ class FetchCursorTest {
     }
 
     @Test
-    void testCursorTypes() {
+    void givenDifferentCursorTypesWhenBuildCursorsThenCreatesCorrectTypes() {
         // Given & When
         FetchCursor previousCursor = FetchCursor.builder()
             .cursorType("fetch-previous")

@@ -58,35 +58,44 @@ class PreviousYearsLawDocumentReaderTest {
     }
 
     @Test
-    void testSetTargetDocumentId() {
-        // When
-        assertDoesNotThrow(() -> reader.setTargetDocumentId("loi-2024-15"));
+    void givenValidDocumentIdWhenSetTargetDocumentIdThenNoException() {
+        // Given: Reader configuré (setUp)
 
-        // Then - No exception, logging only
-        assertNotNull(reader);
+        // When: Définition d'un document ciblé
+        assertDoesNotThrow(() -> reader.setTargetDocumentId("loi-2024-15"),
+                "Setter ne devrait pas lever d'exception");
+
+        // Then: Reader toujours valide
+        assertNotNull(reader, "Le reader ne devrait pas être null");
     }
 
     @Test
-    void testSetForceMode() {
-        // When
-        assertDoesNotThrow(() -> reader.setForceMode(true));
+    void givenReaderWhenSetForceModeThenNoException() {
+        // Given: Reader configuré (setUp)
 
-        // Then - No exception, logging only
-        assertNotNull(reader);
+        // When: Activation du mode force
+        assertDoesNotThrow(() -> reader.setForceMode(true),
+                "Setter ne devrait pas lever d'exception");
+
+        // Then: Reader toujours valide
+        assertNotNull(reader, "Le reader ne devrait pas être null");
     }
 
     @Test
-    void testSetMaxDocuments() {
-        // When
-        assertDoesNotThrow(() -> reader.setMaxDocuments(5));
+    void givenReaderWhenSetMaxDocumentsThenNoException() {
+        // Given: Reader configuré (setUp)
 
-        // Then - No exception, logging only
-        assertNotNull(reader);
+        // When: Définition d'une limite de 5 documents
+        assertDoesNotThrow(() -> reader.setMaxDocuments(5),
+                "Setter ne devrait pas lever d'exception");
+
+        // Then: Reader toujours valide
+        assertNotNull(reader, "Le reader ne devrait pas être null");
     }
 
     @Test
-    void testReadWithTargetDocument() {
-        // Given
+    void givenTargetDocumentIdWhenReadThenReturnsOnlyTargetedDocument() {
+        // Given: Document ciblé loi-2024-15 non existant dans fetch_results
         reader.setTargetDocumentId("loi-2024-15");
         when(fetchResultRepository.existsByDocumentId("loi-2024-15")).thenReturn(false);
         
@@ -100,22 +109,22 @@ class PreviousYearsLawDocumentReaderTest {
         
         when(documentFactory.create("loi", 2024, 15)).thenReturn(mockDoc);
 
-        // When
+        // When: Lecture du document ciblé
         LawDocument result = reader.read();
 
-        // Then
-        assertNotNull(result);
-        assertEquals("loi", result.getType());
-        assertEquals(2024, result.getYear());
-        assertEquals(15, result.getNumber());
+        // Then: Document ciblé retourné, puis null (fin de lecture)
+        assertNotNull(result, "Le document ciblé devrait être retourné");
+        assertEquals("loi", result.getType(), "Type devrait être loi");
+        assertEquals(2024, result.getYear(), "Année devrait être 2024");
+        assertEquals(15, result.getNumber(), "Numéro devrait être 15");
         
         // Vérifier qu'un second appel retourne null (fin de données)
-        assertNull(reader.read());
+        assertNull(reader.read(), "Le second read devrait retourner null");
     }
 
     @Test
-    void testReadWithTargetDocumentInForceMode() {
-        // Given
+    void givenExistingTargetDocumentWhenReadInForceModeThenReturnedAnyway() {
+        // Given: Document ciblé loi-2023-10 existant dans fetch_results, mode force activé
         reader.setTargetDocumentId("loi-2023-10");
         reader.setForceMode(true);
         when(fetchResultRepository.existsByDocumentId(anyString())).thenReturn(true);
@@ -130,44 +139,44 @@ class PreviousYearsLawDocumentReaderTest {
         
         when(documentFactory.create("loi", 2023, 10)).thenReturn(mockDoc);
 
-        // When
+        // When: Lecture en mode force
         LawDocument result = reader.read();
 
-        // Then
+        // Then: Document retourné même s'il existe déjà
         assertNotNull(result, "Force mode should fetch document even if exists");
-        assertEquals("loi", result.getType());
+        assertEquals("loi", result.getType(), "Type devrait être loi");
     }
 
     @Test
-    void testReadWithTargetDocumentAlreadyExists() {
-        // Given
+    void givenExistingTargetDocumentWhenReadInNormalModeThenSkipped() {
+        // Given: Document ciblé loi-2024-99 existant dans fetch_results, mode normal
         reader.setTargetDocumentId("loi-2024-99");
         reader.setForceMode(false);
         when(fetchResultRepository.existsByDocumentId("loi-2024-99")).thenReturn(true);
 
-        // When
+        // When: Lecture en mode normal
         LawDocument result = reader.read();
 
-        // Then
+        // Then: Document skippé (null retourné), factory jamais appelée
         assertNull(result, "Should skip document that already exists");
         verify(documentFactory, never()).create(anyString(), anyInt(), anyInt());
     }
 
     @Test
-    void testReadWithInvalidTargetDocumentId() {
-        // Given
+    void givenInvalidDocumentIdFormatWhenReadThenReturnsNull() {
+        // Given: Document ID avec format invalide (pas 3 parties)
         reader.setTargetDocumentId("invalid-format");
 
-        // When
+        // When: Tentative de lecture
         LawDocument result = reader.read();
 
-        // Then
+        // Then: Null retourné pour format invalide
         assertNull(result, "Should return null for invalid documentId format");
     }
 
     @Test
-    void testReadWithMaxDocumentsLimit() {
-        // Given
+    void givenMaxDocumentsTwoWhenReadThreeTimesThenThirdReturnsNull() {
+        // Given: Limite de 2 documents, pas de cursor, pas de documents vérifiés
         reader.setMaxDocuments(2);
         when(fetchResultRepository.findAllDocumentIds()).thenReturn(Collections.emptyList());
         when(fetchCursorRepository.findByCursorType(anyString())).thenReturn(Optional.empty());
@@ -181,20 +190,20 @@ class PreviousYearsLawDocumentReaderTest {
         
         when(documentFactory.create(anyString(), anyInt(), anyInt())).thenReturn(mockDoc);
 
-        // When
+        // When: 3 lectures successives
         LawDocument first = reader.read();
         LawDocument second = reader.read();
         LawDocument third = reader.read();
 
-        // Then
+        // Then: 2 documents retournés, le 3ème est null (limite atteinte)
         assertNotNull(first, "First document should be returned");
         assertNotNull(second, "Second document should be returned");
         assertNull(third, "Third document should be null (maxDocuments=2)");
     }
 
     @Test
-    void testReadWithCursorFromDatabase() {
-        // Given
+    void givenExistingCursorWhenReadThenResumeFromCursor() {
+        // Given: Cursor existant dans la base (année 2023, numéro 50)
         FetchCursor cursor = FetchCursor.builder()
             .cursorType("fetch-previous")
             .currentYear(2023)
@@ -223,8 +232,8 @@ class PreviousYearsLawDocumentReaderTest {
     }
 
     @Test
-    void testReadWithNoCursor() {
-        // Given
+    void givenNoCursorWhenReadThenStartsFromCurrentYearMinusOne() {
+        // Given: Aucun cursor dans la base, pas de documents vérifiés, limite 1 document
         when(fetchCursorRepository.findByCursorType(anyString())).thenReturn(Optional.empty());
         when(fetchResultRepository.findAllDocumentIds()).thenReturn(Collections.emptyList());
         reader.setMaxDocuments(1);
@@ -238,17 +247,17 @@ class PreviousYearsLawDocumentReaderTest {
         
         when(documentFactory.create(anyString(), anyInt(), anyInt())).thenReturn(mockDoc);
 
-        // When
+        // When: Première lecture sans cursor
         LawDocument result = reader.read();
 
-        // Then
+        // Then: Document généré depuis l'année courante - 1, cursor sauvegardé
         assertNotNull(result, "Should generate documents starting from current year - 1");
         verify(fetchCursorRepository).save(any(FetchCursor.class));
     }
 
     @Test
-    void testReadSkipsVerifiedDocuments() {
-        // Given
+    void givenVerifiedDocumentsWhenReadInNormalModeThenSkipsThem() {
+        // Given: 2 documents vérifiés dans fetch_results, mode normal, limite 2 documents
         List<String> verifiedDocs = List.of("loi-2024-1", "decret-2024-1");
         when(fetchResultRepository.findAllDocumentIds()).thenReturn(verifiedDocs);
         when(fetchCursorRepository.findByCursorType(anyString())).thenReturn(Optional.empty());
@@ -263,18 +272,18 @@ class PreviousYearsLawDocumentReaderTest {
         
         when(documentFactory.create(anyString(), anyInt(), anyInt())).thenReturn(mockDoc);
 
-        // When
+        // When: Lecture en mode normal
         reader.read();
 
-        // Then
+        // Then: Documents vérifiés chargés, factory appelée pour nouveaux documents uniquement
         verify(fetchResultRepository).findAllDocumentIds();
         // Factory should NOT be called for verified documents
         verify(documentFactory, atLeast(1)).create(anyString(), anyInt(), anyInt());
     }
 
     @Test
-    void testReadInForceModeSkipsNothing() {
-        // Given
+    void givenVerifiedDocumentsWhenReadInForceModeThenDoesNotCheckVerified() {
+        // Given: 2 documents vérifiés dans fetch_results, mode force, limite 2 documents
         reader.setForceMode(true);
         reader.setMaxDocuments(2);
         List<String> verifiedDocs = List.of("loi-2024-1", "decret-2024-1");
@@ -290,17 +299,16 @@ class PreviousYearsLawDocumentReaderTest {
         
         when(documentFactory.create(anyString(), anyInt(), anyInt())).thenReturn(mockDoc);
 
-        // When
+        // When: Lecture en mode force
         reader.read();
 
-        // Then
-        // En mode force, findAllDocumentIds ne devrait pas être appelé
+        // Then: findAllDocumentIds jamais appelé en mode force
         verify(fetchResultRepository, never()).findAllDocumentIds();
     }
 
     @Test
-    void testReset() {
-        // Given
+    void givenReaderUsedWhenResetThenCanReadAgain() {
+        // Given: Reader avec limite 1 document, première lecture effectuée
         reader.setMaxDocuments(1);
         when(fetchResultRepository.findAllDocumentIds()).thenReturn(Collections.emptyList());
         when(fetchCursorRepository.findByCursorType(anyString())).thenReturn(Optional.empty());
@@ -314,39 +322,40 @@ class PreviousYearsLawDocumentReaderTest {
         
         when(documentFactory.create(anyString(), anyInt(), anyInt())).thenReturn(mockDoc);
 
-        // When
         reader.read(); // First read
-        reader.reset(); // Reset
-        LawDocument result = reader.read(); // Read again
 
-        // Then
+        // When: Reset du reader puis nouvelle lecture
+        reader.reset();
+        LawDocument result = reader.read();
+
+        // Then: Lecture possible après reset
         assertNotNull(result, "Should read again after reset");
     }
 
     @Test
-    void testParseDocumentIdValid() {
-        // Given
+    void givenValidDocumentIdWhenParsedThenThreePartsExtracted() {
+        // Given: ID de document valide au format type-year-number
         String documentId = "loi-2024-15";
         
-        // When
+        // When: Parsing de l'ID
         String[] parts = documentId.split("-");
         
-        // Then
-        assertEquals(3, parts.length);
-        assertEquals("loi", parts[0]);
-        assertEquals("2024", parts[1]);
-        assertEquals("15", parts[2]);
+        // Then: 3 parties correctement extraites
+        assertEquals(3, parts.length, "L'ID devrait avoir 3 parties");
+        assertEquals("loi", parts[0], "Partie 0 devrait être 'loi'");
+        assertEquals("2024", parts[1], "Partie 1 devrait être '2024'");
+        assertEquals("15", parts[2], "Partie 2 devrait être '15'");
     }
 
     @Test
-    void testParseDocumentIdInvalid() {
-        // Given
+    void givenInvalidDocumentIdWhenParsedThenNotThreeParts() {
+        // Given: ID de document invalide (format incorrect)
         String documentId = "invalid-format";
         
-        // When
+        // When: Parsing de l'ID invalide
         String[] parts = documentId.split("-");
         
-        // Then
+        // Then: Pas 3 parties (format invalide)
         assertEquals(2, parts.length, "Should not have 3 parts");
     }
 }

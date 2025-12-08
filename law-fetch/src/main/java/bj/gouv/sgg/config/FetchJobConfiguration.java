@@ -67,14 +67,17 @@ public class FetchJobConfiguration {
             .listener(new org.springframework.batch.core.StepExecutionListener() {
                 @Override
                 public void beforeStep(org.springframework.batch.core.StepExecution stepExecution) {
-                    // Lire les paramètres --doc, --force et --maxDocuments depuis JobParameters
+                    // Lire les paramètres --doc ou --documentId (équivalents), --force et --maxDocuments depuis JobParameters
                     String doc = stepExecution.getJobParameters().getString(PARAM_DOC);
+                    String documentId = stepExecution.getJobParameters().getString("documentId");
                     String force = stepExecution.getJobParameters().getString(PARAM_FORCE);
                     String maxDocs = stepExecution.getJobParameters().getString("maxDocuments");
                     
-                    if (doc != null && !doc.isEmpty()) {
-                        currentYearReader.setTargetDocumentId(doc);
-                        log.info("📄 Target document: {}", doc);
+                    // Accepter --doc ou --documentId comme équivalents
+                    String targetDoc = (doc != null && !doc.isEmpty()) ? doc : documentId;
+                    if (targetDoc != null && !targetDoc.isEmpty()) {
+                        currentYearReader.setTargetDocumentId(targetDoc);
+                        log.info("📄 Target document: {}", targetDoc);
                     }
                     
                     if (VALUE_TRUE.equalsIgnoreCase(force)) {

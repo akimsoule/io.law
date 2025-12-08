@@ -42,16 +42,16 @@ class FetchJobIntegrationTest {
     }
 
     @Test
-    void testFetchCurrentJobExecution() throws Exception {
-        // Given
+    void givenNoParametersWhenRunFetchCurrentJobThenCompletesSuccessfully() throws Exception {
+        // Given: Paramètres de job avec timestamp unique
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLong("time", System.currentTimeMillis())
                 .toJobParameters();
 
-        // When
+        // When: Exécution du fetchCurrentJob
         JobExecution jobExecution = jobLauncher.run(fetchCurrentJob, jobParameters);
 
-        // Then
+        // Then: Job complété avec succès, documents détectés ou non
         assertEquals(BatchStatus.COMPLETED, jobExecution.getStatus(),
                 "Le job fetchCurrentJob devrait se terminer avec succès");
 
@@ -61,56 +61,58 @@ class FetchJobIntegrationTest {
     }
 
     @Test
-    void testFetchCurrentJobIdempotence() throws Exception {
-        // Given - Premier run
+    void givenJobAlreadyExecutedWhenRunAgainThenIdempotent() throws Exception {
+        // Given: Premier run du fetchCurrentJob et comptage des documents
         JobParameters jobParameters1 = new JobParametersBuilder()
                 .addLong("time", System.currentTimeMillis())
                 .toJobParameters();
         JobExecution firstExecution = jobLauncher.run(fetchCurrentJob, jobParameters1);
         long countAfterFirst = lawDocumentRepository.count();
 
-        // When - Second run
+        // When: Second run avec paramètres différents
         JobParameters jobParameters2 = new JobParametersBuilder()
                 .addLong("time", System.currentTimeMillis() + 1000)
                 .toJobParameters();
         JobExecution secondExecution = jobLauncher.run(fetchCurrentJob, jobParameters2);
         long countAfterSecond = lawDocumentRepository.count();
 
-        // Then
-        assertEquals(BatchStatus.COMPLETED, firstExecution.getStatus());
-        assertEquals(BatchStatus.COMPLETED, secondExecution.getStatus());
+        // Then: Les deux runs sont complétés avec le même nombre de documents (idempotence)
+        assertEquals(BatchStatus.COMPLETED, firstExecution.getStatus(),
+                "Le premier run devrait se terminer avec succès");
+        assertEquals(BatchStatus.COMPLETED, secondExecution.getStatus(),
+                "Le second run devrait se terminer avec succès");
         assertEquals(countAfterFirst, countAfterSecond,
                 "Le job devrait être idempotent - même nombre de documents après 2 runs");
     }
 
     @Test
-    void testFetchedDocumentsHaveCorrectStatus() throws Exception {
-        // Given
+    void givenJobExecutedWhenCheckingStatusThenDocumentsHaveFetchedStatus() throws Exception {
+        // Given: Paramètres de job valides
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLong("time", System.currentTimeMillis())
                 .toJobParameters();
 
-        // When
+        // When: Exécution du fetchCurrentJob
         jobLauncher.run(fetchCurrentJob, jobParameters);
 
-        // Then
+        // Then: Les documents détectés ont le statut FETCHED
         long fetchedCount = lawDocumentRepository.countByStatus(LawDocument.ProcessingStatus.FETCHED);
         assertTrue(fetchedCount >= 0,
                 "Les documents détectés devraient avoir le statut FETCHED");
     }
 
     @Test
-    void testFetchSpecificLawDocument() throws Exception {
-        // Given - Cibler une loi spécifique (loi-2024-15)
+    void givenSpecificLawIdWhenRunFetchJobThenProcessesTargetedDocument() throws Exception {
+        // Given: Cibler une loi spécifique (loi-2024-15)
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLong("time", System.currentTimeMillis())
                 .addString("documentId", "loi-2024-15")
                 .toJobParameters();
 
-        // When
+        // When: Exécution du fetchCurrentJob avec document ciblé
         JobExecution jobExecution = jobLauncher.run(fetchCurrentJob, jobParameters);
 
-        // Then
+        // Then: Job complété et document ciblé traité si existant
         assertEquals(BatchStatus.COMPLETED, jobExecution.getStatus(),
                 "Le job devrait se terminer avec succès pour un document ciblé");
 
@@ -129,17 +131,17 @@ class FetchJobIntegrationTest {
     }
 
     @Test
-    void testFetchSpecificDecretDocument() throws Exception {
-        // Given - Cibler un décret spécifique (decret-2025-716)
+    void givenSpecificDecretIdWhenRunFetchJobThenProcessesTargetedDecret() throws Exception {
+        // Given: Cibler un décret spécifique (decret-2025-716)
         JobParameters jobParameters = new JobParametersBuilder()
                 .addLong("time", System.currentTimeMillis())
                 .addString("documentId", "decret-2025-716")
                 .toJobParameters();
 
-        // When
+        // When: Exécution du fetchCurrentJob avec décret ciblé
         JobExecution jobExecution = jobLauncher.run(fetchCurrentJob, jobParameters);
 
-        // Then
+        // Then: Job complété et décret ciblé traité si existant
         assertEquals(BatchStatus.COMPLETED, jobExecution.getStatus(),
                 "Le job devrait se terminer avec succès pour un décret ciblé");
 
@@ -153,14 +155,15 @@ class FetchJobIntegrationTest {
     }
 
     @Test
-    void testFetchWithForceMode() throws Exception {
-        // Given - Premier run pour créer un document
+    void givenExistingDocumentWhenRunWithForceThenRefetchesWithoutDuplicates() throws Exception {
+        // Given: Premier run pour créer un document existant
         JobParameters jobParameters1 = new JobParametersBuilder()
                 .addLong("time", System.currentTimeMillis())
                 .addString("documentId", "loi-2024-15")
                 .toJobParameters();
         JobExecution firstExecution = jobLauncher.run(fetchCurrentJob, jobParameters1);
-        assertEquals(BatchStatus.COMPLETED, firstExecution.getStatus());
+        assertEquals(BatchStatus.COMPLETED, firstExecution.getStatus(),
+                "Le premier run devrait se terminer avec succès");
 
         // Simuler un document déjà FETCHED
         LawDocument existingDoc = lawDocumentRepository.findByTypeAndYearAndNumber("loi", 2024, 15)
@@ -168,7 +171,7 @@ class FetchJobIntegrationTest {
         if (existingDoc != null) {
             long firstCount = lawDocumentRepository.count();
 
-            // When - Second run avec force=true
+            // When: Second run avec force=true pour re-fetch
             JobParameters jobParameters2 = new JobParametersBuilder()
                     .addLong("time", System.currentTimeMillis() + 1000)
                     .addString("documentId", "loi-2024-15")
@@ -176,7 +179,7 @@ class FetchJobIntegrationTest {
                     .toJobParameters();
             JobExecution secondExecution = jobLauncher.run(fetchCurrentJob, jobParameters2);
 
-            // Then
+            // Then: Job complété sans duplication de documents
             assertEquals(BatchStatus.COMPLETED, secondExecution.getStatus(),
                     "Le job avec force=true devrait se terminer avec succès");
 
@@ -188,25 +191,26 @@ class FetchJobIntegrationTest {
     }
 
     @Test
-    void testFetchWithoutForceSkipsExisting() throws Exception {
-        // Given - Premier run pour créer un document
+    void givenExistingDocumentWhenRunWithoutForceThenSkipsWithoutDuplicates() throws Exception {
+        // Given: Premier run pour créer un document existant
         JobParameters jobParameters1 = new JobParametersBuilder()
                 .addLong("time", System.currentTimeMillis())
                 .addString("documentId", "loi-2024-15")
                 .toJobParameters();
         JobExecution firstExecution = jobLauncher.run(fetchCurrentJob, jobParameters1);
-        assertEquals(BatchStatus.COMPLETED, firstExecution.getStatus());
+        assertEquals(BatchStatus.COMPLETED, firstExecution.getStatus(),
+                "Le premier run devrait se terminer avec succès");
 
         long firstCount = lawDocumentRepository.count();
 
-        // When - Second run SANS force (devrait skip)
+        // When: Second run SANS force (devrait skip le document existant)
         JobParameters jobParameters2 = new JobParametersBuilder()
                 .addLong("time", System.currentTimeMillis() + 1000)
                 .addString("documentId", "loi-2024-15")
                 .toJobParameters();
         JobExecution secondExecution = jobLauncher.run(fetchCurrentJob, jobParameters2);
 
-        // Then
+        // Then: Job complété sans duplication (document skippé)
         assertEquals(BatchStatus.COMPLETED, secondExecution.getStatus(),
                 "Le job sans force devrait se terminer avec succès");
 

@@ -14,8 +14,8 @@
     <artifactId>law-download</artifactId>
     <packaging>jar</packaging>
     
-    <name>Law Download Module</name>
-    <description>Module de téléchargement des PDFs</description>
+    <name>Law Download</name>
+    <description>PDF file download from sgg.gouv.bj</description>
     
     <!-- Dépendances -->
     <dependencies>

@@ -1,13 +1,12 @@
 package com.io;
 
 /**
- * Hello world!
- *
+ * Placeholder for consolidation module
  */
 public class App 
 {
     public static void main( String[] args )
     {
-        System.out.println( "Hello World!" );
+        // Module consolidation entry point
     }
 }

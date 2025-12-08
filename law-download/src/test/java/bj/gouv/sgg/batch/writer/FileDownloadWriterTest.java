@@ -28,22 +28,31 @@ class FileDownloadWriterTest {
     }
 
     @Test
-    void testDocumentWithPdfPath() {
-        // Then
-        assertNotNull(testDocument.getPdfPath());
-        assertEquals("data/pdfs/loi/loi-2025-17.pdf", testDocument.getPdfPath());
+    void givenDownloadedDocumentWhenGetPdfPathThenReturnsCorrectPath() {
+        // Given: Document téléchargé avec pdfPath (défini dans setUp)
+
+        // Then: PdfPath correctement défini et formaté
+        assertNotNull(testDocument.getPdfPath(),
+                "Le pdfPath ne devrait pas être null");
+        assertEquals("data/pdfs/loi/loi-2025-17.pdf", testDocument.getPdfPath(),
+                "Le pdfPath devrait suivre le pattern data/pdfs/{type}/{documentId}.pdf");
     }
 
     @Test
-    void testDocumentIdMatchesPdfFilename() {
-        // When
+    void givenDocumentWhenGetIdAndFilenameThenConsistent() {
+        // Given: Document avec ID et PDF filename (défini dans setUp)
+
+        // When: Récupération de l'ID et du filename
         String documentId = testDocument.getDocumentId();
         String pdfFilename = testDocument.getPdfFilename();
 
-        // Then
-        assertTrue(pdfFilename.startsWith(documentId));
-        assertEquals("loi-2025-17", documentId);
-        assertEquals("loi-2025-17.pdf", pdfFilename);
+        // Then: Filename commence par ID et a l'extension .pdf
+        assertTrue(pdfFilename.startsWith(documentId),
+                "Le filename devrait commencer par l'ID du document");
+        assertEquals("loi-2025-17", documentId,
+                "L'ID devrait être loi-2025-17");
+        assertEquals("loi-2025-17.pdf", pdfFilename,
+                "Le filename devrait être loi-2025-17.pdf");
     }
 
     @Test
