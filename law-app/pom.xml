@@ -20,31 +20,22 @@
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
             <artifactId>law-common</artifactId>
-            <version>${revision}</version>
         </dependency>
-        
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
             <artifactId>law-fetch</artifactId>
-            <version>${revision}</version>
         </dependency>
-        
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
             <artifactId>law-download</artifactId>
-            <version>${revision}</version>
         </dependency>
-        
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
             <artifactId>law-consolidate</artifactId>
-            <version>${revision}</version>
         </dependency>
-        
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
             <artifactId>law-json-config</artifactId>
-            <version>${revision}</version>
         </dependency>
         
         <!-- Modules law-tojson -->
@@ -106,7 +97,7 @@
             <scope>runtime</scope>
         </dependency>
         
-        <!-- Tests -->
+        <!-- Tests (versions centralisées dans parent POM) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

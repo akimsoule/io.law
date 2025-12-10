@@ -1,4 +1,6 @@
-package bj.gouv.sgg.exception;
+package bj.gouv.sgg.download.exception;
+
+import bj.gouv.sgg.exception.LawProcessingException;
 
 /**
  * Exception levée lors d'erreurs de téléchargement de PDF.

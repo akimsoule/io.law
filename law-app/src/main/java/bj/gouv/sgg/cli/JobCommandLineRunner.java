@@ -26,6 +26,9 @@ import java.util.Arrays;
  *   java -jar law-api.jar --job=pdfToJsonJob --doc=loi-2024-15
  *   java -jar law-api.jar --job=pdfToJsonJob --force --maxDocuments=20
  *   java -jar law-api.jar --spring.main.web-application-type=none --job=ocrJob
+ *   java -jar law-api.jar --job=consolidateJob
+ *   java -jar law-api.jar --job=fullJob --doc=loi-2024-15 ✅ (pipeline complet)
+ *   java -jar law-api.jar --job=fullJob --doc=loi-2024-15 --force ✅ (retraitement complet)
  * 
  * Arguments supportés:
  *   --job=<jobName>          : Nom du job à exécuter
@@ -40,7 +43,8 @@ import java.util.Arrays;
  *   - downloadJob           : --doc, --force, --maxDocuments
  *   - pdfToJsonJob          : --doc, --doc + --force, --maxDocuments (défaut: 10)
  *   - ocrJob                : (tous documents DOWNLOADED)
- *   - consolidationJob      : (tous documents EXTRACTED)
+ *   - consolidateJob        : (tous documents EXTRACTED) ✅
+ *   - fullJob               : --doc (OBLIGATOIRE), --force (optionnel) - Pipeline complet ✅
  * 
  * Note: --force nécessite --doc pour pdfToJsonJob (force + document spécifique)
  */

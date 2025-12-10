@@ -66,13 +66,13 @@ class DownloadProcessorTest {
     }
 
     @Test
-    void testUrlConstruction() {
+    void givenTestDocument_whenGetUrl_thenReturnsCorrectUrl() {
         // Then
         assertEquals("https://sgg.gouv.bj/doc/loi-2025-17", testDocument.getUrl());
     }
 
     @Test
-    void testPdfFilenameGeneration() {
+    void givenTestDocument_whenGetPdfFilename_thenReturnsCorrectFilename() {
         // When
         String pdfFilename = testDocument.getPdfFilename();
 
@@ -81,7 +81,7 @@ class DownloadProcessorTest {
     }
 
     @Test
-    void testDocumentBuilderPattern() {
+    void givenDocumentBuilder_whenBuild_thenCreatesValidDocument() {
         // Given & When
         LawDocument doc = LawDocument.builder()
             .type("loi")
@@ -102,13 +102,13 @@ class DownloadProcessorTest {
     }
 
     @Test
-    void testInitialStatus() {
+    void givenTestDocument_whenGetStatus_thenReturnsFetched() {
         // Then
         assertEquals(LawDocument.ProcessingStatus.FETCHED, testDocument.getStatus());
     }
 
     @Test
-    void testForceModeSetter() {
+    void givenDownloadProcessor_whenSetForceMode_thenNoException() {
         // Given
         DownloadProcessor processor = new DownloadProcessor(fileStorageService);
         
@@ -120,7 +120,7 @@ class DownloadProcessorTest {
     }
 
     @Test
-    void testSkipAlreadyDownloadedDocument() throws Exception {
+    void givenAlreadyDownloadedDocument_whenProcess_thenReturnsNull() throws Exception {
         // Given
         DownloadProcessor processor = new DownloadProcessor(fileStorageService);
         testDocument.setStatus(LawDocument.ProcessingStatus.DOWNLOADED);
@@ -137,7 +137,7 @@ class DownloadProcessorTest {
     }
 
     @Test
-    void testUrlShouldNotContainDownloadSuffix() {
+    void givenBaseUrl_whenCheckUrl_thenDoesNotContainDownloadSuffix() {
         // Given
         String baseUrl = "https://sgg.gouv.bj/doc/loi-2025-04";
         LawDocument doc = LawDocument.builder()
@@ -155,7 +155,7 @@ class DownloadProcessorTest {
     }
 
     @Test
-    void testDownloadUrlConstruction() {
+    void givenBaseUrl_whenAppendDownload_thenConstructsDownloadUrl() {
         // Given
         String baseUrl = "https://sgg.gouv.bj/doc/loi-2025-04";
         String expectedDownloadUrl = baseUrl + "/download";
@@ -176,7 +176,7 @@ class DownloadProcessorTest {
     }
 
     @Test
-    void testDocumentWithPaddedNumber() {
+    void givenNumberLessThan10_whenGetUrl_thenContainsPaddedNumber() {
         // Given - Numéro < 10 devrait avoir padding en base
         LawDocument doc = LawDocument.builder()
             .type("loi")

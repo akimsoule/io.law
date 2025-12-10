@@ -1,6 +1,6 @@
 package bj.gouv.sgg.batch.writer;
 
-import bj.gouv.sgg.exception.BatchProcessingException;
+import bj.gouv.sgg.fetch.exception.BatchProcessingException;
 import bj.gouv.sgg.model.FetchResult;
 import bj.gouv.sgg.model.LawDocument;
 import bj.gouv.sgg.repository.FetchResultRepository;

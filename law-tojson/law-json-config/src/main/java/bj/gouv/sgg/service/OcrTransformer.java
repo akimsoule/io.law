@@ -2,6 +2,7 @@ package bj.gouv.sgg.service;
 
 import bj.gouv.sgg.exception.IAException;
 import bj.gouv.sgg.impl.ArticleRegexExtractor;
+import bj.gouv.sgg.config.ArticleExtractorConfig;
 import bj.gouv.sgg.model.Article;
 import bj.gouv.sgg.model.DocumentMetadata;
 import bj.gouv.sgg.model.LawDocument;
@@ -42,8 +43,8 @@ public class OcrTransformer {
 
     private final OcrService ocrService;
     private final ArticleRegexExtractor articleRegexExtractor;
-    private final Gson gson;
     private final FileStorageService fileStorageService;
+    private final ArticleExtractorConfig articleExtractorConfig;
     
     // Gson formatté pour sortie lisible
     private static final Gson PRETTY_GSON = new GsonBuilder().setPrettyPrinting().create();
@@ -92,9 +93,22 @@ public class OcrTransformer {
                      docId, metadata.getLawTitle(), metadata.getPromulgationDate(), 
                      metadata.getSignatories().size());
             
-            // 4. Calculer confiance
-            double confidence = articleRegexExtractor.calculateConfidence(ocrText, articles);
+            // 4. Calculer confiance avec enregistrement des mots non reconnus
+            double confidence = articleRegexExtractor.calculateConfidence(ocrText, articles, docId);
             log.info("🎯 [{}] Confidence calculated: {}", docId, confidence);
+
+            // 4.b Statistiques d'occurrences des mots non reconnus (top 10)
+            try {
+                var unrec = articleExtractorConfig.getUnrecognizedWords(ocrText);
+                var topStats = topUnrecognizedStats(ocrText, unrec, 10);
+                if (!topStats.isEmpty()) {
+                    log.info("📊 [{}] Top unrecognized words (word=count): {}", docId, topStats);
+                } else {
+                    log.info("📊 [{}] No unrecognized words found in OCR text", docId);
+                }
+            } catch (Exception statsEx) {
+                log.warn("⚠️ [{}] Failed to compute unrecognized word stats: {}", docId, statsEx.getMessage());
+            }
             
             // 5. Construire JSON
             String json = buildJson(document, articles, metadata, confidence);
@@ -201,5 +215,37 @@ public class OcrTransformer {
         }
         
         return PRETTY_GSON.toJson(root);
+    }
+
+    /**
+     * Calcule le top N des mots non reconnus avec leurs occurrences dans le texte OCR.
+     * Retourne une chaîne compacte "mot1=12, mot2=9, ...".
+     */
+    private String topUnrecognizedStats(String ocrText, java.util.Set<String> words, int topN) {
+        if (ocrText == null || ocrText.isBlank() || words == null || words.isEmpty()) {
+            return "";
+        }
+        String lower = ocrText.toLowerCase();
+        java.util.Map<String, Integer> counts = new java.util.HashMap<>();
+        for (String w : words) {
+            if (w == null || w.isBlank()) continue;
+            String esc = w.toLowerCase()
+                .replaceAll("([\\\\.\\^\\$\\|\\?\\*\\+\\(\\)\\[\\]\\{\\}])", "\\\\$1");
+            java.util.regex.Pattern p = java.util.regex.Pattern.compile("(^|[^A-Za-zÀ-ÿ])" + esc + "([^A-Za-zÀ-ÿ]|$)");
+            java.util.regex.Matcher m = p.matcher(lower);
+            int c = 0;
+            while (m.find()) { c++; }
+            if (c > 0) counts.put(w, c);
+        }
+        java.util.List<java.util.Map.Entry<String,Integer>> list = new java.util.ArrayList<>(counts.entrySet());
+        list.sort((a,b) -> Integer.compare(b.getValue(), a.getValue()));
+        StringBuilder sb = new StringBuilder();
+        int limit = Math.min(topN, list.size());
+        for (int i = 0; i < limit; i++) {
+            var e = list.get(i);
+            if (i > 0) sb.append(", ");
+            sb.append(e.getKey()).append("=").append(e.getValue());
+        }
+        return sb.toString();
     }
 }

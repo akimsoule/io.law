@@ -6,7 +6,6 @@ import bj.gouv.sgg.model.LawDocument;
 import bj.gouv.sgg.modele.JsonResult;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.pdmodel.PDDocument;
 import org.apache.pdfbox.rendering.PDFRenderer;

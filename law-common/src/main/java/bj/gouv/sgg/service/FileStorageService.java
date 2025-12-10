@@ -142,6 +142,16 @@ public class FileStorageService {
     }
     
     /**
+     * Crée le répertoire si nécessaire.
+     */
+    public void ensureDirectoryExists(Path directory) throws IOException {
+        if (!Files.exists(directory)) {
+            Files.createDirectories(directory);
+            log.debug("📁 Directory created: {}", directory);
+        }
+    }
+    
+    /**
      * Valide le type de document.
      */
     private void validateType(String type) {
@@ -154,7 +164,10 @@ public class FileStorageService {
      * Valide l'identifiant de document (sécurité path traversal).
      */
     private void validateDocumentId(String documentId) {
-        if (documentId == null || documentId.contains("..") || documentId.contains("/") || documentId.contains("\\")) {
+        if (documentId == null || documentId.isEmpty()) {
+            throw new IllegalArgumentException("Document ID cannot be null or empty");
+        }
+        if (documentId.contains("..") || documentId.contains("/") || documentId.contains("\\")) {
             throw new SecurityException("Invalid document ID: " + documentId);
         }
     }

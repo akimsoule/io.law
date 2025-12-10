@@ -1,4 +1,6 @@
-package bj.gouv.sgg.exception;
+package bj.gouv.sgg.fetch.exception;
+
+import bj.gouv.sgg.exception.LawProcessingException;
 
 /**
  * Exception levée lors d'une erreur de traitement par lot (batch).
