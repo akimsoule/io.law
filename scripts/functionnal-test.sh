@@ -75,5 +75,28 @@ echo ""
 echo "📄 pdfToJsonJob - avec limite personnalisée (max 10 docs)"
 java -jar $JAR --job=pdfToJsonJob --maxDocuments=10 $OPTS || exit 1
 
+# === CONSOLIDATE JOB ===
+echo ""
+echo "💾 consolidateJob - tous documents EXTRACTED"
+java -jar $JAR --job=consolidateJob $OPTS || exit 1
+
+# === FULL JOB ===
+echo ""
+echo "🚀 fullJob - pipeline complet pour un document (loi-2024-15)"
+java -jar $JAR --job=fullJob --doc=loi-2024-15 $OPTS || exit 1
+
+echo ""
+echo "🔄 fullJob - test avec --force (retraitement complet)"
+java -jar $JAR --job=fullJob --doc=loi-2024-15 --force $OPTS || exit 1
+
+echo ""
+echo "❌ fullJob - test sans paramètre --doc (doit échouer)"
+if java -jar $JAR --job=fullJob $OPTS 2>/dev/null; then
+    echo "ERREUR: fullJob devrait échouer sans --doc"
+    exit 1
+else
+    echo "✅ Échec attendu confirmé (--doc obligatoire)"
+fi
+
 echo ""
 echo "🎉 Tous les tests passés avec succès !"

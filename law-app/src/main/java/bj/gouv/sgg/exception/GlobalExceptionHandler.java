@@ -10,6 +10,10 @@ import org.springframework.web.context.request.WebRequest;
 /**
  * Gestionnaire global des exceptions pour l'API REST.
  * Capture les exceptions et retourne des réponses JSON standardisées.
+ * 
+ * <p><b>Note</b> : Les exceptions spécifiques aux modules (PdfDownloadException, 
+ * ArticleExtractionException, BatchProcessingException) sont gérées au niveau 
+ * batch et héritent de LawProcessingException, donc capturées par le handler générique.
  */
 @Slf4j
 @RestControllerAdvice
@@ -50,57 +54,6 @@ public class GlobalExceptionHandler {
     }
     
     /**
-     * Gère les erreurs de téléchargement de PDF (500).
-     */
-    @ExceptionHandler(PdfDownloadException.class)
-    public ResponseEntity<ErrorResponse> handlePdfDownload(
-            PdfDownloadException ex, 
-            WebRequest request) {
-        log.error("PDF download error: {}", ex.getMessage(), ex);
-        
-        ErrorResponse error = ErrorResponse.fromException(
-                ex, 
-                getPath(request), 
-                HttpStatus.INTERNAL_SERVER_ERROR.value());
-        
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-    }
-    
-    /**
-     * Gère les erreurs de traitement OCR (500).
-     */
-    @ExceptionHandler(OcrProcessingException.class)
-    public ResponseEntity<ErrorResponse> handleOcrProcessing(
-            OcrProcessingException ex, 
-            WebRequest request) {
-        log.error("OCR processing error: {}", ex.getMessage(), ex);
-        
-        ErrorResponse error = ErrorResponse.fromException(
-                ex, 
-                getPath(request), 
-                HttpStatus.INTERNAL_SERVER_ERROR.value());
-        
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-    }
-    
-    /**
-     * Gère les erreurs d'extraction d'articles (500).
-     */
-    @ExceptionHandler(ArticleExtractionException.class)
-    public ResponseEntity<ErrorResponse> handleArticleExtraction(
-            ArticleExtractionException ex, 
-            WebRequest request) {
-        log.error("Article extraction error: {}", ex.getMessage(), ex);
-        
-        ErrorResponse error = ErrorResponse.fromException(
-                ex, 
-                getPath(request), 
-                HttpStatus.INTERNAL_SERVER_ERROR.value());
-        
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-    }
-    
-    /**
      * Gère les erreurs de stockage de fichiers (500).
      */
     @ExceptionHandler(FileStorageException.class)
@@ -108,23 +61,6 @@ public class GlobalExceptionHandler {
             FileStorageException ex, 
             WebRequest request) {
         log.error("File storage error: {}", ex.getMessage(), ex);
-        
-        ErrorResponse error = ErrorResponse.fromException(
-                ex, 
-                getPath(request), 
-                HttpStatus.INTERNAL_SERVER_ERROR.value());
-        
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-    }
-    
-    /**
-     * Gère les erreurs de traitement par lot (500).
-     */
-    @ExceptionHandler(BatchProcessingException.class)
-    public ResponseEntity<ErrorResponse> handleBatchProcessing(
-            BatchProcessingException ex, 
-            WebRequest request) {
-        log.error("Batch processing error: {}", ex.getMessage(), ex);
         
         ErrorResponse error = ErrorResponse.fromException(
                 ex, 

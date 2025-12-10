@@ -22,4 +22,29 @@
         <module>law-ocr-json</module>
         <module>law-json-config</module>
     </modules>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>bj.gouv.sgg</groupId>
+                <artifactId>law-ai-pdf-json</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>bj.gouv.sgg</groupId>
+                <artifactId>law-json-config</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>bj.gouv.sgg</groupId>
+                <artifactId>law-ocr-json</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>bj.gouv.sgg</groupId>
+                <artifactId>law-pdf-ocr</artifactId>
+                <version>${revision}</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 </project>

@@ -1,7 +1,7 @@
 package bj.gouv.sgg.service;
 
-import bj.gouv.sgg.exception.EmptyPdfException;
-import bj.gouv.sgg.exception.PdfDownloadException;
+import bj.gouv.sgg.download.exception.EmptyPdfException;
+import bj.gouv.sgg.download.exception.PdfDownloadException;
 import bj.gouv.sgg.model.LawDocument;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

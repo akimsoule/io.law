@@ -17,22 +17,18 @@
     <packaging>jar</packaging>
 
     <dependencies>
+        <!-- Modules internes law-tojson -->
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
             <artifactId>law-ai-pdf-json</artifactId>
-            <version>${revision}</version>
         </dependency>
-
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
             <artifactId>law-pdf-ocr</artifactId>
-            <version>${revision}</version>
         </dependency>
-
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
             <artifactId>law-ocr-json</artifactId>
-            <version>${revision}</version>
         </dependency>
         
         <!-- Spring Boot -->
@@ -41,7 +37,7 @@
             <artifactId>spring-boot-starter-batch</artifactId>
         </dependency>
         
-        <!-- Tests -->
+        <!-- Tests (versions centralisées dans parent POM) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>

@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class DocumentStatusManager {
     
+    private static final String INVALID_DOCUMENT_ID_MSG = "❌ Invalid documentId format: {}";
+    
     private final LawDocumentRepository lawDocumentRepository;
     
     /**
@@ -49,7 +51,7 @@ public class DocumentStatusManager {
     private void updateStatusInternal(String documentId, LawDocument.ProcessingStatus newStatus) {
         String[] parts = LawDocument.parseDocumentId(documentId);
         if (parts.length == 0) {
-            log.error("❌ Invalid documentId format: {}", documentId);
+            log.error(INVALID_DOCUMENT_ID_MSG, documentId);
             return;
         }
         
@@ -68,13 +70,24 @@ public class DocumentStatusManager {
     }
     
     /**
+     * Met à jour le statut de plusieurs documents en lot.
+     */
+    @Transactional
+    public void bulkUpdateStatus(LawDocument.ProcessingStatus fromStatus, LawDocument.ProcessingStatus toStatus) {
+        var documents = lawDocumentRepository.findByStatus(fromStatus);
+        documents.forEach(doc -> doc.setStatus(toStatus));
+        lawDocumentRepository.saveAll(documents);
+        log.info("📊 Bulk status update: {} documents {} -> {}", documents.size(), fromStatus, toStatus);
+    }
+    
+    /**
      * Enregistre une erreur pour un document.
      */
     @Transactional
     public void recordError(String documentId, String errorMessage) {
         String[] parts = LawDocument.parseDocumentId(documentId);
         if (parts.length == 0) {
-            log.error("❌ Invalid documentId format: {}", documentId);
+            log.error(INVALID_DOCUMENT_ID_MSG, documentId);
             return;
         }
         

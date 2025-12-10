@@ -39,15 +39,7 @@
             <artifactId>pdfbox</artifactId>
             <version>3.0.1</version>
         </dependency>
-        
-        <!-- Lombok -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>provided</scope>
-        </dependency>
-        
-        <!-- Mockito (explicite pour meilleure gestion versions) -->
+        <!-- Mockito (versions centralisées dans parent POM) -->
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>

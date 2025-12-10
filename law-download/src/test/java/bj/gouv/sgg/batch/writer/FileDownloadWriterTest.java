@@ -56,13 +56,13 @@ class FileDownloadWriterTest {
     }
 
     @Test
-    void testDownloadedStatus() {
+    void givenTestDocument_whenGetStatus_thenReturnsDownloaded() {
         // Then
         assertEquals(LawDocument.ProcessingStatus.DOWNLOADED, testDocument.getStatus());
     }
 
     @Test
-    void testPdfPathFormat() {
+    void givenTestDocument_whenGetPdfPath_thenHasCorrectFormat() {
         // Given
         String pdfPath = testDocument.getPdfPath();
 
@@ -73,7 +73,7 @@ class FileDownloadWriterTest {
     }
 
     @Test
-    void testDocumentWithPdfContent() {
+    void givenPdfContent_whenSetPdfContent_thenStoresContent() {
         // Given
         byte[] pdfContent = "%PDF-1.4\n%EOF".getBytes();
         testDocument.setPdfContent(pdfContent);
@@ -85,7 +85,7 @@ class FileDownloadWriterTest {
     }
 
     @Test
-    void testDocumentWithSha256() {
+    void givenSha256Hash_whenSetSha256_thenStoresHash() {
         // Given
         String sha256Hash = "abc123def456";
         testDocument.setSha256(sha256Hash);
@@ -95,7 +95,7 @@ class FileDownloadWriterTest {
     }
 
     @Test
-    void testDocumentWithNullPdfContent() {
+    void givenDocumentWithoutContent_whenGetPdfContent_thenReturnsNull() {
         // Given
         LawDocument docWithoutContent = LawDocument.builder()
             .type("loi")
@@ -111,7 +111,7 @@ class FileDownloadWriterTest {
     }
 
     @Test
-    void testDocumentReadyForWrite() {
+    void givenCompleteDocument_whenCheckReadyForWrite_thenHasAllRequiredFields() {
         // Given - Document avec tout ce qu'il faut pour écrire
         byte[] content = new byte[]{0x25, 0x50, 0x44, 0x46}; // %PDF
         LawDocument readyDoc = LawDocument.builder()
@@ -132,7 +132,7 @@ class FileDownloadWriterTest {
     }
 
     @Test
-    void testPdfContentIsPdfSignature() {
+    void givenPdfSignature_whenSetPdfContent_thenStoresPdfMagicBytes() {
         // Given
         byte[] pdfSignature = new byte[]{0x25, 0x50, 0x44, 0x46}; // %PDF
         testDocument.setPdfContent(pdfSignature);

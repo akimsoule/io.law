@@ -41,7 +41,7 @@ class FetchedDocumentReaderTest {
     }
 
     @Test
-    void testParseYear() {
+    void givenDocumentId_whenParseYear_thenReturnsCorrectYear() {
         // Given
         String documentId = "loi-2024-15";
         String[] parts = documentId.split("-");
@@ -54,7 +54,7 @@ class FetchedDocumentReaderTest {
     }
 
     @Test
-    void testParseNumber() {
+    void givenDocumentId_whenParseNumber_thenReturnsCorrectNumber() {
         // Given
         String documentId = "loi-2024-15";
         String[] parts = documentId.split("-");
