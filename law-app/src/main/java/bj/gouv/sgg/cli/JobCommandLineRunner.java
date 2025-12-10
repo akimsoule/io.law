@@ -29,6 +29,7 @@ import java.util.Arrays;
  *   java -jar law-api.jar --job=consolidateJob
  *   java -jar law-api.jar --job=fullJob --doc=loi-2024-15 ✅ (pipeline complet)
  *   java -jar law-api.jar --job=fullJob --doc=loi-2024-15 --force ✅ (retraitement complet)
+ *   java -jar law-api.jar --job=fixJob ✅ (correction et amélioration continue)
  * 
  * Arguments supportés:
  *   --job=<jobName>          : Nom du job à exécuter
@@ -45,6 +46,7 @@ import java.util.Arrays;
  *   - ocrJob                : (tous documents DOWNLOADED)
  *   - consolidateJob        : (tous documents EXTRACTED) ✅
  *   - fullJob               : --doc (OBLIGATOIRE), --force (optionnel) - Pipeline complet ✅
+ *   - fixJob                : (tous documents) - Détection et correction automatique ✅
  * 
  * Note: --force nécessite --doc pour pdfToJsonJob (force + document spécifique)
  */

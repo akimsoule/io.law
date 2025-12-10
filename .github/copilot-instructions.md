@@ -15,8 +15,9 @@ Application Spring Batch pour extraire, traiter et consolider les lois/décrets 
 ### Features & Modules
 
 - **[fullJob](docs/features/fulljob.md)** : Pipeline complet automatique
+- **[fixJob](docs/features/fixjob.md)** : Correction automatique & amélioration continue
 - **[Qualité Séquence](docs/features/sequence-quality.md)** : Pénalité confiance extraction
-- **[Modules](docs/modules/)** : Documentation spécifique (consolidate, json-config)
+- **[Modules](docs/modules/)** : Documentation spécifique (consolidate, json-config, fix)
 
 ---
 
@@ -43,6 +44,7 @@ io.law/
 │   ├── law-json-config/    # Config commune ✅
 │   └── (law-tojson-app)/   # Orchestration (⏳ TODO)
 ├── law-consolidate/     # Consolidation BD ✅
+├── law-fix/             # Correction automatique & amélioration continue ✅
 └── law-app/             # API REST + CLI + orchestration
 ```
 
@@ -219,7 +221,7 @@ logging:
 
 ---
 
-## État Actuel (9 décembre 2025)
+## État Actuel (10 décembre 2025)
 
 ### ✅ Modules Complétés
 
@@ -228,6 +230,7 @@ logging:
 3. **law-download** : 1 job - 26 tests (8 intégration + 18 unitaires)
 4. **law-ocr-json** : Extraction OCR → JSON - 70 tests (69 passent, 1 désactivé)
 5. **law-consolidate** : Import JSON → MySQL - Job consolidateJob opérationnel ✅
+6. **law-fix** : Correction automatique & amélioration continue - Job fixJob opérationnel ✅
 
 ### 📊 Statistiques
 
@@ -250,13 +253,14 @@ logging:
 
 ### 🚀 Prochaines Étapes
 
-1. **Tests law-consolidate** : Tests unitaires + intégration pour ConsolidationService
-2. **Analyser 4 FAILED** : Documents échoués lors de la consolidation
-3. **Améliorer extraction OCR** : Analyser 9 fichiers échouant → Objectif 90%+
-4. **law-tojson-app** : Orchestration OCR → IA (fallback)
-5. **law-app** : API REST + Swagger pour consultation
-6. **Pipeline automatique** : Orchestration complète fetch → consolidate
-7. **Enrichir dictionnaire** : Exploiter `data/word_non_recognize.txt` pour ajouter corrections ciblées
+1. **Tests law-fix** : Tests unitaires + intégration pour FixOrchestrator et services
+2. **Tests law-consolidate** : Tests unitaires + intégration pour ConsolidationService
+3. **Analyser 4 FAILED** : Documents échoués lors de la consolidation (utiliser fixJob)
+4. **Améliorer extraction OCR** : Analyser 9 fichiers échouant → Objectif 90%+ (fixJob détecte automatiquement)
+5. **law-tojson-app** : Orchestration OCR → IA (fallback)
+6. **law-app** : API REST + Swagger pour consultation
+7. **Pipeline automatique** : Orchestration complète fetch → consolidate → fix
+8. **Enrichir dictionnaire** : Exploiter `data/word_non_recognize.txt` identifié par fixJob pour ajouter corrections ciblées
 
 ---
 

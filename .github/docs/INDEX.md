@@ -29,6 +29,7 @@ Documentation des fonctionnalités avancées et pipelines.
 |---------|-------------|--------|
 | **[fulljob.md](features/fulljob.md)** | Pipeline complet automatique (fetch → download → extract → consolidate) | 352 |
 | **[sequence-quality.md](features/sequence-quality.md)** | Pénalité confiance basée sur séquence d'articles | 257 |
+| **[fixjob.md](features/fixjob.md)** | Correction automatique et amélioration continue (fixJob) | 520 |
 
 ---
 
@@ -40,6 +41,7 @@ Documentation spécifique par module.
 |--------|-------------|--------|
 | **[consolidate.md](modules/consolidate.md)** | law-consolidate : Import JSON → MySQL, entités JPA, repositories | 279 |
 | **[json-config.md](modules/json-config.md)** | law-json-config : Job pdfToJsonJob, stratégie fallback IA/OCR | 177 |
+| **[fix.md](modules/fix.md)** | law-fix : Correction automatique et amélioration continue qualité données | 287 |
 
 ---
 

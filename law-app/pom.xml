@@ -35,6 +35,10 @@
         </dependency>
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
+            <artifactId>law-fix</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>bj.gouv.sgg</groupId>
             <artifactId>law-json-config</artifactId>
         </dependency>
         
