@@ -29,7 +29,7 @@ class OcrToJsonIntegrationTest {
         config = new ArticleExtractorConfig();
         config.init();
         
-        extractionService = new ArticleRegexExtractor(config);
+        extractionService = new ArticleRegexExtractor(config, new bj.gouv.sgg.service.UnrecognizedWordsService());
         corrector = new CsvCorrector();
     }
 

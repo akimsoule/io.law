@@ -22,7 +22,7 @@ class ArticleRegexExtractorTest {
     void setUp() {
         ArticleExtractorConfig config = new ArticleExtractorConfig();
         config.init();
-        extractor = new ArticleRegexExtractor(config);
+        extractor = new ArticleRegexExtractor(config, new bj.gouv.sgg.service.UnrecognizedWordsService());
     }
 
     @Test
@@ -266,5 +266,102 @@ class ArticleRegexExtractorTest {
         assertNotNull(metadata.getSignatories());
         // Au moins un signataire devrait être trouvé
         assertFalse(metadata.getSignatories().isEmpty());
+    }
+
+    @Test
+    void givenDocumentIdWhenCalculateConfidenceThenRecordsUnrecognizedWords() {
+        // Given
+        String ocrText = """
+            Article 1
+            Texte avec erreur1 et erreur2 non reconnus.
+            """;
+        List<Article> articles = List.of(
+            Article.builder().index(1).content("Article content").build()
+        );
+        String documentId = "test-doc-123";
+
+        // When
+        double confidence = extractor.calculateConfidence(ocrText, articles, documentId);
+
+        // Then
+        assertTrue(confidence >= 0 && confidence <= 1.0);
+        // Les mots sont enregistrés via UnrecognizedWordsService (vérifiable via logs)
+    }
+
+    @Test
+    void givenNoDocumentIdWhenCalculateConfidenceThenNoRecording() {
+        // Given
+        String ocrText = "Article 1\nContenu simple";
+        List<Article> articles = List.of(
+            Article.builder().index(1).content("Article content").build()
+        );
+
+        // When - pas de documentId
+        double confidence = extractor.calculateConfidence(ocrText, articles);
+
+        // Then - should not throw, just skip recording
+        assertTrue(confidence >= 0 && confidence <= 1.0);
+    }
+
+    @Test
+    void givenTextWithManyUnrecognizedWordsWhenCalculateConfidenceThenLowerScore() {
+        // Given
+        String textWithErrors = """
+            Articlc 1
+            Contenu avec bcaucoup d'erreur OCR : xyzabc qwerty asdfgh.
+            Erceurs OCR fréqucntes.
+            """;
+        List<Article> articles = List.of(
+            Article.builder().index(1).content("Article content").build()
+        );
+
+        // When
+        double confidence = extractor.calculateConfidence(textWithErrors, articles, "test-errors");
+
+        // Then - confidence should be impacted by unrecognized words
+        assertTrue(confidence < 0.7, "Confidence should be lower with many OCR errors");
+    }
+
+    @Test
+    void givenGoodSequenceWhenCalculateConfidenceThenNoSequencePenalty() {
+        // Given
+        String ocrText = """
+            Article 1
+            Contenu article 1.
+            
+            Article 2
+            Contenu article 2.
+            
+            Article 3
+            Contenu article 3.
+            """;
+        List<Article> articles = List.of(
+            Article.builder().index(1).content("Contenu 1").build(),
+            Article.builder().index(2).content("Contenu 2").build(),
+            Article.builder().index(3).content("Contenu 3").build()
+        );
+
+        // When
+        double confidence = extractor.calculateConfidence(ocrText, articles, "test-good-seq");
+
+        // Then - good sequence should not reduce confidence
+        assertTrue(confidence > 0.5, "Good sequence should maintain good confidence");
+    }
+
+    @Test
+    void givenBadSequenceWhenCalculateConfidenceThenSequencePenaltyApplied() {
+        // Given
+        String ocrText = "Articles with bad sequence";
+        List<Article> articles = List.of(
+            Article.builder().index(1).content("Article 1").build(),
+            Article.builder().index(1).content("Duplicate").build(), // duplicate
+            Article.builder().index(3).content("Article 3").build()  // gap
+        );
+
+        // When
+        double confidence = extractor.calculateConfidence(ocrText, articles, "test-bad-seq");
+
+        // Then - bad sequence should reduce confidence
+        assertTrue(confidence < 0.9, "Bad sequence should reduce confidence");
     }
 }

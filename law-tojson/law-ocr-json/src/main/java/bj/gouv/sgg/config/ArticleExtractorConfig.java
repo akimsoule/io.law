@@ -176,6 +176,26 @@ public class ArticleExtractorConfig {
         if (total == 0) return 0.0;
         return (double) unrec / total;
     }
+    
+    /**
+     * Extrait l'ensemble des mots non reconnus par le dictionnaire.
+     * Retourne un Set pour éviter les doublons.
+     * 
+     * @param text Texte OCR à analyser
+     * @return Set des mots non reconnus (minuscules, >= 3 chars)
+     */
+    public java.util.Set<String> getUnrecognizedWords(String text) {
+        java.util.Set<String> unrecognized = new java.util.HashSet<>();
+        if (text == null || text.isEmpty() || frenchDict.isEmpty()) return unrecognized;
+        
+        String[] words = text.toLowerCase().split("[^a-zàâäéèêëïîôùûüÿçœæ]+");
+        for (String w : words) {
+            if (w.length() >= 3 && !frenchDict.contains(w)) {
+                unrecognized.add(w);
+            }
+        }
+        return unrecognized;
+    }
 
     /**
      * Compte les termes juridiques trouvés dans le texte

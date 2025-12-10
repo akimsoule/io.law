@@ -25,7 +25,7 @@ class OcrExtractionServiceTest {
         ArticleExtractorConfig config = new ArticleExtractorConfig();
         config.init();
         
-        ocrExtractionService = new ArticleRegexExtractor(config);
+        ocrExtractionService = new ArticleRegexExtractor(config, new bj.gouv.sgg.service.UnrecognizedWordsService());
         correctOcrText = new CsvCorrector();
     }
 
