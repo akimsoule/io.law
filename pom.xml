@@ -26,6 +26,7 @@
         <module>law-download</module>
         <module>law-tojson</module>
         <module>law-consolidate</module>
+        <module>law-fix</module>
         <module>law-app</module>
     </modules>
 
@@ -71,6 +72,11 @@
             <dependency>
                 <groupId>bj.gouv.sgg</groupId>
                 <artifactId>law-json-config</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>bj.gouv.sgg</groupId>
+                <artifactId>law-fix</artifactId>
                 <version>${revision}</version>
             </dependency>
             
