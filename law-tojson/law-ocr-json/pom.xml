@@ -20,20 +20,17 @@
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
             <artifactId>law-common</artifactId>
-            <version>${revision}</version>
-        </dependency>
-        
-        <!-- Module pdfToOcr pour DownloadedDocumentReader -->
-        <dependency>
-            <groupId>bj.gouv.sgg</groupId>
-            <artifactId>law-pdf-ocr</artifactId>
-            <version>${revision}</version>
         </dependency>
         
         <!-- Gson -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 </project>
