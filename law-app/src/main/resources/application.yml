@@ -6,7 +6,7 @@ spring:
     web-application-type: none
   
   datasource:
-    url: jdbc:mysql://localhost:3306/law_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/law_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${DATABASE_USERNAME:root}
     password: ${DATABASE_PASSWORD:root}
@@ -44,11 +44,11 @@ law:
   end-year: 1960
   max-number-per-year: 2000
   
-  directories:
-    data: /Volumes/FOLDER/dev/projects/io.law/data
-    pdfs: pdfs
-    ocr: ocr
-    articles: articles
+  storage:
+    base-path: /data
+    pdf-dir: pdfs
+    ocr-dir: ocr
+    json-dir: articles
   
   http:
     timeout: 30000
@@ -60,14 +60,24 @@ law:
   
   batch:
     chunk-size: 10
-    max-threads: 0  # Si ≤ 0 : calcul automatique min(10, availableProcessors * 2). Sinon, valeur fixe.
-    max-items-to-fetch-previous: 100
+    max-threads: 8  # 1 thread par vCPU (KVM 8 = 8 vCPU)
+    max-items-to-fetch-previous: 1000  # Augmenté: 500 loi + 500 décret par cycle pour progresser vers années antérieures
+    max-documents-to-extract: 50
+    job-timeout-minutes: 55
   
   capacity:
-    ia: 4
-    ocr: 2
+    ia: 4   # Activé pour Ollama qwen2.5:7b (nécessite ~10GB RAM)
+    ocr: 2  # Score OCR (4GB+)
     ollama-url: http://localhost:11434
-    ollama-models-required: gemma:2b
+    ollama-models-required: qwen2.5:7b
+  
+  groq:
+    api-key: ${GROQ_API_KEY:}
+
+quality:
+  sequence-penalty: enabled   # Pénalité si numérotation des articles non séquentielle
+  dictionary-penalty: enabled # Pénalité progressive via mots non reconnus
+  unrecognized-words-file: data/word_non_recognize.txt
 
 logging:
   level:

@@ -8,6 +8,7 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.ApplicationContext;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -30,6 +31,7 @@ import java.util.Arrays;
  *   java -jar law-api.jar --job=fullJob --doc=loi-2024-15 ✅ (pipeline complet)
  *   java -jar law-api.jar --job=fullJob --doc=loi-2024-15 --force ✅ (retraitement complet)
  *   java -jar law-api.jar --job=fixJob ✅ (correction et amélioration continue)
+ *   java -jar law-api.jar --job=orchestrate ✅ (orchestration continue Ctrl+C pour arrêter)
  * 
  * Arguments supportés:
  *   --job=<jobName>          : Nom du job à exécuter
@@ -47,12 +49,14 @@ import java.util.Arrays;
  *   - consolidateJob        : (tous documents EXTRACTED) ✅
  *   - fullJob               : --doc (OBLIGATOIRE), --force (optionnel) - Pipeline complet ✅
  *   - fixJob                : (tous documents) - Détection et correction automatique ✅
+ *   - orchestrate           : Orchestration continue (arrêt: Ctrl+C) ✅
  * 
  * Note: --force nécessite --doc pour pdfToJsonJob (force + document spécifique)
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@Order(2) // Après OrchestratorRunner
 public class JobCommandLineRunner implements CommandLineRunner {
 
     private static final String JOB_ARG_PREFIX = "--job=";

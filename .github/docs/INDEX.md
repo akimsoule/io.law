@@ -28,8 +28,9 @@ Documentation des fonctionnalités avancées et pipelines.
 | Feature | Description | Lignes |
 |---------|-------------|--------|
 | **[fulljob.md](features/fulljob.md)** | Pipeline complet automatique (fetch → download → extract → consolidate) | 352 |
-| **[sequence-quality.md](features/sequence-quality.md)** | Pénalité confiance basée sur séquence d'articles | 257 |
 | **[fixjob.md](features/fixjob.md)** | Correction automatique et amélioration continue (fixJob) | 520 |
+| **[orchestrate.md](features/orchestrate.md)** | Orchestration continue du pipeline complet (Ctrl+C pour arrêter) | 320 |
+| **[sequence-quality.md](features/sequence-quality.md)** | Pénalité confiance basée sur séquence d'articles | 257 |
 
 ---
 
