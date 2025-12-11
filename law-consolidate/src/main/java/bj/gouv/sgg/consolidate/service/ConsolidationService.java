@@ -83,6 +83,15 @@ public class ConsolidationService {
     private final ConsolidatedMetadataRepository metadataRepository;
     private final ConsolidatedSignatoryRepository signatoryRepository;
     private final Gson gson;
+    
+    // JSON field names constants
+    private static final String FIELD_ARTICLES = "articles";
+    private static final String FIELD_SIGNATORIES = "signatories";
+    private static final String FIELD_TITLE = "title";
+    private static final String FIELD_PROMULGATION_DATE = "promulgationDate";
+    private static final String FIELD_PROMULGATION_CITY = "promulgationCity";
+    private static final String FIELD_MANDATE_START = "mandateStart";
+    private static final String FIELD_MANDATE_END = "mandateEnd";
 
     /**
      * Consolide un document : charge JSON, parse, persiste en BD.
@@ -138,18 +147,18 @@ public class ConsolidationService {
             consolidateMetadata(jsonDoc, document, confidence, source, timestamp);
 
             // 5. Consolider articles
-            JsonArray articles = jsonDoc.getAsJsonArray("articles");
+            JsonArray articles = jsonDoc.getAsJsonArray(FIELD_ARTICLES);
             consolidateArticles(articles, document, confidence, source);
 
             // 6. Consolider signataires (si présents)
-            if (jsonDoc.has("signatories") && !jsonDoc.get("signatories").isJsonNull()) {
-                JsonArray signatories = jsonDoc.getAsJsonArray("signatories");
+            if (jsonDoc.has(FIELD_SIGNATORIES) && !jsonDoc.get(FIELD_SIGNATORIES).isJsonNull()) {
+                JsonArray signatories = jsonDoc.getAsJsonArray(FIELD_SIGNATORIES);
                 consolidateSignatories(signatories, document);
             }
 
             log.info("✅ [{}] Consolidation terminée: {} articles, {} signataires",
                     docId, articles.size(),
-                    jsonDoc.has("signatories") ? jsonDoc.getAsJsonArray("signatories").size() : 0);
+                    jsonDoc.has(FIELD_SIGNATORIES) ? jsonDoc.getAsJsonArray(FIELD_SIGNATORIES).size() : 0);
 
             return true;
 
@@ -182,23 +191,23 @@ public class ConsolidationService {
         metadata.setDocumentNumber(document.getNumber());
 
         // Titre (optionnel)
-        if (jsonDoc.has("title") && !jsonDoc.get("title").isJsonNull()) {
-            metadata.setTitle(jsonDoc.get("title").getAsString());
+        if (jsonDoc.has(FIELD_TITLE) && !jsonDoc.get(FIELD_TITLE).isJsonNull()) {
+            metadata.setTitle(jsonDoc.get(FIELD_TITLE).getAsString());
         }
 
         // Date promulgation (optionnel)
-        if (jsonDoc.has("promulgationDate") && !jsonDoc.get("promulgationDate").isJsonNull()) {
-            metadata.setPromulgationDate(jsonDoc.get("promulgationDate").getAsString());
+        if (jsonDoc.has(FIELD_PROMULGATION_DATE) && !jsonDoc.get(FIELD_PROMULGATION_DATE).isJsonNull()) {
+            metadata.setPromulgationDate(jsonDoc.get(FIELD_PROMULGATION_DATE).getAsString());
         }
 
         // Ville promulgation (optionnel)
-        if (jsonDoc.has("promulgationCity") && !jsonDoc.get("promulgationCity").isJsonNull()) {
-            metadata.setPromulgationCity(jsonDoc.get("promulgationCity").getAsString());
+        if (jsonDoc.has(FIELD_PROMULGATION_CITY) && !jsonDoc.get(FIELD_PROMULGATION_CITY).isJsonNull()) {
+            metadata.setPromulgationCity(jsonDoc.get(FIELD_PROMULGATION_CITY).getAsString());
         }
 
         // Nombre d'articles
-        if (jsonDoc.has("articles") && !jsonDoc.get("articles").isJsonNull()) {
-            metadata.setTotalArticles(jsonDoc.getAsJsonArray("articles").size());
+        if (jsonDoc.has(FIELD_ARTICLES) && !jsonDoc.get(FIELD_ARTICLES).isJsonNull()) {
+            metadata.setTotalArticles(jsonDoc.getAsJsonArray(FIELD_ARTICLES).size());
         }
 
         // URL source
@@ -286,11 +295,11 @@ public class ConsolidationService {
             signatory.setConsolidatedAt(LocalDateTime.now());
 
             // Dates mandat (optionnelles)
-            if (signatoryJson.has("mandateStart") && !signatoryJson.get("mandateStart").isJsonNull()) {
-                signatory.setMandateStart(LocalDate.parse(signatoryJson.get("mandateStart").getAsString()));
+            if (signatoryJson.has(FIELD_MANDATE_START) && !signatoryJson.get(FIELD_MANDATE_START).isJsonNull()) {
+                signatory.setMandateStart(LocalDate.parse(signatoryJson.get(FIELD_MANDATE_START).getAsString()));
             }
-            if (signatoryJson.has("mandateEnd") && !signatoryJson.get("mandateEnd").isJsonNull()) {
-                signatory.setMandateEnd(LocalDate.parse(signatoryJson.get("mandateEnd").getAsString()));
+            if (signatoryJson.has(FIELD_MANDATE_END) && !signatoryJson.get(FIELD_MANDATE_END).isJsonNull()) {
+                signatory.setMandateEnd(LocalDate.parse(signatoryJson.get(FIELD_MANDATE_END).getAsString()));
             }
 
             consolidatedSignatories.add(signatory);
