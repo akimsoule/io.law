@@ -45,7 +45,7 @@ law:
   max-number-per-year: 2000
   
   storage:
-    base-path: /data
+    base-path: data
     pdf-dir: pdfs
     ocr-dir: ocr
     json-dir: articles

@@ -1,8 +1,8 @@
 #!/bin/bash
-# Synchronise les données depuis le serveur Hostinger vers localhost
+# Synchronise les données depuis le serveur vers localhost
 
 SERVER_USER="root"
-SERVER_HOST=""  # À remplir: IP du serveur Hostinger
+SERVER_HOST=""  # À remplir: IP du serveur
 SERVER_PATH="~/io.law"  # Chemin du projet sur le serveur (configuré par setup-server.sh)
 LOCAL_PATH="/Volumes/FOLDER/dev/projects/io.law"
 
@@ -15,16 +15,17 @@ fi
 echo "🔄 Sync serveur → localhost"
 echo ""
 
-# MySQL
-echo "📊 MySQL..."
-ssh ${SERVER_USER}@${SERVER_HOST} "cd ${SERVER_PATH}/scripts_deploy && docker exec law-mysql mysqldump -u root -plaw_password law_db" | \
-  docker exec -i law-mysql mysql -u root -plaw_password law_db
-echo "✅ Base synchronisée"
+# MySQL dump
+echo "📊 Export MySQL..."
+DUMP_FILE="law_db_$(date +%Y%m%d_%H%M%S).sql"
+ssh ${SERVER_USER}@${SERVER_HOST} "mysqldump -u root -proot law_db > ${SERVER_PATH}/data/${DUMP_FILE}"
+echo "✅ Dump créé sur le serveur: ${DUMP_FILE}"
 
-# Fichiers
-echo "📁 Fichiers..."
+# Fichiers + MySQL dump
+echo "📁 Téléchargement complet..."
 rsync -avz --progress ${SERVER_USER}@${SERVER_HOST}:${SERVER_PATH}/data/ "$LOCAL_PATH/data/"
-echo "✅ Fichiers synchronisés"
+echo "✅ Données synchronisées"
 
 echo ""
+echo "💾 Dump MySQL disponible: data/${DUMP_FILE}"
 echo "✅ Terminé"
