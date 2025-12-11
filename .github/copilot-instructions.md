@@ -16,6 +16,7 @@ Application Spring Batch pour extraire, traiter et consolider les lois/décrets 
 
 - **[fullJob](docs/features/fulljob.md)** : Pipeline complet automatique
 - **[fixJob](docs/features/fixjob.md)** : Correction automatique & amélioration continue
+- **[orchestrate](docs/features/orchestrate.md)** : Orchestration continue (Ctrl+C pour arrêter)
 - **[Qualité Séquence](docs/features/sequence-quality.md)** : Pénalité confiance extraction
 - **[Modules](docs/modules/)** : Documentation spécifique (consolidate, json-config, fix)
 
@@ -196,7 +197,7 @@ public String getDocumentId() {
 Jobs  : suffixe "Job" → fetchCurrentJob, downloadJob, ocrJob
 Steps : suffixe "Step" → fetchCurrentStep, downloadStep
 ```
-    max-threads: 10
+    max-threads: 4
     max-documents-to-extract: 50
     job-timeout-minutes: 55
   

@@ -38,7 +38,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         
         <!-- Versions des dépendances -->
-        <lombok.version>edge-SNAPSHOT</lombok.version>
+        <lombok.version>1.18.30</lombok.version>
         <jacoco.version>0.8.13</jacoco.version>
         <bytebuddy.version>1.15.11</bytebuddy.version>
         <httpclient5.version>5.3</httpclient5.version>
