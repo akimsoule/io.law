@@ -47,6 +47,7 @@ public class PipelineOrchestrator {
     private static final long CYCLE_DELAY_MS = 60_000; // 1 minute entre cycles
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private static final String SEPARATOR = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
 
     /**
      * Démarre l'orchestration continue.
@@ -54,13 +55,13 @@ public class PipelineOrchestrator {
      */
     public void startContinuousOrchestration() {
         if (running.compareAndSet(false, true)) {
-            log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            log.info(SEPARATOR);
             log.info("🚀 DÉMARRAGE ORCHESTRATION CONTINUE");
-            log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            log.info(SEPARATOR);
             log.info("📋 Pipeline: fetchCurrent → fetchPrevious → download → extract → consolidate → fix");
             log.info("🔄 Mode: Continu (arrêt: Ctrl+C)");
             log.info("⏱️  Délai entre cycles: {}ms", CYCLE_DELAY_MS);
-            log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+            log.info(SEPARATOR);
 
             // Hook pour arrêt propre
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -105,9 +106,9 @@ public class PipelineOrchestrator {
         String timestamp = LocalDateTime.now().format(FORMATTER);
         
         log.info("");
-        log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        log.info(SEPARATOR);
         log.info("🔄 CYCLE #{} - {}", cycle, timestamp);
-        log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        log.info(SEPARATOR);
 
         boolean success = true;
 
@@ -154,7 +155,7 @@ public class PipelineOrchestrator {
             log.warn("⚠️ Cycle #{} terminé avec erreurs (voir logs ci-dessus)", cycle);
         }
         
-        log.info("━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━");
+        log.info(SEPARATOR);
     }
 
     /**

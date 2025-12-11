@@ -58,7 +58,7 @@ public class ArticleRegexExtractor implements OcrExtractionService {
                     
                     if (isValidSequence) {
                         // Sauvegarder l'article précédent
-                        if (inArticle && currentArticle.length() > 0) {
+                        if (inArticle && !currentArticle.isEmpty()) {
                             saveArticle(articles, index, currentArticle);
                             currentArticle.setLength(0);
                         }
