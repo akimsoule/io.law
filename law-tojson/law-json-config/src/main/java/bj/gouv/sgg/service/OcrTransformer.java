@@ -75,13 +75,7 @@ public class OcrTransformer {
             log.debug("📄 [{}] OCR text extracted: {} chars", docId, ocrText.length());
             
             // Sauvegarder le texte OCR brut
-            try {
-                fileStorageService.saveOcr(document.getType(), docId, ocrText);
-                log.info("💾 [{}] OCR text saved: {} chars", docId, ocrText.length());
-            } catch (IOException e) {
-                log.warn("⚠️ [{}] Failed to save OCR text: {}", docId, e.getMessage());
-                // Continue processing même si sauvegarde OCR échoue
-            }
+            saveOcrText(document.getType(), docId, ocrText);
             
             // 2. Extraire articles via regex
             List<Article> articles = articleRegexExtractor.extractArticles(ocrText);
@@ -98,17 +92,7 @@ public class OcrTransformer {
             log.info("🎯 [{}] Confidence calculated: {}", docId, confidence);
 
             // 4.b Statistiques d'occurrences des mots non reconnus (top 10)
-            try {
-                var unrec = articleExtractorConfig.getUnrecognizedWords(ocrText);
-                var topStats = topUnrecognizedStats(ocrText, unrec, 10);
-                if (!topStats.isEmpty()) {
-                    log.info("📊 [{}] Top unrecognized words (word=count): {}", docId, topStats);
-                } else {
-                    log.info("📊 [{}] No unrecognized words found in OCR text", docId);
-                }
-            } catch (Exception statsEx) {
-                log.warn("⚠️ [{}] Failed to compute unrecognized word stats: {}", docId, statsEx.getMessage());
-            }
+            logUnrecognizedWordsStats(ocrText, docId);
             
             // 5. Construire JSON
             String json = buildJson(document, articles, metadata, confidence);
@@ -247,5 +231,35 @@ public class OcrTransformer {
             sb.append(e.getKey()).append("=").append(e.getValue());
         }
         return sb.toString();
+    }
+    
+    /**
+     * Sauvegarde le texte OCR brut sur disque.
+     */
+    private void saveOcrText(String documentType, String docId, String ocrText) {
+        try {
+            fileStorageService.saveOcr(documentType, docId, ocrText);
+            log.info("💾 [{}] OCR text saved: {} chars", docId, ocrText.length());
+        } catch (IOException e) {
+            log.warn("⚠️ [{}] Failed to save OCR text: {}", docId, e.getMessage());
+            // Continue processing même si sauvegarde OCR échoue
+        }
+    }
+    
+    /**
+     * Log les statistiques des mots non reconnus (top 10).
+     */
+    private void logUnrecognizedWordsStats(String ocrText, String docId) {
+        try {
+            var unrec = articleExtractorConfig.getUnrecognizedWords(ocrText);
+            var topStats = topUnrecognizedStats(ocrText, unrec, 10);
+            if (!topStats.isEmpty()) {
+                log.info("📊 [{}] Top unrecognized words (word=count): {}", docId, topStats);
+            } else {
+                log.info("📊 [{}] No unrecognized words found in OCR text", docId);
+            }
+        } catch (Exception statsEx) {
+            log.warn("⚠️ [{}] Failed to compute unrecognized word stats: {}", docId, statsEx.getMessage());
+        }
     }
 }

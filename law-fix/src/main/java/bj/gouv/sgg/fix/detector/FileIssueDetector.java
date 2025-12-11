@@ -29,11 +29,11 @@ public class FileIssueDetector {
         String docId = document.getDocumentId();
         
         // Vérifier PDF manquant
-        if (document.getStatus() == LawDocument.ProcessingStatus.DOWNLOADED ||
+        if ((document.getStatus() == LawDocument.ProcessingStatus.DOWNLOADED ||
             document.getStatus() == LawDocument.ProcessingStatus.EXTRACTED ||
-            document.getStatus() == LawDocument.ProcessingStatus.CONSOLIDATED) {
-            
-            if (!fileStorageService.pdfExists(document.getType(), docId)) {
+            document.getStatus() == LawDocument.ProcessingStatus.CONSOLIDATED) &&
+            !fileStorageService.pdfExists(document.getType(), docId)) {
+            {
                 issues.add(Issue.builder()
                     .documentId(docId)
                     .type(Issue.IssueType.MISSING_PDF)
@@ -47,13 +47,12 @@ public class FileIssueDetector {
                 
                 log.warn("🔴 [{}] PDF manquant (status={})", docId, document.getStatus());
             }
-        }
         
         // Vérifier OCR manquant
-        if (document.getStatus() == LawDocument.ProcessingStatus.EXTRACTED ||
-            document.getStatus() == LawDocument.ProcessingStatus.CONSOLIDATED) {
-            
-            if (!fileStorageService.ocrExists(document.getType(), docId)) {
+        if ((document.getStatus() == LawDocument.ProcessingStatus.EXTRACTED ||
+            document.getStatus() == LawDocument.ProcessingStatus.CONSOLIDATED) &&
+            !fileStorageService.ocrExists(document.getType(), docId)) {
+            {
                 issues.add(Issue.builder()
                     .documentId(docId)
                     .type(Issue.IssueType.MISSING_OCR)
@@ -67,13 +66,12 @@ public class FileIssueDetector {
                 
                 log.warn("⚠️  [{}] OCR manquant (status={})", docId, document.getStatus());
             }
-        }
         
         // Vérifier JSON manquant
-        if (document.getStatus() == LawDocument.ProcessingStatus.EXTRACTED ||
-            document.getStatus() == LawDocument.ProcessingStatus.CONSOLIDATED) {
-            
-            if (!fileStorageService.jsonExists(document.getType(), docId)) {
+        if ((document.getStatus() == LawDocument.ProcessingStatus.EXTRACTED ||
+            document.getStatus() == LawDocument.ProcessingStatus.CONSOLIDATED) &&
+            !fileStorageService.jsonExists(document.getType(), docId)) {
+            {
                 issues.add(Issue.builder()
                     .documentId(docId)
                     .type(Issue.IssueType.MISSING_JSON)
@@ -87,7 +85,6 @@ public class FileIssueDetector {
                 
                 log.warn("🔴 [{}] JSON manquant (status={})", docId, document.getStatus());
             }
-        }
         
         return issues;
     }

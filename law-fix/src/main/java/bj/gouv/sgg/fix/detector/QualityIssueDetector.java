@@ -52,98 +52,111 @@ public class QualityIssueDetector {
             String jsonContent = Files.readString(jsonPath);
             JsonObject json = gson.fromJson(jsonContent, JsonObject.class);
             
-            // Vérifier la confiance
             if (json.has("_metadata")) {
                 JsonObject metadata = json.getAsJsonObject("_metadata");
-                
-                if (metadata.has("confidence")) {
-                    double confidence = metadata.get("confidence").getAsDouble();
-                    
-                    if (confidence < LOW_CONFIDENCE_THRESHOLD) {
-                        issues.add(Issue.builder()
-                            .documentId(docId)
-                            .type(Issue.IssueType.LOW_CONFIDENCE)
-                            .severity(Issue.IssueSeverity.HIGH)
-                            .description(String.format("Confiance très faible: %.2f (seuil: %.2f)", 
-                                confidence, LOW_CONFIDENCE_THRESHOLD))
-                            .currentStatus(document.getStatus().name())
-                            .suggestedAction("Re-extraire avec force ou vérifier corrections OCR")
-                            .detectedAt(LocalDateTime.now())
-                            .autoFixable(true)
-                            .build());
-                        
-                        log.warn("⚠️  [{}] Confiance faible: {}", docId, confidence);
-                    }
-                }
-                
-                // Vérifier les problèmes de séquence
-                if (metadata.has("sequenceIssues")) {
-                    JsonObject sequenceIssues = metadata.getAsJsonObject("sequenceIssues");
-                    int totalIssues = sequenceIssues.get("gaps").getAsInt() +
-                                     sequenceIssues.get("duplicates").getAsInt() +
-                                     sequenceIssues.get("outOfOrder").getAsInt();
-                    
-                    if (totalIssues > 0) {
-                        issues.add(Issue.builder()
-                            .documentId(docId)
-                            .type(Issue.IssueType.SEQUENCE_ISSUES)
-                            .severity(Issue.IssueSeverity.MEDIUM)
-                            .description(String.format("Problèmes séquence: %d gaps, %d duplicates, %d inversions",
-                                sequenceIssues.get("gaps").getAsInt(),
-                                sequenceIssues.get("duplicates").getAsInt(),
-                                sequenceIssues.get("outOfOrder").getAsInt()))
-                            .currentStatus(document.getStatus().name())
-                            .suggestedAction("Vérifier OCR et ajouter corrections CSV")
-                            .detectedAt(LocalDateTime.now())
-                            .autoFixable(true)
-                            .build());
-                        
-                        log.warn("⚠️  [{}] Problèmes de séquence détectés: {}", docId, totalIssues);
-                    }
-                }
-                
-                // Vérifier taux de mots non reconnus
-                if (metadata.has("unrecognizedWordsRate")) {
-                    double rate = metadata.get("unrecognizedWordsRate").getAsDouble();
-                    
-                    if (rate > HIGH_UNRECOGNIZED_RATE_THRESHOLD) {
-                        issues.add(Issue.builder()
-                            .documentId(docId)
-                            .type(Issue.IssueType.HIGH_UNRECOGNIZED_WORDS)
-                            .severity(Issue.IssueSeverity.MEDIUM)
-                            .description(String.format("Taux mots non reconnus élevé: %.1f%% (seuil: %.1f%%)",
-                                rate * 100, HIGH_UNRECOGNIZED_RATE_THRESHOLD * 100))
-                            .currentStatus(document.getStatus().name())
-                            .suggestedAction("Ajouter corrections OCR depuis data/word_non_recognize.txt")
-                            .detectedAt(LocalDateTime.now())
-                            .autoFixable(true)
-                            .build());
-                        
-                        log.warn("⚠️  [{}] Taux mots non reconnus élevé: {:.1f}%", docId, rate * 100);
-                    }
-                }
+                checkConfidence(issues, docId, metadata, document.getStatus().name());
+                checkSequenceIssues(issues, docId, metadata, document.getStatus().name());
+                checkUnrecognizedWords(issues, docId, metadata, document.getStatus().name());
             }
             
-            // Vérifier si articles présents
-            if (!json.has("articles") || json.getAsJsonArray("articles").isEmpty()) {
-                issues.add(Issue.builder()
-                    .documentId(docId)
-                    .type(Issue.IssueType.MISSING_ARTICLES)
-                    .severity(Issue.IssueSeverity.CRITICAL)
-                    .description("Aucun article extrait dans le JSON")
-                    .currentStatus(document.getStatus().name())
-                    .suggestedAction("Re-extraire avec amélioration patterns ou corrections OCR")
-                    .detectedAt(LocalDateTime.now())
-                    .autoFixable(true)
-                    .build());
-                
-                log.error("🔴 [{}] Aucun article extrait", docId);
-            }
+            checkMissingArticles(issues, docId, json, document.getStatus().name());
             
         } catch (Exception e) {
             log.error("❌ [{}] Erreur lecture JSON qualité: {}", docId, e.getMessage());
         }
         
         return issues;
+    }
+    
+    private void checkConfidence(List<Issue> issues, String docId, JsonObject metadata, String status) {
+        if (!metadata.has("confidence")) {
+            return;
+        }
+        
+        double confidence = metadata.get("confidence").getAsDouble();
+        if (confidence < LOW_CONFIDENCE_THRESHOLD) {
+            issues.add(Issue.builder()
+                .documentId(docId)
+                .type(Issue.IssueType.LOW_CONFIDENCE)
+                .severity(Issue.IssueSeverity.HIGH)
+                .description(String.format("Confiance très faible: %.2f (seuil: %.2f)", 
+                    confidence, LOW_CONFIDENCE_THRESHOLD))
+                .currentStatus(status)
+                .suggestedAction("Re-extraire avec force ou vérifier corrections OCR")
+                .detectedAt(LocalDateTime.now())
+                .autoFixable(true)
+                .build());
+            
+            log.warn("⚠️  [{}] Confiance faible: {}", docId, confidence);
+        }
+    }
+    
+    private void checkSequenceIssues(List<Issue> issues, String docId, JsonObject metadata, String status) {
+        if (!metadata.has("sequenceIssues")) {
+            return;
+        }
+        
+        JsonObject sequenceIssues = metadata.getAsJsonObject("sequenceIssues");
+        int totalIssues = sequenceIssues.get("gaps").getAsInt() +
+                         sequenceIssues.get("duplicates").getAsInt() +
+                         sequenceIssues.get("outOfOrder").getAsInt();
+        
+        if (totalIssues > 0) {
+            issues.add(Issue.builder()
+                .documentId(docId)
+                .type(Issue.IssueType.SEQUENCE_ISSUES)
+                .severity(Issue.IssueSeverity.MEDIUM)
+                .description(String.format("Problèmes séquence: %d gaps, %d duplicates, %d inversions",
+                    sequenceIssues.get("gaps").getAsInt(),
+                    sequenceIssues.get("duplicates").getAsInt(),
+                    sequenceIssues.get("outOfOrder").getAsInt()))
+                .currentStatus(status)
+                .suggestedAction("Vérifier OCR et ajouter corrections CSV")
+                .detectedAt(LocalDateTime.now())
+                .autoFixable(true)
+                .build());
+            
+            log.warn("⚠️  [{}] Problèmes de séquence détectés: {}", docId, totalIssues);
+        }
+    }
+    
+    private void checkUnrecognizedWords(List<Issue> issues, String docId, JsonObject metadata, String status) {
+        if (!metadata.has("unrecognizedWordsRate")) {
+            return;
+        }
+        
+        double rate = metadata.get("unrecognizedWordsRate").getAsDouble();
+        if (rate > HIGH_UNRECOGNIZED_RATE_THRESHOLD) {
+            issues.add(Issue.builder()
+                .documentId(docId)
+                .type(Issue.IssueType.HIGH_UNRECOGNIZED_WORDS)
+                .severity(Issue.IssueSeverity.MEDIUM)
+                .description(String.format("Taux mots non reconnus élevé: %.1f%% (seuil: %.1f%%)",
+                    rate * 100, HIGH_UNRECOGNIZED_RATE_THRESHOLD * 100))
+                .currentStatus(status)
+                .suggestedAction("Ajouter corrections OCR depuis data/word_non_recognize.txt")
+                .detectedAt(LocalDateTime.now())
+                .autoFixable(true)
+                .build());
+            
+            log.warn("⚠️  [{}] Taux mots non reconnus élevé: {:.1f}%", docId, rate * 100);
+        }
+    }
+    
+    private void checkMissingArticles(List<Issue> issues, String docId, JsonObject json, String status) {
+        if (!json.has("articles") || json.getAsJsonArray("articles").isEmpty()) {
+            issues.add(Issue.builder()
+                .documentId(docId)
+                .type(Issue.IssueType.MISSING_ARTICLES)
+                .severity(Issue.IssueSeverity.CRITICAL)
+                .description("Aucun article extrait dans le JSON")
+                .currentStatus(status)
+                .suggestedAction("Re-extraire avec amélioration patterns ou corrections OCR")
+                .detectedAt(LocalDateTime.now())
+                .autoFixable(true)
+                .build());
+            
+            log.error("🔴 [{}] Aucun article extrait", docId);
+        }
     }
 }

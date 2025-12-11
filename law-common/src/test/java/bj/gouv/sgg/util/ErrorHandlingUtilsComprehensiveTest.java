@@ -224,6 +224,7 @@ class ErrorHandlingUtilsComprehensiveTest {
     }
 
     @Test
+    @SuppressWarnings("null")
     void givenNullPointerException_whenExecuteVoidSafely_thenReturnsFalse() {
         // Given
         Runnable nullPointerOperation = () -> {

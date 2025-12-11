@@ -244,13 +244,15 @@ class OcrIntegrationTest {
     @Test
     void givenNullInputsWhenPerformOcrThenThrowsException() throws IOException {
         // Given: Entrées null (PDF ou output null)
+        File outputFile = tempDir.resolve("out.txt").toFile();
         assertThrows(NullPointerException.class,
-                () -> ocrService.performOcr(null, tempDir.resolve("out.txt").toFile()),
+                () -> ocrService.performOcr(null, outputFile),
                 "PDF null devrait lever NullPointerException");
         
         // Null output - L'implémentation wrappe dans FileOperationException via ErrorHandlingUtils
         File validPdf = createSimpleTextPdf("test");
-        assertThrows(FileOperationException.class, () -> ocrService.performOcr(validPdf, null),
+        assertThrows(FileOperationException.class,
+                () -> ocrService.performOcr(validPdf, null),
                 "Output null devrait lever FileOperationException (wrappée par ErrorHandlingUtils)");
     }
     
@@ -261,7 +263,8 @@ class OcrIntegrationTest {
         File ocrOutput = tempDir.resolve("output.txt").toFile();
         
         // L'implémentation wrappe les erreurs I/O dans FileOperationException
-        assertThrows(FileOperationException.class, () -> ocrService.performOcr(nonExistentPdf, ocrOutput),
+        assertThrows(FileOperationException.class,
+                () -> ocrService.performOcr(nonExistentPdf, ocrOutput),
                 "PDF inexistant devrait lever FileOperationException");
     }
     

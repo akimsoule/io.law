@@ -1,6 +1,9 @@
 package bj.gouv.sgg.util;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.LocalDate;
 
@@ -11,69 +14,43 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class DateParsingUtilTest {
 
-    @Test
-    void givenValidFrenchDate_whenFormatDate_thenReturnsIsoFormat() {
-        // Given
-        String day = "15";
-        String month = "janvier";
-        String year = "2024";
-
+    @ParameterizedTest
+    @CsvSource({
+        "15, janvier, 2024, 2024-01-15",
+        "28, fevrier, 2024, 2024-02-28",
+        "15, août, 2024, 2024-08-15",
+        "31, décembre, 2024, 2024-12-31",
+        "15, JANVIER, 2024, 2024-01-15",
+        "1, janvier, 2024, 2024-01-01",
+        "1, février, 2024, 2024-02-01",
+        "1, mars, 2024, 2024-03-01",
+        "1, avril, 2024, 2024-04-01",
+        "1, mai, 2024, 2024-05-01",
+        "1, juin, 2024, 2024-06-01",
+        "1, juillet, 2024, 2024-07-01",
+        "1, août, 2024, 2024-08-01",
+        "1, septembre, 2024, 2024-09-01",
+        "1, octobre, 2024, 2024-10-01",
+        "1, novembre, 2024, 2024-11-01",
+        "1, décembre, 2024, 2024-12-01",
+        "29, février, 2024, 2024-02-29"
+    })
+    void givenValidFrenchDate_whenFormatDate_thenReturnsIsoFormat(String day, String month, String year, String expected) {
         // When
         String result = DateParsingUtil.formatDate(day, month, year);
 
         // Then
-        assertThat(result).isEqualTo("2024-01-15");
+        assertThat(result).isEqualTo(expected);
     }
 
-    @Test
-    void givenAccentlessFrenchMonth_whenFormatDate_thenReturnsIsoFormat() {
-        // Given
-        String day = "28";
-        String month = "fevrier";  // Sans accent
-        String year = "2024";
-
-        // When
-        String result = DateParsingUtil.formatDate(day, month, year);
-
-        // Then
-        assertThat(result).isEqualTo("2024-02-28");
-    }
-
-    @Test
-    void givenAccentedFrenchMonth_whenFormatDate_thenReturnsIsoFormat() {
-        // Given
-        String day = "15";
-        String month = "août";  // Avec accent
-        String year = "2024";
-
-        // When
-        String result = DateParsingUtil.formatDate(day, month, year);
-
-        // Then
-        assertThat(result).isEqualTo("2024-08-15");
-    }
-
-    @Test
-    void givenDecember_whenFormatDate_thenReturnsIsoFormat() {
-        // Given
-        String day = "31";
-        String month = "décembre";
-        String year = "2024";
-
-        // When
-        String result = DateParsingUtil.formatDate(day, month, year);
-
-        // Then
-        assertThat(result).isEqualTo("2024-12-31");
-    }
-
-    @Test
-    void givenUnknownMonth_whenFormatDate_thenReturnsNull() {
-        // Given
-        String day = "15";
-        String month = "invalid";
-        String year = "2024";
-
+    @ParameterizedTest
+    @CsvSource({
+        "15, invalid, 2024",
+        "32, janvier, 2024",
+        "15, janvier, invalid",
+        "29, février, 2023"
+    })
+    void givenInvalidDate_whenFormatDate_thenReturnsNull(String day, String month, String year) {
         // When
         String result = DateParsingUtil.formatDate(day, month, year);
 
@@ -89,61 +66,23 @@ class DateParsingUtilTest {
         assertThat(DateParsingUtil.formatDate("15", "janvier", null)).isNull();
     }
 
-    @Test
-    void givenInvalidDay_whenFormatDate_thenReturnsNull() {
-        // Given
-        String day = "32";  // Invalid day
-        String month = "janvier";
-        String year = "2024";
-
-        // When
-        String result = DateParsingUtil.formatDate(day, month, year);
-
-        // Then
-        assertThat(result).isNull();
-    }
-
-    @Test
-    void givenInvalidYear_whenFormatDate_thenReturnsNull() {
-        // Given
-        String day = "15";
-        String month = "janvier";
-        String year = "invalid";
-
-        // When
-        String result = DateParsingUtil.formatDate(day, month, year);
-
-        // Then
-        assertThat(result).isNull();
-    }
-
-    @Test
-    void givenUppercaseMonth_whenFormatDate_thenHandlesCaseInsensitively() {
-        // Given
-        String day = "15";
-        String month = "JANVIER";  // Uppercase
-        String year = "2024";
-
-        // When
-        String result = DateParsingUtil.formatDate(day, month, year);
-
-        // Then
-        assertThat(result).isEqualTo("2024-01-15");
-    }
-
-    @Test
-    void givenValidIsoDate_whenParseDate_thenReturnsLocalDate() {
-        // Given
-        String dateStr = "2024-01-15";
-
+    @ParameterizedTest
+    @CsvSource({
+        "2024-01-15, 2024, 1, 15",
+        "  2024-01-15  , 2024, 1, 15"
+    })
+    void givenValidIsoDate_whenParseDate_thenReturnsLocalDate(String dateStr, int expectedYear, int expectedMonth, int expectedDay) {
         // When
         LocalDate result = DateParsingUtil.parseDate(dateStr);
 
         // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getYear()).isEqualTo(2024);
-        assertThat(result.getMonthValue()).isEqualTo(1);
-        assertThat(result.getDayOfMonth()).isEqualTo(15);
+        assertThat(result)
+            .isNotNull()
+            .satisfies(date -> {
+                assertThat(date.getYear()).isEqualTo(expectedYear);
+                assertThat(date.getMonthValue()).isEqualTo(expectedMonth);
+                assertThat(date.getDayOfMonth()).isEqualTo(expectedDay);
+            });
     }
 
     @Test
@@ -173,20 +112,15 @@ class DateParsingUtilTest {
         LocalDate result = DateParsingUtil.parseDate(dateStr);
 
         // Then
-        assertThat(result).isNotNull();
-        assertThat(result.getYear()).isEqualTo(2024);
+        assertThat(result)
+            .isNotNull()
+            .hasYear(2024);
     }
 
-    @Test
-    void givenInvalidFormat_whenParseDate_thenReturnsNull() {
-        // Given
-        String dateStr = "15/01/2024";  // Wrong format
-
-        // When
-        LocalDate result = DateParsingUtil.parseDate(dateStr);
-
-        // Then
-        assertThat(result).isNull();
+    @ParameterizedTest
+    @ValueSource(strings = {"15/01/2024", "invalid-date", "2024-13-01", "2024-01-32"})
+    void givenInvalidDateFormat_whenParseDate_thenReturnsNull(String dateStr) {
+        assertThat(DateParsingUtil.parseDate(dateStr)).isNull();
     }
 
     @Test
@@ -199,8 +133,9 @@ class DateParsingUtilTest {
         LocalDate result = DateParsingUtil.parseDate(parts, index);
 
         // Then
-        assertThat(result).isNotNull();
-        assertThat(result).isEqualTo(LocalDate.of(2024, 1, 15));
+        assertThat(result)
+            .isNotNull()
+            .isEqualTo(LocalDate.of(2024, 1, 15));
     }
 
     @Test
