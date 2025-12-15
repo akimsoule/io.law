@@ -1,7 +1,6 @@
 package bj.gouv.sgg.util;
 
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.Random;
@@ -16,7 +15,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * - Retry avec délais progressifs
  */
 @Slf4j
-@Component
 public class RateLimitHandler {
     
     // Compteurs pour statistiques

@@ -5,13 +5,18 @@ import bj.gouv.sgg.model.DocumentRecord;
 import bj.gouv.sgg.model.ProcessingStatus;
 import bj.gouv.sgg.service.DocumentService;
 import bj.gouv.sgg.service.FileStorageService;
-import bj.gouv.sgg.service.PdfDownloadService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.security.MessageDigest;
+import java.time.Duration;
+import java.util.HexFormat;
 import java.util.List;
 import java.util.concurrent.*;
 
@@ -25,14 +30,17 @@ public class DownloadJob {
     private final AppConfig config;
     private final DocumentService documentService;
     private final FileStorageService fileStorageService;
-    private final PdfDownloadService pdfDownloadService;
+    private final HttpClient httpClient;
     private final ExecutorService executor;
     
     public DownloadJob() {
         this.config = AppConfig.get();
         this.documentService = new DocumentService();
         this.fileStorageService = new FileStorageService();
-        this.pdfDownloadService = new PdfDownloadService();
+        this.httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofMillis(config.getHttpTimeout()))
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
         this.executor = Executors.newFixedThreadPool(config.getMaxThreads());
     }
     
@@ -77,6 +85,9 @@ public class DownloadJob {
     }
     
     private DocumentRecord downloadDocument(DocumentRecord doc) {
+        String url = String.format("%s/%s-%d-%d", 
+            config.getBaseUrl(), doc.getType(), doc.getYear(), doc.getNumber());
+        
         try {
             // Vérifier si déjà téléchargé
             Path pdfPath = fileStorageService.pdfPath(doc.getType(), doc.getDocumentId());
@@ -87,30 +98,43 @@ public class DownloadJob {
                 return doc;
             }
             
-            // Télécharger via service
-            String sha256 = pdfDownloadService.downloadPdf(
-                doc.getType(), 
-                doc.getYear(), 
-                doc.getNumber(), 
-                pdfPath
-            );
+            // Télécharger
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .GET()
+                .header("User-Agent", config.getUserAgent())
+                .timeout(Duration.ofMillis(config.getHttpTimeout()))
+                .build();
             
-            // Valider format PDF
-            if (!pdfDownloadService.validatePdfFormat(pdfPath)) {
-                log.warn("⚠️ Invalid PDF format: {}", doc.getDocumentId());
-                Files.deleteIfExists(pdfPath);
+            HttpResponse<byte[]> response = httpClient.send(request, 
+                HttpResponse.BodyHandlers.ofByteArray());
+            
+            if (response.statusCode() == 200) {
+                byte[] data = response.body();
+                
+                // Calculer SHA-256
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                byte[] hash = digest.digest(data);
+                String sha256 = HexFormat.of().formatHex(hash);
+                
+                // Sauvegarder
+                Files.createDirectories(pdfPath.getParent());
+                Files.write(pdfPath, data);
+                
+                doc.setStatus(ProcessingStatus.DOWNLOADED);
+                doc.setPdfPath(pdfPath.toString());
+                
+                log.info("✅ Downloaded: {} ({})", doc.getDocumentId(), sha256.substring(0, 8));
+                return doc;
+                
+            } else {
+                log.warn("❌ Failed to download {} : HTTP {}", doc.getDocumentId(), response.statusCode());
                 doc.setStatus(ProcessingStatus.FAILED);
-                doc.setErrorMessage("Invalid PDF format");
+                doc.setErrorMessage("HTTP " + response.statusCode());
                 return doc;
             }
             
-            doc.setStatus(ProcessingStatus.DOWNLOADED);
-            doc.setPdfPath(pdfPath.toString());
-            
-            log.info("✅ Downloaded: {} ({})", doc.getDocumentId(), sha256.substring(0, 8));
-            return doc;
-            
-        } catch (IOException e) {
+        } catch (Exception e) {
             log.error("❌ Error downloading {}: {}", doc.getDocumentId(), e.getMessage());
             doc.setStatus(ProcessingStatus.FAILED);
             doc.setErrorMessage(e.getMessage());
