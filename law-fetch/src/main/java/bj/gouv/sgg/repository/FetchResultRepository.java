@@ -25,6 +25,14 @@ public interface FetchResultRepository extends JpaRepository<FetchResult, Long> 
     boolean existsByDocumentId(String documentId);
     
     /**
+     * Vérifie si un document a été définitivement traité (exclut RATE_LIMITED qui doivent être repris)
+     * @param documentId ID du document
+     * @return true si le document existe ET n'est pas RATE_LIMITED
+     */
+    @Query("SELECT CASE WHEN COUNT(f) > 0 THEN true ELSE false END FROM FetchResult f WHERE f.documentId = :documentId AND f.status != 'RATE_LIMITED'")
+    boolean existsByDocumentIdAndNotRateLimited(@org.springframework.data.repository.query.Param("documentId") String documentId);
+    
+    /**
      * Supprime un document par son documentId (mode force)
      * @Transactional géré par le caller
      */

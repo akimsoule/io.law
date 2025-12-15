@@ -25,6 +25,10 @@ spring:
       initialize-schema: always
     job:
       enabled: false
+  
+  # Désactiver l'auto-exécution des jobs au démarrage de l'app de test
+  autoconfigure:
+    exclude: org.springframework.boot.autoconfigure.batch.JobLauncherApplicationRunner
 
 law:
   base-url: https://sgg.gouv.bj/doc

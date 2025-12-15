@@ -97,6 +97,19 @@ public class ConsolidateJobConfiguration {
             .reader(reader)
             .processor(processor)
             .writer(writer)
+            .faultTolerant()
+            .skip(Exception.class)
+            .skipLimit(Integer.MAX_VALUE)
+            .listener(new org.springframework.batch.core.StepExecutionListener() {
+                @Override
+                public void beforeStep(org.springframework.batch.core.StepExecution stepExecution) {
+                    String type = stepExecution.getJobParameters().getString("type");
+                    if (type != null && !type.isEmpty()) {
+                        reader.setTypeFilter(type);
+                        log.info("🎯 Type filter (consolidate): {}", type);
+                    }
+                }
+            })
             .build();
     }
 }

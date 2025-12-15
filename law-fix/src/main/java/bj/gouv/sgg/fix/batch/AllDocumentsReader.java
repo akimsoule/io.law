@@ -44,17 +44,24 @@ public class AllDocumentsReader implements ItemReader<LawDocument> {
     private void initialize() {
         log.info("🔍 Chargement de tous les documents pour analyse...");
         
-        // Charger tous les documents (pagination pour mémoire)
+        // Charger tous les documents SAUF FAILED (404 permanents, non corrigibles)
         Pageable pageable = PageRequest.of(0, 1000);
         Page<LawDocument> page = lawDocumentRepository.findAll(pageable);
         
-        long totalDocuments = page.getTotalElements();
-        log.info("📄 {} documents à analyser", totalDocuments);
+        // Filtrer les documents FAILED
+        java.util.List<LawDocument> documents = page.getContent().stream()
+            .filter(doc -> doc.getStatus() != LawDocument.ProcessingStatus.FAILED)
+            .toList();
         
-        documentIterator = page.getContent().iterator();
+        long totalDocuments = documents.size();
+        long excludedFailed = page.getTotalElements() - totalDocuments;
         
-        // Log distribution par statut
-        lawDocumentRepository.findAll().stream()
+        log.info("📄 {} documents à analyser ({} FAILED exclus)", totalDocuments, excludedFailed);
+        
+        documentIterator = documents.iterator();
+        
+        // Log distribution par statut (hors FAILED)
+        documents.stream()
             .collect(java.util.stream.Collectors.groupingBy(
                 LawDocument::getStatus,
                 java.util.stream.Collectors.counting()

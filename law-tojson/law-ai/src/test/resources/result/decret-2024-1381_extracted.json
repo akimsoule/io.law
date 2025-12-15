@@ -1,0 +1,62 @@
+{
+  "titre": null,
+  "numero": null,
+  "annee": null,
+  "type": "null",
+  "datePromulgation": null,
+  "datePublication": null,
+  "referenceJO": null,
+  "preaambule": null,
+  "articles": [
+    {
+      "index": 1,
+      "content": "l'Elevage et de la Pêche, du Ministre de\nl'Énergie, de l'Eau et des Mines, du Ministre du Cadre de Vie et des Transports,\nchargé du Développement durable et du Ministre de l’Économie et des Finances,"
+    },
+    {
+      "index": 2,
+      "content": "Article 2\nL’Autorité de mise en consommaation est un organe indépendant, doté d'une\npersonnalité morale et de l'autonomie financière."
+    },
+    {
+      "index": 3,
+      "content": "TITRE II : MISSION ET ATTRIBUITIONS\nArticle 3\nL’Autorité de mise en consommaation a pour mission de veiller au respect des\nprescriptions relatives à la qualité et à la conformité des produits importés ou\nfabriqués localement avant leur mise sur le marché afin de garantir la sécurité et la\nsanté des populations.\nÀ ce titre, l'Autorité de mise en consommaation est chargée de :\n- veiller au respect des normes en matière de production, de distribution, de\ntransport et de consommaation des biens et services ;\n- délivrer les « certifications produits » et les « certifications systèmes » ;\n- accorder les autorisations de mise en consommaation des produits en lien avec\nles ministères sectoriels ;\n- assurer la surveillance du marché à travers des missions de vérification de la\nqualité, de la conformité et des normes des produits et services présents sur le\nmarché national en collaboration avec les structures de contrôle compétentes ;\n- mettre en place et de gérer les systèmes de traçabilité des produits destinés au\nmarché béninois ;\n- diligenter des missions de vérification de la conformité de divers produits\nimportés ou manufacturés localement suite aux plaintes à lui adressées par\ntoute personne physique ou morale ;\n- promouvoir la qualité et la cultuure de la qualité auprès des opérateurs\néconomiqs et des consommateurs ;"
+    },
+    {
+      "index": 4,
+      "content": "Article 12\nLe Conseil national de la conformité ne siège valablement que si tous les membres ont été\nrégulièrement convoqués et si la moiitié (1/2) au moins de ses membres est présente ou\nreprésentée.\n\nUn membre ne peut être représenté que par un autre membre.\n\nUn membre ne peut représenter qu'un seul membre."
+    },
+    {
+      "index": 5,
+      "content": "Article 13\nLes décisions du Conseil national de la conformité sont prises à la majorité absolue des\nvoix des membres présents ou représentés.\n\nEn cas de partage des voix, celle du président est prépondérante."
+    },
+    {
+      "index": 6,
+      "content": "Article 19\nLes Commissions techniques sont présidéees par des personnes réputées compétentes\ndans le domaine couvert par la commission concernée."
+    },
+    {
+      "index": 7,
+      "content": "Article 20\nPour l'instruction des dossiers de demande d'enregiistrement et de mise en consommaation\ndes produits et services, les Commissions techniques sollicitent le concours des experts et\nprofesssionnels."
+    },
+    {
+      "index": 8,
+      "content": "Article 21\nLa durée de l'instruction des dossiers de demande d’enregiistrement et de mise en\nconsommaation des produits et services par les Commissions techniques est précisée dans\nla décision de nomination dedits experts par le président de l’Autorité."
+    }
+  ],
+  "signataires": [
+    {
+      "nom": null,
+      "titre": "Ministre",
+      "fonction": "Économie et des Finances"
+    },
+    {
+      "nom": null,
+      "titre": "Ministre",
+      "fonction": "Énergie, de l'Eau et des Mines"
+    },
+    {
+      "nom": null,
+      "titre": "Ministre",
+      "fonction": "Cadre de Vie et des Transports"
+    },
+    { "nom": null, "titre": "Ministre", "fonction": "Elevage et de la Pêche" }
+  ]
+}

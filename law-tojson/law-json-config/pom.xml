@@ -20,7 +20,7 @@
         <!-- Modules internes law-tojson -->
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
-            <artifactId>law-ai-pdf-json</artifactId>
+            <artifactId>law-ai</artifactId>
         </dependency>
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
@@ -29,6 +29,10 @@
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
             <artifactId>law-ocr-json</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>bj.gouv.sgg</groupId>
+            <artifactId>law-qa</artifactId>
         </dependency>
         
         <!-- Spring Boot -->

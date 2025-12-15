@@ -68,8 +68,9 @@ public class ConsolidatedArticle {
     /**
      * Contenu textuel complet de l'article.
      * Peut contenir plusieurs paragraphes, sauts de ligne.
+     * MEDIUMTEXT supporte jusqu'à 16MB (largement suffisant pour un article).
      */
-    @Column(nullable = false, columnDefinition = "TEXT")
+    @Column(nullable = false, columnDefinition = "MEDIUMTEXT")
     private String content;
     
     /**

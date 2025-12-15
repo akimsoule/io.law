@@ -1,10 +1,11 @@
 package bj.gouv.sgg.batch.writer;
 
-import bj.gouv.sgg.fetch.exception.BatchProcessingException;
+import bj.gouv.sgg.exception.BatchProcessingException;
 import bj.gouv.sgg.model.FetchResult;
 import bj.gouv.sgg.model.LawDocument;
 import bj.gouv.sgg.repository.FetchResultRepository;
 import bj.gouv.sgg.repository.LawDocumentRepository;
+import bj.gouv.sgg.service.NotFoundService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.Chunk;
@@ -28,7 +29,10 @@ public class FetchWriter implements ItemWriter<LawDocument> {
     
     private final FetchResultRepository repository;
     private final LawDocumentRepository lawDocumentRepository;
+    private final NotFoundService notFoundService;
+    
     private boolean forceMode = false;
+    private boolean enableNotFoundConsolidation = false; // Désactivé par défaut (CurrentYear)
     
     /**
      * Active le mode force (écrasement des données existantes)
@@ -36,6 +40,14 @@ public class FetchWriter implements ItemWriter<LawDocument> {
     public void setForceMode(boolean force) {
         this.forceMode = force;
         log.info("FetchWriter force mode: {}", force);
+    }
+    
+    /**
+     * Active la consolidation des plages NOT_FOUND (PreviousYears uniquement)
+     */
+    public void setEnableNotFoundConsolidation(boolean enable) {
+        this.enableNotFoundConsolidation = enable;
+        log.info("FetchWriter NOT_FOUND consolidation: {}", enable);
     }
     
     @Override
@@ -82,6 +94,20 @@ public class FetchWriter implements ItemWriter<LawDocument> {
         }
         
         saveResults(results);
+        
+        // Consolider les NOT_FOUND si activé (PreviousYears uniquement)
+        if (enableNotFoundConsolidation) {
+            List<LawDocument> notFoundDocs = chunk.getItems().stream()
+                .filter(doc -> !doc.isExists())
+                .map(LawDocument.class::cast)
+                .toList();
+            
+            if (!notFoundDocs.isEmpty()) {
+                notFoundService.addNotFoundDocuments(notFoundDocs);
+                log.debug("📊 Recorded {} NOT_FOUND documents", notFoundDocs.size());
+            }
+        }
+        
         logSummary(newCount, updatedCount, skippedCount);
     }
     

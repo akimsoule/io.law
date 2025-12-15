@@ -33,58 +33,58 @@ public class FileIssueDetector {
             document.getStatus() == LawDocument.ProcessingStatus.EXTRACTED ||
             document.getStatus() == LawDocument.ProcessingStatus.CONSOLIDATED) &&
             !fileStorageService.pdfExists(document.getType(), docId)) {
-            {
-                issues.add(Issue.builder()
-                    .documentId(docId)
-                    .type(Issue.IssueType.MISSING_PDF)
-                    .severity(Issue.IssueSeverity.CRITICAL)
-                    .description("PDF manquant alors que status=" + document.getStatus())
-                    .currentStatus(document.getStatus().name())
-                    .suggestedAction("Re-télécharger PDF depuis SGG")
-                    .detectedAt(LocalDateTime.now())
-                    .autoFixable(true)
-                    .build());
-                
-                log.warn("🔴 [{}] PDF manquant (status={})", docId, document.getStatus());
-            }
+            
+            issues.add(Issue.builder()
+                .documentId(docId)
+                .type(Issue.IssueType.MISSING_PDF)
+                .severity(Issue.IssueSeverity.CRITICAL)
+                .description("PDF manquant alors que status=" + document.getStatus())
+                .currentStatus(document.getStatus().name())
+                .suggestedAction("Re-télécharger PDF depuis SGG")
+                .detectedAt(LocalDateTime.now())
+                .autoFixable(true)
+                .build());
+            
+            log.warn("🔴 [{}] PDF manquant (status={})", docId, document.getStatus());
+        }
         
         // Vérifier OCR manquant
         if ((document.getStatus() == LawDocument.ProcessingStatus.EXTRACTED ||
             document.getStatus() == LawDocument.ProcessingStatus.CONSOLIDATED) &&
             !fileStorageService.ocrExists(document.getType(), docId)) {
-            {
-                issues.add(Issue.builder()
-                    .documentId(docId)
-                    .type(Issue.IssueType.MISSING_OCR)
-                    .severity(Issue.IssueSeverity.HIGH)
-                    .description("OCR manquant alors que status=" + document.getStatus())
-                    .currentStatus(document.getStatus().name())
-                    .suggestedAction("Re-exécuter extraction OCR")
-                    .detectedAt(LocalDateTime.now())
-                    .autoFixable(true)
-                    .build());
-                
-                log.warn("⚠️  [{}] OCR manquant (status={})", docId, document.getStatus());
-            }
+            
+            issues.add(Issue.builder()
+                .documentId(docId)
+                .type(Issue.IssueType.MISSING_OCR)
+                .severity(Issue.IssueSeverity.HIGH)
+                .description("OCR manquant alors que status=" + document.getStatus())
+                .currentStatus(document.getStatus().name())
+                .suggestedAction("Re-exécuter extraction OCR")
+                .detectedAt(LocalDateTime.now())
+                .autoFixable(true)
+                .build());
+            
+            log.warn("⚠️  [{}] OCR manquant (status={})", docId, document.getStatus());
+        }
         
         // Vérifier JSON manquant
         if ((document.getStatus() == LawDocument.ProcessingStatus.EXTRACTED ||
             document.getStatus() == LawDocument.ProcessingStatus.CONSOLIDATED) &&
             !fileStorageService.jsonExists(document.getType(), docId)) {
-            {
-                issues.add(Issue.builder()
-                    .documentId(docId)
-                    .type(Issue.IssueType.MISSING_JSON)
-                    .severity(Issue.IssueSeverity.CRITICAL)
-                    .description("JSON manquant alors que status=" + document.getStatus())
-                    .currentStatus(document.getStatus().name())
-                    .suggestedAction("Re-parser OCR → JSON")
-                    .detectedAt(LocalDateTime.now())
-                    .autoFixable(true)
-                    .build());
-                
-                log.warn("🔴 [{}] JSON manquant (status={})", docId, document.getStatus());
-            }
+            
+            issues.add(Issue.builder()
+                .documentId(docId)
+                .type(Issue.IssueType.MISSING_JSON)
+                .severity(Issue.IssueSeverity.CRITICAL)
+                .description("JSON manquant alors que status=" + document.getStatus())
+                .currentStatus(document.getStatus().name())
+                .suggestedAction("Re-parser OCR → JSON")
+                .detectedAt(LocalDateTime.now())
+                .autoFixable(true)
+                .build());
+            
+            log.warn("🔴 [{}] JSON manquant (status={})", docId, document.getStatus());
+        }
         
         return issues;
     }

@@ -1,0 +1,22 @@
+Tu es un expert en correction de documents juridiques structurés.
+
+MISSION : Corriger les erreurs orthographiques et grammaticales dans les VALEURS du JSON sans modifier sa STRUCTURE.
+
+RÈGLES ABSOLUES :
+1. Conserve EXACTEMENT la structure JSON (clés, types, hiérarchie)
+2. Corrige UNIQUEMENT les valeurs textuelles (strings)
+3. Ne modifie PAS les nombres, booléens, nulls
+4. Préserve le sens juridique exact
+5. Applique les règles du français juridique béninois
+6. Ne supprime ni n'ajoute aucun champ
+
+EXEMPLES DE CORRECTIONS :
+- "préscnte loi" → "présente loi"
+- "Républiquc du Bénin" → "République du Bénin"
+- "ministère de la jusitce" → "ministère de la justice"
+- "conformémcnt" → "conformément"
+
+JSON À CORRIGER :
+%s
+
+RETOUR ATTENDU : Le JSON corrigé UNIQUEMENT, structure identique, valeurs améliorées.

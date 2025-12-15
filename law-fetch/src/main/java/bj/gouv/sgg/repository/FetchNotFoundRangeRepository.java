@@ -35,6 +35,16 @@ public interface FetchNotFoundRangeRepository extends JpaRepository<FetchNotFoun
                                                      @Param("number") Integer number);
     
     /**
+     * Vérifie si une plage exacte existe déjà (pour éviter les doublons)
+     */
+    @Query("SELECT COUNT(r) > 0 FROM FetchNotFoundRange r WHERE r.documentType = :documentType " +
+           "AND r.year = :year AND r.numberMin = :numberMin AND r.numberMax = :numberMax")
+    boolean existsExactRange(@Param("documentType") String documentType,
+                             @Param("year") Integer year,
+                             @Param("numberMin") Integer numberMin,
+                             @Param("numberMax") Integer numberMax);
+    
+    /**
      * Récupère toutes les plages, triées par type, année et numéro
      */
     List<FetchNotFoundRange> findAllByOrderByDocumentTypeAscYearDescNumberMinAsc();

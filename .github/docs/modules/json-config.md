@@ -53,7 +53,7 @@ law:
     ia: 4   # Score RAM/CPU pour IA (0=désactivé, 4=16GB+)
     ocr: 2  # Score pour OCR (0=désactivé, 2=4GB+)
     ollama-url: http://localhost:11434
-    ollama-models-required: qwen2.5:7b
+    ollama-models-required: gemma3n
   
   batch:
     chunk-size: 10
@@ -80,7 +80,6 @@ public Job ocrJob() { ... }
 - `law-json-common` : Modèles et utilitaires
 - `law-pdf-ocr` : Service OCR Tesseract
 - `law-ocr-json` : Service parsing regex
-- `law-ai-pdf-json` : Service IA Ollama/Groq
 
 ### Modules externes optionnels (pour FullPipelineJob)
 - `law-fetch` : Job récupération métadonnées
@@ -173,5 +172,4 @@ mvn verify -pl law-tojson/law-json-config
 
 - [law-pdf-ocr](../law-pdf-ocr/README.md) : Implémentation OCR Tesseract
 - [law-ocr-json](../law-ocr-json/README.md) : Implémentation parsing regex
-- [law-ai-pdf-json](../law-ai-pdf-json/README.md) : Implémentation IA Ollama/Groq
 - [law-app](../../law-app/README.md) : API REST et orchestration

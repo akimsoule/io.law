@@ -151,6 +151,7 @@ public class PdfToJsonJobConfiguration {
             @org.springframework.beans.factory.annotation.Value("#{jobParameters['documentId']}") String documentId,
             @org.springframework.beans.factory.annotation.Value("#{jobParameters['force']}") String force,
             @org.springframework.beans.factory.annotation.Value("#{jobParameters['maxDocuments']}") String maxDocuments,
+            @org.springframework.beans.factory.annotation.Value("#{jobParameters['type']}") String type,
             bj.gouv.sgg.repository.LawDocumentRepository repository
     ) {
         DownloadedPdfReader reader = new DownloadedPdfReader(repository);
@@ -173,6 +174,11 @@ public class PdfToJsonJobConfiguration {
             } catch (NumberFormatException e) {
                 log.warn("⚠️ Invalid maxDocuments value: {}, using default (10)", maxDocuments);
             }
+        }
+        // Filtre type (ex: loi)
+        if (type != null && !type.isBlank()) {
+            reader.setTypeFilter(type);
+            log.info("🎯 Type filter (pdfToJson): {}", type);
         }
         
         return reader;

@@ -19,6 +19,7 @@ public class LawProperties {
     private Ocr ocr = new Ocr();
     private Batch batch = new Batch();
     private Capacity capacity = new Capacity();
+    private Groq groq = new Groq();
 
 
     @Data
@@ -45,7 +46,7 @@ public class LawProperties {
     public static class Batch {
         private int chunkSize;
         private int maxThreads;
-        private int maxItemsToFetchPrevious = 100; // Limite d'items par exécution pour fetchPreviousJob
+        private int maxItemsToFetchPrevious; // Limite d'items par exécution pour fetchPreviousJob
         
         /**
          * Retourne le nombre de threads optimal basé sur les CPU disponibles
@@ -69,6 +70,11 @@ public class LawProperties {
         private int ia = 4;              // Score minimum pour IA (16GB+ RAM, 4+ CPU)
         private int ocr = 2;             // Score minimum pour OCR (4GB+ RAM, 2+ CPU)
         private String ollamaUrl = "http://localhost:11434";
-        private String ollamaModelsRequired = "qwen2.5:7b";
+        private String ollamaModelsRequired = "gemma3n:latest";
+    }
+    
+    @Data
+    public static class Groq {
+        private String apiKey;           // API key Groq (optionnel)
     }
 }

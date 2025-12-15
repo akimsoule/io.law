@@ -1,6 +1,7 @@
 package bj.gouv.sgg.batch.reader;
 
 import bj.gouv.sgg.model.LawDocument;
+import bj.gouv.sgg.repository.DownloadResultRepository;
 import bj.gouv.sgg.repository.LawDocumentRepository;
 import bj.gouv.sgg.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
@@ -23,27 +24,42 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@org.springframework.batch.core.configuration.annotation.StepScope
 public class FetchedDocumentReader implements ItemReader<LawDocument> {
     
     private final LawDocumentRepository lawDocumentRepository;
     private final FileStorageService fileStorageService;
+    private final DownloadResultRepository downloadResultRepository;
     private Iterator<LawDocument> iterator;
     private String targetDocumentId;
     private boolean forceMode = false;
     private Integer maxDocuments;
+    private boolean initialized = false; // Flag pour savoir si le reader a été initialisé
+    private String typeFilter; // null = tous, sinon filtre ex: "loi"
     
     @Override
     public synchronized LawDocument read() {
-        if (iterator == null) {
+        if (!initialized) {
             initialize();
+            initialized = true;
         }
         
-        if (iterator.hasNext()) {
+        if (iterator != null && iterator.hasNext()) {
             return iterator.next();
         }
         
         return null;
+    }
+    
+    /**
+     * Réinitialise le reader (utilisé entre les exécutions de job)
+     */
+    public synchronized void reset() {
+        this.iterator = null;
+        this.initialized = false;
+        this.targetDocumentId = null;
+        this.forceMode = false;
+        this.maxDocuments = null;
+        log.debug("Reader reset");
     }
     
     /**
@@ -71,6 +87,19 @@ public class FetchedDocumentReader implements ItemReader<LawDocument> {
         this.maxDocuments = max;
         log.info("Max documents: {}", max != null ? max : "unlimited");
     }
+
+    /**
+     * Filtre optionnel pour ne lire que le type demandé (ex: "loi").
+     */
+    public void setTypeFilter(String type) {
+        if (type != null && !type.isBlank()) {
+            this.typeFilter = type.trim().toLowerCase();
+            log.info("Type filter enabled: {}", this.typeFilter);
+        } else {
+            this.typeFilter = null;
+            log.info("Type filter disabled (all types)");
+        }
+    }
     
     private synchronized void initialize() {
         List<LawDocument> toDownload;
@@ -82,10 +111,20 @@ public class FetchedDocumentReader implements ItemReader<LawDocument> {
             // Mode normal : tous les documents FETCHED ou DOWNLOADED sans fichier
             List<LawDocument> fetchedDocuments = lawDocumentRepository
                 .findByStatus(LawDocument.ProcessingStatus.FETCHED);
+            if (typeFilter != null) {
+                fetchedDocuments = fetchedDocuments.stream()
+                        .filter(d -> typeFilter.equalsIgnoreCase(d.getType()))
+                        .toList();
+            }
             
             // Ajouter les documents DOWNLOADED mais dont le PDF est absent
             List<LawDocument> downloadedDocuments = lawDocumentRepository
                 .findByStatus(LawDocument.ProcessingStatus.DOWNLOADED);
+            if (typeFilter != null) {
+                downloadedDocuments = downloadedDocuments.stream()
+                        .filter(d -> typeFilter.equalsIgnoreCase(d.getType()))
+                        .toList();
+            }
             
             List<LawDocument> missingPdfDocuments = downloadedDocuments.stream()
                 .filter(doc -> !fileStorageService.pdfExists(doc.getType(), doc.getDocumentId()))
@@ -99,6 +138,11 @@ public class FetchedDocumentReader implements ItemReader<LawDocument> {
             // Combiner FETCHED + DOWNLOADED sans PDF
             List<LawDocument> allToDownload = new java.util.ArrayList<>(fetchedDocuments);
             allToDownload.addAll(missingPdfDocuments);
+
+            // Retirer les documents fetched et dont les fichiers sont déjà présents (sauf en mode force)
+            allToDownload = allToDownload.stream()
+                .filter(this::shouldDownload)
+                .toList(); 
             
             // Trier du plus récent au plus ancien: year DESC, number DESC
             toDownload = allToDownload.stream()
@@ -132,51 +176,48 @@ public class FetchedDocumentReader implements ItemReader<LawDocument> {
         int number = Integer.parseInt(parts[2]);
         
         return lawDocumentRepository.findByTypeAndYearAndNumber(type, year, number)
-            .filter(doc -> shouldDownload(doc))
+            .filter(this::shouldDownload)
             .map(List::of)
             .orElse(List.of());
     }
     
     /**
      * Détermine si un document doit être téléchargé selon la logique :
-     * 1. FETCHED → toujours télécharger
-     * 2. DOWNLOADED mais PDF absent → re-télécharger automatiquement
-     * 3. DOWNLOADED + PDF présent + force → re-télécharger
-     * 4. Autres cas → skip
+     * 1. Si déjà dans download_results + PDF présent → skip (sauf force)
+     * 2. Si FETCHED → télécharger
+     * 3. Si DOWNLOADED mais PDF absent → re-télécharger
      */
     private boolean shouldDownload(LawDocument doc) {
         String docId = doc.getDocumentId();
+        boolean pdfExists = fileStorageService.pdfExists(doc.getType(), docId);
+        boolean existsInDb = downloadResultRepository.existsByDocumentId(docId);
         
-        // Cas 1 : FETCHED → toujours télécharger
-        if (doc.getStatus() == LawDocument.ProcessingStatus.FETCHED) {
-            log.info("✅ [{}] Status FETCHED → will download", docId);
-            return true;
-        }
-        
-        // Cas 2 : DOWNLOADED mais PDF absent → re-télécharger automatiquement
-        if (doc.getStatus() == LawDocument.ProcessingStatus.DOWNLOADED) {
-            boolean pdfExists = fileStorageService.pdfExists(doc.getType(), docId);
-            
-            if (!pdfExists) {
-                log.warn("⚠️ [{}] Status DOWNLOADED but PDF missing → will re-download", docId);
-                return true;
-            }
-            
-            // Cas 3 : DOWNLOADED + PDF présent + force → re-télécharger
+        // Cas principal : déjà téléchargé et persisté (skip sauf force)
+        if (existsInDb && pdfExists) {
             if (forceMode) {
                 log.info("🔄 [{}] Force mode enabled → will re-download", docId);
                 return true;
             }
-            
-            // PDF présent et pas de force → skip
-            log.info("⏭️ [{}] Already downloaded and PDF exists → skip", docId);
+            log.debug("⏭️ [{}] Already in DB and file exists → skip", docId);
             return false;
         }
         
-        // Autres statuts (EXTRACTED, CONSOLIDATED, etc.) → skip sauf si force
+        // Si en DB mais fichier manquant → re-télécharger
+        if (existsInDb) {
+            log.warn("⚠️ [{}] In DB but PDF missing → will re-download", docId);
+            return true;
+        }
+        
+        // Si FETCHED ou DOWNLOADED (non en DB encore) → télécharger
+        if (doc.getStatus() == LawDocument.ProcessingStatus.FETCHED ||
+            doc.getStatus() == LawDocument.ProcessingStatus.DOWNLOADED) {
+            log.debug("✅ [{}] Status {} → will download", docId, doc.getStatus());
+            return true;
+        }
+        
+        // Autres statuts → skip (sauf force)
         if (forceMode) {
-            log.info("🔄 [{}] Force mode enabled (status={}) → will download", 
-                     docId, doc.getStatus());
+            log.info("🔄 [{}] Force mode (status={}) → will download", docId, doc.getStatus());
             return true;
         }
         

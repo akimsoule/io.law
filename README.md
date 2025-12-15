@@ -1,6 +1,6 @@
 # io.law - Lois et Décrets du Bénin
 
-[![Java](https://img.shields.io/badge/Java-17+-orange.svg)](https://openjdk.java.net/)
+[![Java](https://img.shields.io/badge/Java-Latest-orange.svg)](https://openjdk.java.net/)
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.0-brightgreen.svg)](https://spring.io/projects/spring-boot)
 [![Spring Batch](https://img.shields.io/badge/Spring%20Batch-5.1.0-blue.svg)](https://spring.io/projects/spring-batch)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
@@ -38,7 +38,7 @@ io.law/
 
 ### Technologies
 
-- **Java 17+** - Pattern matching, records, text blocks
+- **Java** - Pattern matching, records, text blocks
 - **Spring Boot 3.2.0** - Framework d'application
 - **Spring Batch 5.1.0** - Traitement batch
 - **MySQL 8** - Persistance des données
@@ -136,7 +136,7 @@ API REST et orchestration des jobs.
 
 ## 🔧 Prérequis
 
-- **JDK 17+** : [OpenJDK](https://openjdk.java.net/) ou [Oracle JDK](https://www.oracle.com/java/technologies/downloads/)
+- **JDK** : [OpenJDK](https://openjdk.java.net/) ou [Oracle JDK](https://www.oracle.com/java/technologies/downloads/)
 - **Maven 3.8+** : [Apache Maven](https://maven.apache.org/download.cgi)
 - **MySQL 8+** : [MySQL](https://dev.mysql.com/downloads/mysql/)
 - **Tesseract OCR** (optionnel pour OCR) : [Tesseract](https://github.com/tesseract-ocr/tesseract)
@@ -185,7 +185,7 @@ law:
     ia: 4   # Score RAM/CPU pour IA (16GB+ RAM)
     ocr: 2  # Score pour OCR (4GB+ RAM)
     ollama-url: http://localhost:11434
-    ollama-models-required: qwen2.5:7b
+    ollama-models-required: gemma3n:latest
   
   groq:
     api-key: ${GROQ_API_KEY:}  # Optionnel

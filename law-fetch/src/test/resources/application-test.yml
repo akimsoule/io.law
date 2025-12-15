@@ -29,8 +29,8 @@ spring:
 law:
   base-url: https://sgg.gouv.bj/doc
   user-agent: Mozilla/5.0 (compatible; LawBatchBot/1.0; Test)
-  end-year: 2020
-  max-number-per-year: 50
+  end-year: 2025
+  max-number-per-year: 10
   
   storage:
     base-path: /tmp/law-test

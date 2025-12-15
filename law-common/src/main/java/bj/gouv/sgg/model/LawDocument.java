@@ -78,6 +78,7 @@ public class LawDocument {
         DOWNLOADED,
         EXTRACTED,
         CONSOLIDATED,
-        FAILED
+        FAILED,
+        RATE_LIMITED  // Documents avec 429 (rate limit) qui seront repris
     }
 }

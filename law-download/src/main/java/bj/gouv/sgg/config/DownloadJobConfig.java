@@ -14,6 +14,8 @@ import org.springframework.batch.core.repository.JobRepository;
 import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 /**
@@ -26,6 +28,36 @@ public class DownloadJobConfig {
     
     private final JobRepository jobRepository;
     private final PlatformTransactionManager transactionManager;
+    private final LawProperties properties;
+    
+    /**
+     * TaskExecutor pour traitement multi-threads.
+     * Le nombre de threads est déterminé par min(max-threads, availableProcessors - 1).
+     */
+    @Bean(name = "downloadTaskExecutor")
+    public TaskExecutor downloadTaskExecutor() {
+        // Utiliser getEffectiveMaxThreads() qui gère le cas maxThreads=0
+        int configuredMaxThreads = properties.getBatch().getEffectiveMaxThreads();
+        int availableProcessors = Runtime.getRuntime().availableProcessors();
+        
+        // Utiliser le minimum entre max-threads configuré et (processeurs disponibles - 1)
+        // Garder au moins 1 thread
+        int threadPoolSize = Math.max(1, Math.min(configuredMaxThreads, availableProcessors - 1));
+        
+        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
+        executor.setCorePoolSize(threadPoolSize);
+        executor.setMaxPoolSize(threadPoolSize);
+        executor.setQueueCapacity(properties.getBatch().getChunkSize() * 2);
+        executor.setThreadNamePrefix("download-thread-");
+        executor.setWaitForTasksToCompleteOnShutdown(true);
+        executor.setAwaitTerminationSeconds(60);
+        executor.initialize();
+        
+        log.info("🧵 Download TaskExecutor initialized with {} threads (configured max-threads: {}, available processors: {})",
+                threadPoolSize, configuredMaxThreads, availableProcessors);
+        
+        return executor;
+    }
     
     @Bean
     public Job downloadJob(Step downloadStep) {
@@ -38,21 +70,30 @@ public class DownloadJobConfig {
     @Bean
     public Step downloadStep(FetchedDocumentReader reader,
                              DownloadProcessor downloadProcessor,
-                             FileDownloadWriter writer) {
+                             FileDownloadWriter writer,
+                             TaskExecutor downloadTaskExecutor) {
         
-        // Le reader ne retourne que les documents FETCHED, donc pas besoin de FetchProcessor
-        // On télécharge directement en mono-thread pour éviter les duplicates
-        // Le processor télécharge le PDF et le writer le sauvegarde en base
         return new StepBuilder("downloadStep", jobRepository)
-            .<LawDocument, LawDocument>chunk(1, transactionManager) // Process one document at a time
+            .<LawDocument, LawDocument>chunk(properties.getBatch().getChunkSize(), transactionManager)
             .reader(reader)
             .processor(downloadProcessor)
             .writer(writer) // Sauvegarde dans download_results
-            // Pas de taskExecutor = exécution synchrone en mono-thread
+            .taskExecutor(downloadTaskExecutor) // ✅ Traitement multi-threads
+            .faultTolerant()
+            .skip(Exception.class)
+            .skipLimit(Integer.MAX_VALUE)
             .listener(new org.springframework.batch.core.StepExecutionListener() {
                 @Override
                 public void beforeStep(org.springframework.batch.core.StepExecution stepExecution) {
+                    // Réinitialiser le reader avant chaque exécution
+                    reader.reset();
+                    
                     // Lire les paramètres --doc ou --documentId (équivalents), --force et --maxDocuments depuis JobParameters
+                    String type = stepExecution.getJobParameters().getString("type");
+                    if (type != null && !type.isEmpty()) {
+                        reader.setTypeFilter(type);
+                        log.info("🎯 Type filter (download): {}", type);
+                    }
                     String doc = stepExecution.getJobParameters().getString("doc");
                     String documentId = stepExecution.getJobParameters().getString("documentId");
                     String force = stepExecution.getJobParameters().getString("force");

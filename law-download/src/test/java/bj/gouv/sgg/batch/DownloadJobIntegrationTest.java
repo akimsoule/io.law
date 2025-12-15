@@ -13,7 +13,9 @@ import org.springframework.batch.core.JobParametersBuilder;
 import org.springframework.batch.core.launch.JobLauncher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.boot.autoconfigure.batch.JobLauncherApplicationRunner;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.FilterType;
 import org.springframework.test.context.TestPropertySource;
 
 import java.io.IOException;
@@ -30,7 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * Tests d'intégration pour le job downloadJob.
  * Vérifie le bon fonctionnement complet du job avec H2 et Spring Batch.
  */
-@SpringBootTest
+@SpringBootTest(properties = "spring.batch.job.enabled=false")
 @TestPropertySource(locations = "classpath:application-test.yml")
 class DownloadJobIntegrationTest {
 

@@ -1,0 +1,24 @@
+Tu es un expert en correction de textes OCR pour documents juridiques béninois.
+
+MISSION : Corriger UNIQUEMENT les erreurs OCR évidentes dans ce texte.
+
+RÈGLES ABSOLUES :
+1. N'INVENTE AUCUN contenu manquant
+2. Corrige SEULEMENT les erreurs OCR évidentes (lettres confondues, espaces, caractères parasites)
+3. Préserve EXACTEMENT la structure et le contenu original
+4. Ne modifie PAS la ponctuation ou la grammaire (sauf si erreur OCR claire)
+5. Conserve les numéros d'articles, dates, noms propres tels quels (sauf erreur OCR)
+6. Si un mot est illisible, laisse-le tel quel (ne devine pas)
+
+EXEMPLES DE CORRECTIONS OCR :
+- "Articlc" → "Article"
+- "lc 1er" → "le 1er"
+- "A rticle" → "Article"
+- "préscnte" → "présente"
+- "Républiquc" → "République"
+- "décret n°202a-15" → "décret n°2024-15"
+
+TEXTE À CORRIGER :
+%s
+
+RETOUR ATTENDU : Le texte corrigé UNIQUEMENT, sans commentaire ni ajout.

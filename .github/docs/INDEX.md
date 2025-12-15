@@ -31,6 +31,7 @@ Documentation des fonctionnalités avancées et pipelines.
 | **[fixjob.md](features/fixjob.md)** | Correction automatique et amélioration continue (fixJob) | 520 |
 | **[orchestrate.md](features/orchestrate.md)** | Orchestration continue du pipeline complet (Ctrl+C pour arrêter) | 320 |
 | **[sequence-quality.md](features/sequence-quality.md)** | Pénalité confiance basée sur séquence d'articles | 257 |
+| **[transformation-cascade.md](features/transformation-cascade.md)** | Transformation PDF→JSON avec fallback en cascade (OCR + AI + validation law-qa) | 625 |
 
 ---
 
@@ -52,7 +53,6 @@ Documentation spécifique par module.
 
 | Emplacement | Description |
 |-------------|-------------|
-| `law-ai-pdf-json/src/test/java/README.md` | Tests extraction IA (29 tests) |
 | `law-ocr-json/src/test/resources/samples_ocr/INDEX.md` | Index échantillons OCR (47 fichiers) |
 | `law-ocr-json/src/test/resources/samples_json/README.md` | Échantillons JSON extraits (38 fichiers) |
 | `law-pdf-ocr/src/main/resources/tessdata/README.md` | Instructions installation Tesseract |
