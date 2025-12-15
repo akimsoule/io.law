@@ -1,6 +1,0 @@
-# Ignorer les fichiers OCR temporaires générés par les tests
-test_*.txt
-subdir1/
-
-# Garder uniquement les vrais fichiers de test
-!loi-*.txt
