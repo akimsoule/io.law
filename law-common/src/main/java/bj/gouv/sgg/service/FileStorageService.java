@@ -1,9 +1,7 @@
 package bj.gouv.sgg.service;
 
-import bj.gouv.sgg.config.LawProperties;
-import lombok.RequiredArgsConstructor;
+import bj.gouv.sgg.config.AppConfig;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,11 +13,20 @@ import java.nio.file.Paths;
  * Fournit les chemins normalisés et les opérations de lecture/écriture.
  */
 @Slf4j
-@Service
-@RequiredArgsConstructor
 public class FileStorageService {
     
-    private final LawProperties lawProperties;
+    private final String basePath;
+    private final String pdfDir;
+    private final String ocrDir;
+    private final String jsonDir;
+    
+    public FileStorageService() {
+        AppConfig config = AppConfig.get();
+        this.basePath = config.getProperty("law.storage.base-path", "data");
+        this.pdfDir = config.getProperty("law.storage.pdf-dir", "pdfs");
+        this.ocrDir = config.getProperty("law.storage.ocr-dir", "ocr");
+        this.jsonDir = config.getProperty("law.storage.json-dir", "articles");
+    }
     
     /**
      * Obtient le chemin vers le fichier PDF d'un document.
@@ -32,8 +39,8 @@ public class FileStorageService {
         validateType(type);
         validateDocumentId(documentId);
         
-        return Paths.get(lawProperties.getDirectories().getData())
-                .resolve(lawProperties.getDirectories().getPdfs())
+        return Paths.get(basePath)
+                .resolve(pdfDir)
                 .resolve(type)
                 .resolve(documentId + ".pdf");
     }
@@ -45,8 +52,8 @@ public class FileStorageService {
         validateType(type);
         validateDocumentId(documentId);
         
-        return Paths.get(lawProperties.getDirectories().getData())
-                .resolve(lawProperties.getDirectories().getOcr())
+        return Paths.get(basePath)
+                .resolve(ocrDir)
                 .resolve(type)
                 .resolve(documentId + ".txt");
     }
@@ -58,8 +65,8 @@ public class FileStorageService {
         validateType(type);
         validateDocumentId(documentId);
         
-        return Paths.get(lawProperties.getDirectories().getData())
-                .resolve(lawProperties.getDirectories().getArticles())
+        return Paths.get(basePath)
+                .resolve(jsonDir)
                 .resolve(type)
                 .resolve(documentId + ".json");
     }
