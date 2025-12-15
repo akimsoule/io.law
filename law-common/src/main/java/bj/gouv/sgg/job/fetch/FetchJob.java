@@ -4,9 +4,13 @@ import bj.gouv.sgg.config.AppConfig;
 import bj.gouv.sgg.model.DocumentRecord;
 import bj.gouv.sgg.model.ProcessingStatus;
 import bj.gouv.sgg.service.DocumentService;
-import bj.gouv.sgg.service.HttpCheckService;
 import lombok.extern.slf4j.Slf4j;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -21,13 +25,16 @@ public class FetchJob {
     
     private final AppConfig config;
     private final DocumentService documentService;
-    private final HttpCheckService httpCheckService;
+    private final HttpClient httpClient;
     private final ExecutorService executor;
     
     public FetchJob() {
         this.config = AppConfig.get();
         this.documentService = new DocumentService();
-        this.httpCheckService = new HttpCheckService();
+        this.httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofMillis(config.getHttpTimeout()))
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
         this.executor = Executors.newFixedThreadPool(config.getMaxThreads());
     }
     
@@ -98,24 +105,31 @@ public class FetchJob {
     }
     
     private DocumentRecord checkDocument(DocumentRecord doc) {
+        String url = String.format("%s/%s-%d-%d", 
+            config.getBaseUrl(), doc.getType(), doc.getYear(), doc.getNumber());
+        
         // Vérifier si déjà fetched
         if (documentService.exists(doc.getDocumentId())) {
             return null; // Skip, déjà traité
         }
         
         try {
-            boolean exists = httpCheckService.checkDocumentExists(
-                doc.getType(), 
-                doc.getYear(), 
-                doc.getNumber()
-            );
+            HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .method("HEAD", HttpRequest.BodyPublishers.noBody())
+                .header("User-Agent", config.getUserAgent())
+                .timeout(Duration.ofMillis(config.getHttpTimeout()))
+                .build();
             
-            if (exists) {
+            HttpResponse<Void> response = httpClient.send(request, 
+                HttpResponse.BodyHandlers.discarding());
+            
+            if (response.statusCode() == 200) {
                 doc.setStatus(ProcessingStatus.FETCHED);
                 log.debug("✅ Found: {}", doc.getDocumentId());
                 return doc;
             } else {
-                log.debug("❌ Not found: {}", doc.getDocumentId());
+                log.debug("❌ Not found ({}): {}", response.statusCode(), doc.getDocumentId());
                 return null;
             }
             

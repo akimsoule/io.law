@@ -1,6 +1,5 @@
 package bj.gouv.sgg.model;
 
-import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -9,46 +8,22 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 /**
- * Entité représentant les plages de documents NOT_FOUND
+ * POJO représentant les plages de documents NOT_FOUND
  * Format: loi;2025;19-300 signifie que loi-2025-19 à loi-2025-300 n'existent pas
+ * Persisté via JsonStorage
  */
-@Entity
-@Table(name = "fetch_not_found_ranges", 
-    uniqueConstraints = @UniqueConstraint(columnNames = {"document_type", "document_year", "numberMin", "numberMax"}),
-    indexes = {
-        @Index(name = "idx_type_year", columnList = "document_type,document_year"),
-        @Index(name = "idx_updated_at", columnList = "updatedAt")
-    }
-)
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class FetchNotFoundRange {
     
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
-    
-    @Column(name = "document_type", nullable = false, length = 20)
     private String documentType; // "loi" ou "decret"
-    
-    @Column(name = "document_year", nullable = false)  // "year" est un mot réservé SQL
     private Integer year;
-    
-    @Column(nullable = false)
     private Integer numberMin;
-    
-    @Column(nullable = false)
     private Integer numberMax;
-
-    @Column(nullable = false)
     private Integer documentCount;
-
-    @Column(nullable = false)
     private LocalDateTime createdAt;
-    
-    @Column(nullable = false)
     private LocalDateTime updatedAt;
     
     /**
