@@ -2,6 +2,8 @@ package bj.gouv.sgg.fix.detector;
 
 import bj.gouv.sgg.fix.model.Issue;
 import bj.gouv.sgg.model.LawDocument;
+import bj.gouv.sgg.repository.DownloadResultRepository;
+import bj.gouv.sgg.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -17,6 +19,9 @@ import java.util.List;
 @RequiredArgsConstructor
 @Slf4j
 public class StatusIssueDetector {
+    
+    private final DownloadResultRepository downloadResultRepository;
+    private final FileStorageService fileStorageService;
     
     /**
      * Détecte les documents bloqués dans un statut.
@@ -45,18 +50,37 @@ public class StatusIssueDetector {
         
         // Documents en FETCHED (doivent être téléchargés)
         if (document.getStatus() == LawDocument.ProcessingStatus.FETCHED) {
-            issues.add(Issue.builder()
-                .documentId(docId)
-                .type(Issue.IssueType.STUCK_IN_FETCHED)
-                .severity(Issue.IssueSeverity.HIGH)
-                .description("Document en FETCHED - PDF non téléchargé")
-                .currentStatus(document.getStatus().name())
-                .suggestedAction("Exécuter downloadJob pour ce document")
-                .detectedAt(LocalDateTime.now())
-                .autoFixable(true)
-                .build());
+            // Vérifier incohérence : FETCHED mais déjà dans download_results + PDF présent
+            boolean inDownloadResults = downloadResultRepository.existsByDocumentId(docId);
+            boolean pdfExists = fileStorageService.pdfExists(document.getType(), docId);
             
-            log.info("📥 [{}] Bloqué en FETCHED", docId);
+            if (inDownloadResults && pdfExists) {
+                issues.add(Issue.builder()
+                    .documentId(docId)
+                    .type(Issue.IssueType.STATUS_INCONSISTENT)
+                    .severity(Issue.IssueSeverity.MEDIUM)
+                    .description("Document FETCHED mais PDF déjà téléchargé et en download_results")
+                    .currentStatus(document.getStatus().name())
+                    .suggestedAction("Mettre à jour statut vers DOWNLOADED")
+                    .detectedAt(LocalDateTime.now())
+                    .autoFixable(true)
+                    .build());
+                
+                log.info("⚠️ [{}] Incohérence: FETCHED mais PDF existe", docId);
+            } else {
+                issues.add(Issue.builder()
+                    .documentId(docId)
+                    .type(Issue.IssueType.STUCK_IN_FETCHED)
+                    .severity(Issue.IssueSeverity.HIGH)
+                    .description("Document en FETCHED - PDF non téléchargé")
+                    .currentStatus(document.getStatus().name())
+                    .suggestedAction("Exécuter downloadJob pour ce document")
+                    .detectedAt(LocalDateTime.now())
+                    .autoFixable(true)
+                    .build());
+                
+                log.info("📥 [{}] Bloqué en FETCHED", docId);
+            }
         }
         
         // Documents en DOWNLOADED (doivent être extraits)

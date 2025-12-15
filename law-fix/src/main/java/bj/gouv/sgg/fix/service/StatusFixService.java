@@ -44,6 +44,41 @@ public class StatusFixService {
                 parseType(docId), parseYear(docId), parseNumber(docId)
             ).orElseThrow();
             
+            // Cas spécial : incohérence FETCHED + PDF existe → avancer vers DOWNLOADED
+            if (issue.getType() == Issue.IssueType.STATUS_INCONSISTENT) {
+                document.setStatus(LawDocument.ProcessingStatus.DOWNLOADED);
+                lawDocumentRepository.save(document);
+                
+                log.info("✅ [{}] Statut avancé: FETCHED → DOWNLOADED (PDF existe)", docId);
+                
+                return FixResult.builder()
+                    .documentId(docId)
+                    .issueType(issue.getType())
+                    .status(FixResult.FixStatus.SUCCESS)
+                    .action("Avancé FETCHED → DOWNLOADED")
+                    .details("Statut mis à jour car PDF déjà téléchargé")
+                    .fixedAt(LocalDateTime.now())
+                    .retryCount(0)
+                    .build();
+            }
+            
+            // Cas spécial : PENDING ne peut pas être réinitialisé (déjà au début)
+            // → Le laisser en PENDING pour que fetchJob le reprenne
+            if (document.getStatus() == LawDocument.ProcessingStatus.PENDING) {
+                log.info("⏭️ [{}] Document déjà en PENDING, aucune action nécessaire", docId);
+                
+                return FixResult.builder()
+                    .documentId(docId)
+                    .issueType(issue.getType())
+                    .status(FixResult.FixStatus.SUCCESS)
+                    .action("Maintenu en PENDING")
+                    .details("Document prêt pour traitement par fetchJob")
+                    .fixedAt(LocalDateTime.now())
+                    .retryCount(0)
+                    .build();
+            }
+            
+            // Cas normal : réinitialisation vers statut précédent
             LawDocument.ProcessingStatus previousStatus = getPreviousStatus(document.getStatus());
             
             if (previousStatus == null) {

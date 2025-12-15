@@ -61,11 +61,18 @@ public class DocumentStatusManager {
         
         lawDocumentRepository.findByTypeAndYearAndNumber(type, year, number).ifPresentOrElse(
             document -> {
+                LawDocument.ProcessingStatus oldStatus = document.getStatus();
                 document.setStatus(newStatus);
-                lawDocumentRepository.save(document);
-                log.debug("📊 Status updated: {} -> {}", documentId, newStatus);
+                LawDocument saved = lawDocumentRepository.saveAndFlush(document); // Force commit immédiat
+                log.info("✅ Status updated: {} {} -> {}", documentId, oldStatus, newStatus);
+                
+                // Vérification post-sauvegarde
+                if (saved.getStatus() != newStatus) {
+                    log.error("❌ CRITICAL: Status not persisted! Expected {} but got {}", 
+                             newStatus, saved.getStatus());
+                }
             },
-            () -> log.warn("⚠️ Document not found: {}", documentId)
+            () -> log.error("❌ Document not found for status update: {}", documentId)
         );
     }
     

@@ -10,17 +10,13 @@ import java.util.Optional;
 public interface FetchCursorRepository extends JpaRepository<FetchCursor, Long> {
     
     /**
-     * Trouve un cursor par type SEULEMENT (partagé entre lois et décrets)
-     */
-    Optional<FetchCursor> findByCursorType(String cursorType);
-    
-    /**
-     * Trouve un cursor par type et documentType
+     * Trouve le cursor unique pour cursorType and fetchPrevious
+     * Il n'y a qu'un seul cursor qui gère loi+decret ensemble
      */
     Optional<FetchCursor> findByCursorTypeAndDocumentType(String cursorType, String documentType);
     
     /**
-     * Vérifie si un cursor existe
+     * Vérifie si le cursor existe
      */
-    boolean existsByCursorTypeAndDocumentType(String cursorType, String documentType);
+    boolean existsByDocumentType(String documentType);
 }

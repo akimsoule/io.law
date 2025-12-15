@@ -94,7 +94,7 @@
     <build>
         <plugins>
             <!-- Configuration Lombok pour annotation processing -->
-            <plugin>
+            <!-- <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
@@ -109,7 +109,7 @@
                         <arg>-parameters</arg>
                     </compilerArgs>
                 </configuration>
-            </plugin>
+            </plugin> -->
             
             <!-- JaCoCo (configuration héritée du parent) -->
             <plugin>

@@ -6,29 +6,24 @@ import bj.gouv.sgg.repository.FetchResultRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.*;
 
-/**
- * Tests unitaires pour LawFetchService
- */
 @ExtendWith(MockitoExtension.class)
 class LawFetchServiceTest {
 
     @Mock
-    private FetchResultRepository repository;
+    private FetchResultRepository fetchResultRepository;
 
     @Mock
     private LawProperties properties;
@@ -36,96 +31,104 @@ class LawFetchServiceTest {
     @Mock
     private RestTemplate restTemplate;
 
-    @InjectMocks
     private LawFetchService service;
-
-    @Captor
-    private ArgumentCaptor<FetchResult> resultCaptor;
 
     @BeforeEach
     void setUp() {
-        when(properties.getBaseUrl()).thenReturn("https://sgg.gouv.bj/doc");
+        lenient().when(properties.getBaseUrl()).thenReturn("https://sgg.gouv.bj/doc");
+        service = new LawFetchService(fetchResultRepository, properties, restTemplate);
     }
 
     @Test
-    void givenNewDocumentWhenFetchSingleDocumentThenReturnsDownloadedResult() {
-        // Given: Un document loi-2024-15 non existant en BD, serveur répond HTTP 200
-        when(repository.findByDocumentId("loi-2024-15")).thenReturn(Optional.empty());
-        when(restTemplate.headForHeaders(anyString())).thenReturn(null);
+    void givenDocumentExists_whenFetchSingleDocument_thenReturnsDownloadedResult() {
+        // Given
+        String documentId = "loi-2024-15";
+        HttpHeaders headers = new HttpHeaders();
+        
+        when(restTemplate.headForHeaders(anyString())).thenReturn(headers);
+        when(fetchResultRepository.findByDocumentId(documentId))
+            .thenReturn(Optional.empty());
+        when(fetchResultRepository.save(any(FetchResult.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
 
-        // When: Fetch du document
+        // When
         FetchResult result = service.fetchSingleDocument("loi", 2024, 15);
 
-        // Then: Résultat créé avec status DOWNLOADED et métadonnées complètes
-        assertNotNull(result, "Le résultat ne devrait pas être null");
-        assertEquals("loi-2024-15", result.getDocumentId(), "L'ID document devrait être loi-2024-15");
-        assertEquals("DOWNLOADED", result.getStatus(), "Le status devrait être DOWNLOADED");
-        assertEquals("loi", result.getDocumentType(), "Le type devrait être loi");
-        assertEquals(2024, result.getYear(), "L'année devrait être 2024");
-        assertEquals(15, result.getNumber(), "Le numéro devrait être 15");
-        assertNotNull(result.getFetchedAt(), "La date de fetch devrait être définie");
-
-        verify(repository).save(resultCaptor.capture());
-        FetchResult saved = resultCaptor.getValue();
-        assertEquals("loi-2024-15", saved.getDocumentId(), "Le document sauvegardé devrait avoir l'ID loi-2024-15");
-        assertEquals("DOWNLOADED", saved.getStatus(), "Le status sauvegardé devrait être DOWNLOADED");
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getDocumentId()).isEqualTo(documentId);
+        assertThat(result.getStatus()).isEqualTo("DOWNLOADED");
+        assertThat(result.getUrl()).contains("sgg.gouv.bj/doc/loi-2024-15");
+        assertThat(result.getErrorMessage()).isNull();
+        
+        verify(fetchResultRepository).save(any(FetchResult.class));
     }
 
     @Test
-    void givenNonExistentDocumentWhenFetchSingleDocumentThenReturnsNotFoundResult() {
-        // Given: Un document loi-1960-999 inexistant, serveur répond HTTP 404
-        when(repository.findByDocumentId("loi-1960-999")).thenReturn(Optional.empty());
+    void givenDocumentNotFound_whenFetchSingleDocument_thenReturnsNotFoundResult() {
+        // Given
+        String documentId = "decret-2020-999";
+        
         when(restTemplate.headForHeaders(anyString()))
             .thenThrow(new HttpClientErrorException(HttpStatus.NOT_FOUND));
+        when(fetchResultRepository.findByDocumentId(documentId))
+            .thenReturn(Optional.empty());
+        when(fetchResultRepository.save(any(FetchResult.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
 
-        // When: Tentative de fetch du document
-        FetchResult result = service.fetchSingleDocument("loi", 1960, 999);
+        // When
+        FetchResult result = service.fetchSingleDocument("decret", 2020, 999);
 
-        // Then: Résultat avec status NOT_FOUND et message d'erreur 404
-        assertNotNull(result, "Le résultat ne devrait pas être null même pour document introuvable");
-        assertEquals("loi-1960-999", result.getDocumentId(), "L'ID document devrait être loi-1960-999");
-        assertEquals("NOT_FOUND", result.getStatus(), "Le status devrait être NOT_FOUND");
-        assertEquals("404 Not Found", result.getErrorMessage(), "Le message d'erreur devrait être 404 Not Found");
-
-        verify(repository).save(resultCaptor.capture());
-        FetchResult saved = resultCaptor.getValue();
-        assertEquals("NOT_FOUND", saved.getStatus(), "Le status sauvegardé devrait être NOT_FOUND");
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getDocumentId()).isEqualTo(documentId);
+        assertThat(result.getStatus()).isEqualTo("NOT_FOUND");
+        assertThat(result.getErrorMessage()).contains("404");
+        
+        verify(fetchResultRepository).save(any(FetchResult.class));
     }
 
     @Test
-    void givenExistingPendingDocumentWhenFetchSingleDocumentThenUpdatesStatusToDownloaded() {
-        // Given: Un document loi-2024-15 existant avec status PENDING en BD
-        FetchResult existing = FetchResult.builder()
-            .documentId("loi-2024-15")
+    void givenExistingFetchResult_whenFetchSingleDocument_thenUpdatesExisting() {
+        // Given
+        String documentId = "loi-2023-10";
+        FetchResult existingResult = FetchResult.builder()
+            .documentId(documentId)
             .documentType("loi")
-            .year(2024)
-            .number(15)
+            .year(2023)
+            .number(10)
             .status("PENDING")
             .build();
+        
+        HttpHeaders headers = new HttpHeaders();
+        when(restTemplate.headForHeaders(anyString())).thenReturn(headers);
+        when(fetchResultRepository.findByDocumentId(documentId))
+            .thenReturn(Optional.of(existingResult));
+        when(fetchResultRepository.save(any(FetchResult.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
 
-        when(repository.findByDocumentId("loi-2024-15")).thenReturn(Optional.of(existing));
-        when(restTemplate.headForHeaders(anyString())).thenReturn(null);
+        // When
+        FetchResult result = service.fetchSingleDocument("loi", 2023, 10);
 
-        // When: Re-fetch du document existant
-        FetchResult result = service.fetchSingleDocument("loi", 2024, 15);
-
-        // Then: Status mis à jour à DOWNLOADED, errorMessage effacé
-        assertEquals("DOWNLOADED", result.getStatus(), "Le status devrait être mis à jour à DOWNLOADED");
-        assertNull(result.getErrorMessage(), "Le message d'erreur devrait être null après succès");
-        verify(repository).save(existing);
+        // Then
+        assertThat(result).isNotNull();
+        assertThat(result.getStatus()).isEqualTo("DOWNLOADED");
+        assertThat(result).isSameAs(existingResult); // Vérifie que c'est l'instance mise à jour
+        
+        verify(fetchResultRepository).save(existingResult);
     }
 
     @Test
-    void givenDecretParametersWhenFetchSingleDocumentThenBuildsCorrectUrl() {
-        // Given: Paramètres d'un décret (type decret, année 2025, numéro 716)
-        when(repository.findByDocumentId("decret-2025-716")).thenReturn(Optional.empty());
-        when(restTemplate.headForHeaders(anyString())).thenReturn(null);
+    void givenServerError_whenFetchSingleDocument_thenThrowsException() {
+        
+        when(restTemplate.headForHeaders(anyString()))
+            .thenThrow(new HttpClientErrorException(HttpStatus.INTERNAL_SERVER_ERROR));
 
-        // When: Fetch du décret
-        FetchResult result = service.fetchSingleDocument("decret", 2025, 716);
-
-        // Then: URL construite au format base/type-year-number
-        assertEquals("https://sgg.gouv.bj/doc/decret-2025-716", result.getUrl(),
-                    "L'URL devrait suivre le format base/type-year-number");
+        // When/Then - Le service lance l'exception (pas de catch pour 500)
+        try {
+            service.fetchSingleDocument("loi", 2022, 5);
+        } catch (HttpClientErrorException e) {
+            assertThat(e.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }

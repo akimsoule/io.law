@@ -1,7 +1,5 @@
 package bj.gouv.sgg.config;
 
-import bj.gouv.sgg.impl.GroqClient;
-import bj.gouv.sgg.impl.NoClient;
 import bj.gouv.sgg.impl.OllamaClient;
 import bj.gouv.sgg.service.IAService;
 import lombok.RequiredArgsConstructor;
@@ -10,39 +8,24 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Configuration du bean IAService avec sélection automatique selon capacité machine.
+ * Configuration du bean IAService - OllamaClient uniquement.
  * 
- * <p><b>Stratégie de sélection</b> :
- * <ol>
- *   <li><b>OllamaClient</b> (priorité 1) :
+ * <p><b>Stratégie</b> :
+ * <ul>
+ *   <li><b>OllamaClient</b> : Extraction IA via Ollama local
  *       <ul>
  *         <li>Condition : {@code law.capacity.ia >= 4} (16GB+ RAM)</li>
  *         <li>Vérifications : Ollama pingable + modèle disponible</li>
  *         <li>Avantage : Gratuit, rapide, privé</li>
  *       </ul>
  *   </li>
- *   <li><b>GroqClient</b> (priorité 2 - fallback) :
- *       <ul>
- *         <li>Condition : {@code law.groq.api-key} configurée</li>
- *         <li>Vérification : Groq API accessible</li>
- *         <li>Limitation : Rate limit + latence possible</li>
- *       </ul>
- *   </li>
- *   <li><b>NoClient</b> (priorité 3 - fallback final) :
- *       <ul>
- *         <li>Condition : Aucune IA disponible</li>
- *         <li>Comportement : Throw IAException (force utilisation OCR)</li>
- *       </ul>
- *   </li>
- * </ol>
+ * </ul>
  * 
  * <p><b>Note</b> : Ce bean est utilisé par {@link bj.gouv.sgg.processor.PdfToJsonProcessor} pour injection.
- * La logique de fallback interne (Ollama → Groq → OCR) reste dans le processor.
+ * Fallback vers OCR si Ollama indisponible.
  * 
  * @see bj.gouv.sgg.service.IAService
  * @see bj.gouv.sgg.impl.OllamaClient
- * @see bj.gouv.sgg.impl.GroqClient
- * @see bj.gouv.sgg.impl.NoClient
  */
 @Configuration
 @RequiredArgsConstructor
@@ -50,21 +33,18 @@ import org.springframework.context.annotation.Configuration;
 public class IAServiceConfiguration {
 
     private final OllamaClient ollamaClient;
-    private final GroqClient groqClient;
-    private final NoClient noClient;
     private final bj.gouv.sgg.config.LawProperties lawProperties;
 
     /**
-     * Bean IAService sélectionné automatiquement selon la capacité de la machine.
+     * Bean IAService - Retourne OllamaClient si disponible.
      * 
      * <p><b>Détection capacité</b> : RAM + CPU → Score 0-10
      * <ul>
-     *   <li>Score 0-3 : Machine faible → OCR seulement (NoClient)</li>
-     *   <li>Score 4-6 : Machine moyenne → IA locale possible (OllamaClient si disponible)</li>
-     *   <li>Score 7-10 : Machine puissante → IA locale optimale (OllamaClient prioritaire)</li>
+     *   <li>Score 0-3 : Machine faible → OCR seulement</li>
+     *   <li>Score 4+ : Machine moyenne/puissante → IA locale possible</li>
      * </ul>
      * 
-     * @return IAService instance appropriée selon capacité machine
+     * @return IAService instance (OllamaClient)
      */
     @Bean
     public IAService iaService() {
@@ -76,7 +56,7 @@ public class IAServiceConfiguration {
         log.info("🖥️ Capacité machine détectée : {} GB RAM, {} CPU → Score: {}", 
                  totalMemoryGB, availableProcessors, capacityScore);
         
-        // Priorité 1 : OllamaClient si capacité IA suffisante (>=4)
+        // Vérifier si capacité IA suffisante (>=4)
         if (capacityScore >= lawProperties.getCapacity().getIa()) {
             // Vérifier si Ollama est disponible
             try {
@@ -94,21 +74,9 @@ public class IAServiceConfiguration {
                      capacityScore, lawProperties.getCapacity().getIa());
         }
         
-        // Priorité 2 : GroqClient si API key configurée
-        try {
-            if (groqClient.isAvailable()) {
-                log.info("✅ IAService sélectionné : GroqClient (fallback - API key configurée)");
-                return groqClient;
-            } else {
-                log.warn("⚠️ GroqClient non disponible (API key manquante ou serveur inaccessible)");
-            }
-        } catch (Exception e) {
-            log.warn("⚠️ Erreur vérification GroqClient : {}", e.getMessage());
-        }
-        
-        // Priorité 3 : NoClient (fallback final)
-        log.warn("⚠️ IAService sélectionné : NoClient (aucune IA disponible - fallback OCR uniquement)");
-        return noClient;
+        // Si Ollama non disponible, retourner OllamaClient quand même (le processor fera fallback vers OCR)
+        log.info("ℹ️ IAService retourne OllamaClient (fallback vers OCR dans le processor si indisponible)");
+        return ollamaClient;
     }
     
     /**

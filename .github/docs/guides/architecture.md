@@ -5,7 +5,7 @@
 Application Spring Batch modulaire pour extraire, traiter et consolider les lois/décrets depuis https://sgg.gouv.bj/doc.
 
 ### Technologies
-- **Java 17+**, **Spring Boot 3.2.0** + Spring Batch
+- **Java**, **Spring Boot 3.2.0** + Spring Batch
 - **Maven Multi-Modules** (11 modules)
 - **PDFBox** (extraction PDF), **Tesseract OCR** (JavaCPP)
 - **MySQL 8.4** (Docker), **Ollama/Groq** (parsing IA optionnel)
@@ -20,8 +20,7 @@ io.law/
 ├── law-common/          # Socle (models, repos, exceptions, config)
 ├── law-fetch/           # Récupération métadonnées (2 jobs)
 ├── law-download/        # Téléchargement PDFs
-├── law-tojson/          # PDF → JSON (4 sous-modules)
-│   ├── law-ai-pdf-json/    # Extraction IA
+├── law-tojson/          # PDF → JSON (3 sous-modules)
 │   ├── law-pdf-ocr/        # Extraction OCR
 │   ├── law-ocr-json/       # Parsing OCR → JSON ✅
 │   ├── law-json-config/    # Config commune ✅
@@ -82,10 +81,6 @@ io.law/
 - 70 tests (69 pass, 1 skip)
  - Enregistre les mots OCR non reconnus dans `data/word_non_recognize.txt`
  - Calcule une pénalité progressive de confiance selon le taux et le volume de mots non reconnus
-
-#### law-ai-pdf-json
-- Extraction via IA (Ollama/Groq)
-- Fallback si OCR échoue
 
 #### law-json-config ✅
 - Modèles JSON partagés (`Article`, `Signatory`, `DocumentMetadata`)

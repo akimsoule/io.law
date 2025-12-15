@@ -44,17 +44,23 @@ public class ConsolidationWriter implements ItemWriter<LawDocument> {
             String docId = document.getDocumentId();
             
             try {
-                // Sauvegarder status mis à jour par le processor
-                lawDocumentRepository.save(document);
+                // Sauvegarder status avec flush immédiat pour garantir commit
+                LawDocument saved = lawDocumentRepository.saveAndFlush(document);
                 
-                if (document.getStatus() == LawDocument.ProcessingStatus.CONSOLIDATED) {
+                // Vérification post-sauvegarde
+                if (saved.getStatus() != document.getStatus()) {
+                    log.error("❌ [{}] CRITICAL: Status not persisted! Expected {} but got {}", 
+                             docId, document.getStatus(), saved.getStatus());
+                }
+                
+                if (saved.getStatus() == LawDocument.ProcessingStatus.CONSOLIDATED) {
                     consolidated++;
                     log.info("✅ [{}] Status mis à jour → CONSOLIDATED", docId);
-                } else if (document.getStatus() == LawDocument.ProcessingStatus.FAILED) {
+                } else if (saved.getStatus() == LawDocument.ProcessingStatus.FAILED) {
                     failed++;
                     log.warn("⚠️ [{}] Status mis à jour → FAILED", docId);
                 } else {
-                    log.debug("📝 [{}] Status: {}", docId, document.getStatus());
+                    log.debug("📝 [{}] Status: {}", docId, saved.getStatus());
                 }
                 
             } catch (Exception e) {

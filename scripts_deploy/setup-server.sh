@@ -108,11 +108,11 @@ systemctl enable ollama 2>/dev/null || true
 sleep 2
 
 # Vérifier si modèle existe, sinon télécharger
-if ! ollama list | grep -q "qwen2.5:7b"; then
-    echo "📥 Téléchargement modèle qwen2.5:7b (en arrière-plan)..."
-    nohup ollama pull qwen2.5:7b > /tmp/ollama-pull.log 2>&1 &
+if ! ollama list | grep -q "gemma3n"; then
+    echo "📥 Téléchargement modèle gemma3n (en arrière-plan)..."
+    nohup ollama pull gemma3n > /tmp/ollama-pull.log 2>&1 &
 else
-    echo "✅ Modèle qwen2.5:7b déjà présent"
+    echo "✅ Modèle gemma3n déjà présent"
 fi
 
 # ============================================

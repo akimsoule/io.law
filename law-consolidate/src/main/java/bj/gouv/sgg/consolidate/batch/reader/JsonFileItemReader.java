@@ -2,11 +2,13 @@ package bj.gouv.sgg.consolidate.batch.reader;
 
 import bj.gouv.sgg.model.LawDocument;
 import bj.gouv.sgg.repository.LawDocumentRepository;
+import bj.gouv.sgg.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.ItemReader;
 import org.springframework.stereotype.Component;
 
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 
@@ -39,14 +41,20 @@ import java.util.List;
 public class JsonFileItemReader implements ItemReader<LawDocument> {
     
     private final LawDocumentRepository lawDocumentRepository;
+    private final FileStorageService fileStorageService;
     
     private Iterator<LawDocument> documentIterator;
     private int totalDocuments = 0;
+    private int skippedNoJson = 0;
+    private String typeFilter; // null = tous, sinon filtre ex: "loi"
     
     /**
      * Lit le prochain document à consolider.
      * 
-     * @return Document EXTRACTED, ou {@code null} si fin de liste
+     * <p><b>Filtrage</b> : Ne retourne que les documents qui ont un fichier JSON.
+     * Les documents EXTRACTED sans JSON sont skippés (log debug).
+     * 
+     * @return Document EXTRACTED avec JSON existant, ou {@code null} si fin de liste
      */
     @Override
     public LawDocument read() {
@@ -55,15 +63,44 @@ public class JsonFileItemReader implements ItemReader<LawDocument> {
             initializeReader();
         }
         
-        // Retourner prochain document ou null si fin
-        if (documentIterator.hasNext()) {
+        // Chercher prochain document avec JSON existant
+        while (documentIterator.hasNext()) {
             LawDocument doc = documentIterator.next();
-            log.debug("📖 [{}] Document lu pour consolidation", doc.getDocumentId());
+            String docId = doc.getDocumentId();
+            
+            // Vérifier existence du fichier JSON
+            Path jsonPath = fileStorageService.jsonPath(doc.getType(), docId);
+            if (!fileStorageService.jsonExists(doc.getType(), docId)) {
+                log.debug("⏭️ [{}] JSON non trouvé, skip (extraction pas encore faite)", docId);
+                skippedNoJson++;
+                continue; // Skip ce document
+            }
+            
+            log.debug("📖 [{}] Document lu pour consolidation", docId);
             return doc;
         }
         
-        log.info("✅ Lecture terminée: {} documents EXTRACTED", totalDocuments);
+        // Fin de lecture : log et reset pour prochaine exécution
+        if (totalDocuments > 0) {
+            log.info("✅ Lecture terminée: {} documents EXTRACTED, {} skippés (pas de JSON)",
+                    totalDocuments - skippedNoJson, skippedNoJson);
+        }
+        documentIterator = null; // Reset pour prochaine exécution du job
+        totalDocuments = 0;
+        skippedNoJson = 0;
         return null;
+    }
+    
+    /**
+     * Définit un filtre de type (ex: "loi" ou "decret").
+     */
+    public void setTypeFilter(String type) {
+        if (type != null && !type.isBlank()) {
+            this.typeFilter = type.trim().toLowerCase();
+            log.info("🎯 Type filter enabled (consolidate): {}", this.typeFilter);
+        } else {
+            this.typeFilter = null;
+        }
     }
     
     /**
@@ -75,6 +112,13 @@ public class JsonFileItemReader implements ItemReader<LawDocument> {
         List<LawDocument> documents = lawDocumentRepository.findByStatus(
             LawDocument.ProcessingStatus.EXTRACTED
         );
+        
+        if (typeFilter != null) {
+            documents = documents.stream()
+                .filter(d -> typeFilter.equalsIgnoreCase(d.getType()))
+                .toList();
+            log.info("🎯 Filtrage par type='{}' appliqué: {} documents", typeFilter, documents.size());
+        }
         
         totalDocuments = documents.size();
         documentIterator = documents.iterator();

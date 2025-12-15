@@ -1,0 +1,41 @@
+# Configuration pour tests
+spring:
+  application:
+    name: law-AIpdfToJson-test
+  
+  # H2 pour base de données en mémoire (tests)
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: 
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    database-platform: org.hibernate.dialect.H2Dialect
+    show-sql: false
+  
+  h2:
+    console:
+      enabled: false
+  
+  batch:
+    job:
+      enabled: false
+
+law:
+  capacity:
+    ia: 2  # Score minimum réduit pour Mac Intel 2019
+    ocr: 2
+    ollama-url: http://localhost:11434
+    ollama-models-required: gemma3n:latest  # Modèle disponible (6.9B)
+  
+  groq:
+    api-key: ${GROQ_API_KEY:}  # Clé API Groq depuis variable d'environnement
+    model: llama-3.1-8b-instant  # Modèle rapide pour tests (rate limit friendly)
+
+logging:
+  level:
+    root: INFO
+    bj.gouv.sgg: DEBUG

@@ -44,6 +44,7 @@ public class DownloadedPdfReader implements ItemReader<LawDocument> {
     private String targetDocumentId;
     private boolean forceMode = false;
     private Integer maxDocuments = 10; // Par défaut : 10 documents
+    private String typeFilter; // null = tous, sinon filtre ex: "loi"
     
     @Override
     public synchronized LawDocument read() {
@@ -85,6 +86,19 @@ public class DownloadedPdfReader implements ItemReader<LawDocument> {
         this.maxDocuments = max;
         log.info("📊 Nombre max de documents: {}", max != null ? max : "illimité");
     }
+
+    /**
+     * Filtre optionnel pour ne lire que le type demandé (ex: "loi").
+     */
+    public void setTypeFilter(String type) {
+        if (type != null && !type.isBlank()) {
+            this.typeFilter = type.trim().toLowerCase();
+            log.info("🎯 Type filter enabled: {}", this.typeFilter);
+        } else {
+            this.typeFilter = null;
+            log.info("🎯 Type filter disabled (all types)");
+        }
+    }
     
     private synchronized void initialize() {
         List<LawDocument> toProcess;
@@ -100,6 +114,11 @@ public class DownloadedPdfReader implements ItemReader<LawDocument> {
             
             List<LawDocument> downloadedDocuments = lawDocumentRepository
                 .findByStatus(LawDocument.ProcessingStatus.DOWNLOADED);
+            if (typeFilter != null) {
+                downloadedDocuments = downloadedDocuments.stream()
+                        .filter(d -> typeFilter.equalsIgnoreCase(d.getType()))
+                        .toList();
+            }
             
             // Trier du plus récent au plus ancien: year DESC, number DESC
             toProcess = downloadedDocuments.stream()

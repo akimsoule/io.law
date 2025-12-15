@@ -31,6 +31,7 @@ public class Issue {
         STUCK_IN_FETCHED("Document bloqué en FETCHED", true),
         STUCK_IN_DOWNLOADED("Document bloqué en DOWNLOADED", true),
         STUCK_IN_EXTRACTED("Document bloqué en EXTRACTED", true),
+        STATUS_INCONSISTENT("Statut incohérent avec fichiers existants", true),
         
         // Problèmes de fichiers
         MISSING_PDF("PDF manquant alors que status=DOWNLOADED", true),

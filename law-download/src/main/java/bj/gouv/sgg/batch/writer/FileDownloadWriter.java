@@ -4,6 +4,7 @@ import bj.gouv.sgg.model.DownloadResult;
 import bj.gouv.sgg.model.LawDocument;
 import bj.gouv.sgg.repository.DownloadResultRepository;
 import bj.gouv.sgg.service.DocumentStatusManager;
+import bj.gouv.sgg.service.DownloadResultUpdateService;
 import bj.gouv.sgg.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -24,6 +25,9 @@ public class FileDownloadWriter implements ItemWriter<LawDocument> {
 
     private final FileStorageService fileStorageService;
     private final DocumentStatusManager statusManager;
+    private final DownloadResultUpdateService downloadResultUpdateService;
+    
+    // Gardé pour la vérification d'existence (read-only)
     private final DownloadResultRepository downloadResultRepository;
     
     private boolean forceMode = false;
@@ -81,6 +85,7 @@ public class FileDownloadWriter implements ItemWriter<LawDocument> {
     
     /**
      * Traite et sauvegarde un document.
+     * Utilise DownloadResultUpdateService pour éviter les deadlocks en multi-threading.
      */
     private void processDocument(LawDocument doc) throws IOException {
         String docId = doc.getDocumentId();
@@ -88,22 +93,17 @@ public class FileDownloadWriter implements ItemWriter<LawDocument> {
         // Sauvegarder le PDF sur disque
         fileStorageService.savePdf(doc.getType(), docId, doc.getPdfContent());
         
-        // Mettre à jour ou créer l'entrée dans download_results
-        DownloadResult downloadResult = downloadResultRepository.findByDocumentId(docId)
-            .orElse(DownloadResult.builder()
-                .documentId(docId)
-                .build());
+        // Sauvegarder le résultat dans download_results avec transaction isolée
+        String pdfPath = fileStorageService.pdfPath(doc.getType(), docId).toString();
+        downloadResultUpdateService.saveDownloadResult(
+            docId,
+            doc.getUrl(),
+            pdfPath,
+            doc.getSha256(),
+            (long) doc.getPdfContent().length
+        );
         
-        // Mettre à jour les infos
-        downloadResult.setUrl(doc.getUrl());
-        downloadResult.setPdfPath(fileStorageService.pdfPath(doc.getType(), docId).toString());
-        downloadResult.setSha256(doc.getSha256());
-        downloadResult.setFileSize((long) doc.getPdfContent().length);
-        downloadResult.setDownloadedAt(LocalDateTime.now());
-        
-        downloadResultRepository.save(downloadResult);
-        
-        // Mettre à jour le statut du document
+        // Mettre à jour le statut du document (transaction séparée via @Transactional)
         statusManager.updateStatus(doc.getDocumentId(), LawDocument.ProcessingStatus.DOWNLOADED);
         
         log.info("✅ PDF saved: {} ({} bytes)", doc.getDocumentId(), doc.getPdfContent().length);

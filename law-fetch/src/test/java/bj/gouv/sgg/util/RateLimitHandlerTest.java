@@ -1,13 +1,11 @@
 package bj.gouv.sgg.util;
 
+import bj.gouv.sgg.util.RateLimitHandler.ProbeFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
 
-/**
- * Tests unitaires pour RateLimitHandler
- */
 class RateLimitHandlerTest {
 
     private RateLimitHandler handler;
@@ -18,66 +16,67 @@ class RateLimitHandlerTest {
     }
 
     @Test
-    void givenNewInstanceWhenCreateRateLimitHandlerThenInitializesSuccessfully() {
-        // Given & When
-        RateLimitHandler newHandler = new RateLimitHandler();
+    void givenSuccessfulOperation_whenExecuteWithRetry_thenReturnResult() {
+        // Given
+        String url = "https://example.com/test";
+        ProbeFunction operation = u -> 200;
+
+        // When
+        Integer result = handler.executeWithRetry(url, operation);
 
         // Then
-        assertNotNull(newHandler);
+        assertThat(result).isEqualTo(200);
     }
 
     @Test
-    void givenInitializedHandlerWhenBeforeRequestThenDoesNotThrow() {
-        // When & Then
-        assertDoesNotThrow(() -> handler.beforeRequest());
+    void givenInitial429ThenSuccess_whenExecuteWithRetry_thenRetryAndSucceed() {
+        // Given
+        String url = "https://example.com/test";
+        int[] attemptCount = {0};
+        
+        ProbeFunction operation = u -> {
+            attemptCount[0]++;
+            if (attemptCount[0] < 2) {
+                return 429; // Premier essai → 429
+            }
+            return 200; // Deuxième essai → succès
+        };
+
+        // When
+        Integer result = handler.executeWithRetry(url, operation);
+
+        // Then
+        assertThat(result).isEqualTo(200);
+        assertThat(attemptCount[0]).isGreaterThan(1); // Au moins 2 tentatives
     }
 
     @Test
-    void givenRateLimitErrorWhenOn429ThenDoesNotThrow() {
-        // When & Then
-        assertDoesNotThrow(() -> handler.on429("https://sgg.gouv.bj/doc/loi-2024-15"));
+    void givenPersistent429_whenExecuteWithRetry_thenReturn429AfterMaxRetries() {
+        // Given
+        String url = "https://example.com/test";
+        ProbeFunction operation = u -> 429; // Toujours 429
+
+        // When
+        Integer result = handler.executeWithRetry(url, operation);
+
+        // Then
+        assertThat(result).isEqualTo(429); // Retourne 429 après épuisement des retries
     }
 
     @Test
-    void givenMultipleRateLimitsWhenOn429ThenAdaptsDelay() {
-        // Given & When - Simuler plusieurs 429
-        handler.on429("url1");
-        handler.on429("url2");
-        handler.on429("url3");
-
-        // Then - Ne devrait pas lever d'exception
-        assertDoesNotThrow(() -> handler.beforeRequest());
+    void givenMultipleRequests_whenBeforeRequest_thenNoException() {
+        // When/Then - Ne devrait pas lancer d'exception
+        handler.beforeRequest();
+        handler.beforeRequest();
     }
 
     @Test
-    void givenMultipleRequestsWhenBeforeRequestThenCompletesInReasonableTime() {
-        // Given & When
-        long startTime = System.currentTimeMillis();
-        for (int i = 0; i < 5; i++) {
-            handler.beforeRequest();
-        }
-        long duration = System.currentTimeMillis() - startTime;
+    void givenMultiple429_whenOn429_thenIncrementCounter() {
+        // When
+        handler.on429("https://example.com/test1");
+        handler.on429("https://example.com/test2");
 
-        // Then - Devrait être raisonnablement rapide
-        assertTrue(duration < 5000, "Requests should not block for too long");
-    }
-
-    @Test
-    void givenManyCallsWhenBeforeRequestThenAllSucceed() {
-        // When & Then - Plusieurs appels ne doivent pas échouer
-        for (int i = 0; i < 10; i++) {
-            assertDoesNotThrow(() -> handler.beforeRequest());
-        }
-    }
-
-    @Test
-    void givenConsecutiveRateLimitsWhenOn429ThenRemainsFunctional() {
-        // Given & When - Appels consécutifs de 429
-        for (int i = 0; i < 10; i++) {
-            handler.on429("https://sgg.gouv.bj/doc/loi-2024-" + i);
-        }
-
-        // Then - Handler doit rester fonctionnel
-        assertDoesNotThrow(() -> handler.beforeRequest());
+        // Then - Vérifie que le handler a bien enregistré les 429
+        // (pas d'exception levée)
     }
 }

@@ -12,39 +12,64 @@ Application pour extraire, traiter et consolider les lois et décrets du gouvern
 
 ```yaml
 spring:
+  application:
+    name: io.law
+  
   datasource:
-    url: jdbc:mysql://localhost:3306/law_db
+    url: jdbc:mysql://${MYSQL_HOST:localhost}:3306/law_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    driver-class-name: com.mysql.cj.jdbc.Driver
     username: ${DATABASE_USERNAME:root}
-    password: ${DATABASE_PASSWORD:}
+    password: ${DATABASE_PASSWORD:root}
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
   
   jpa:
     hibernate:
       ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+    open-in-view: false
   
   batch:
     job:
       enabled: false  # Manuel via CLI/API
+    jdbc:
+      initialize-schema: always
 
 law:
   base-url: https://sgg.gouv.bj/doc
+  user-agent: Mozilla/5.0 (compatible; LawBatchBot/1.0)
+  end-year: 1960
+  max-number-per-year: 2000
   
   storage:
-    base-path: /data
+    base-path: data
     pdf-dir: pdfs
     ocr-dir: ocr
     json-dir: articles
   
+  http:
+    timeout: 30000
+  
+  ocr:
+    language: fra
+    dpi: 300
+    quality-threshold: 0.70
+  
   batch:
     chunk-size: 10
-    max-threads: 10
-    max-documents-to-extract: 50
-    job-timeout-minutes: 55
+    max-threads: 20
+    max-items-to-fetch-previous: 10000
   
   capacity:
     ia: 4   # Score RAM/CPU IA (16GB+)
     ocr: 2  # Score OCR (4GB+)
     ollama-url: http://localhost:11434
-    ollama-models-required: qwen2.5:7b
+    ollama-models-required: gemma3n:latest
   
   groq:
     api-key: ${GROQ_API_KEY:}
@@ -56,7 +81,11 @@ quality:
 
 logging:
   level:
+    root: INFO
     bj.gouv.sgg: DEBUG
+    org.springframework.batch: INFO
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
 ```
 
 ---
@@ -106,27 +135,34 @@ java -jar law-app.jar --job=fetchPreviousJob
 java -jar law-app.jar --job=downloadJob
 ```
 
-### 4. ocrJob (⏳ À implémenter)
-**Objectif** : Extraire texte via OCR
+### 4. pdfToJsonJob ✅
+**Objectif** : Transformer PDF → JSON structuré (OCR + IA avec fallback automatique)
 
-**Fonctionnement prévu** :
+**Fonctionnement** :
 - Lit documents DOWNLOADED
-- Exécute Tesseract OCR
-- Génère fichiers `.txt` dans `data/ocr/{type}/`
-- Update statut → EXTRACTED
-
-### 5. extractJob (⏳ À implémenter)
-**Objectif** : Parser OCR → JSON structuré
-
-**Fonctionnement prévu** :
-- Lit documents EXTRACTED
-- Parse articles, métadonnées, signataires
+- **Stratégie fallback automatique** :
+  1. Tente extraction via **IA Ollama** (si capacité IA ≥ 4)
+  2. Fallback vers **Groq API** (si Ollama échoue)
+  3. Fallback vers **OCR** (Tesseract + parsing regex)
+- Exécute Tesseract OCR pour texte brut
+- Parse articles, métadonnées, signataires via regex
 - Applique 258 corrections OCR
 - Génère JSON dans `data/articles/{type}/`
-- Fallback vers IA si OCR échoue
- - Enregistre les mots non reconnus et applique pénalités de confiance
+- Enregistre mots non reconnus + applique pénalités confiance
+- Update statut → EXTRACTED ou FAILED
 
-### 6. consolidateJob ✅
+**Commande** :
+```bash
+java -jar law-app.jar --job=pdfToJsonJob
+
+# Mode ciblé
+java -jar law-app.jar --job=pdfToJsonJob --doc=loi-2024-15
+
+# Mode force (écrase JSON existants)
+java -jar law-app.jar --job=pdfToJsonJob --doc=decret-2024-1632 --force
+```
+
+### 5. consolidateJob ✅
 **Objectif** : Import JSON → MySQL
 
 **Fonctionnement** :
@@ -153,6 +189,28 @@ java -jar law-app.jar --job=consolidateJob
 
 ---
 
+## Qualité & Mots Non Reconnus
+
+**Suivi des mots non reconnus pendant extraction** :
+- Fichier : `data/word_non_recognize.txt` (unicité par mot)
+- Log attendu : `Recorded X new unrecognized words (total: Y)` lors de `pdfToJsonJob`
+- Impact : Pénalités progressives sur score de confiance
+
+**Commandes utiles** :
+```bash
+# Forcer extraction pour enregistrer les mots
+java -jar law-app.jar --job=pdfToJsonJob --doc=decret-2024-1632 --force
+
+# Vérifier le fichier
+wc -l data/word_non_recognize.txt
+tail -20 data/word_non_recognize.txt
+
+# Statistiques (si disponible)
+sh scripts/unrecognized_words_stats.sh
+```
+
+---
+
 ## Pipeline Complet
 
 ```bash
@@ -171,29 +229,10 @@ java -jar law-app.jar --job=fetchPreviousJob
 # 4. Télécharger PDFs
 java -jar law-app.jar --job=downloadJob
 
-# 5. Extraction OCR (à venir)
-java -jar law-app.jar --job=ocrJob
+# 5. Extraction PDF → JSON (OCR + IA)
+java -jar law-app.jar --job=pdfToJsonJob
 
-# 6. Parsing JSON (à venir)
-java -jar law-app.jar --job=extractJob
-## Qualité & Mots Non Reconnu
-
-- Fichier suivi : `data/word_non_recognize.txt` (unicité par mot)
-- Log attendu : `Recorded X new unrecognized words (total: Y)` lors de `pdfToJsonJob`
-- Commandes utiles :
-
-```zsh
-# Forcer OCR→JSON pour enregistrer les mots
-java -jar law-app/target/law-app-1.0-SNAPSHOT.jar \
-  --job=pdfToJsonJob --doc=decret-2024-1632 --force \
-  --spring.main.web-application-type=none
-
-# Vérifier le fichier
-wc -l data/word_non_recognize.txt
-tail -20 data/word_non_recognize.txt
-```
-
-# 7. Consolidation BD ✅
+# 6. Consolidation BD
 java -jar law-app.jar --job=consolidateJob
 ```
 

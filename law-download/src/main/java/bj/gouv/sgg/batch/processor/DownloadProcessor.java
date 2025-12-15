@@ -1,7 +1,6 @@
 package bj.gouv.sgg.batch.processor;
 
 import bj.gouv.sgg.model.LawDocument;
-import bj.gouv.sgg.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hc.client5.http.classic.methods.HttpGet;
@@ -18,17 +17,17 @@ import java.security.NoSuchAlgorithmException;
 
 /**
  * Processor qui télécharge le PDF d'un document
+ * Note: Le filtrage (skip si déjà téléchargé) est géré par le Reader
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
 public class DownloadProcessor implements ItemProcessor<LawDocument, LawDocument> {
     
-    private final FileStorageService fileStorageService;
     private boolean forceMode = false;
     
     /**
-     * Active le mode force (re-téléchargement même si déjà DOWNLOADED)
+     * Active le mode force (pour logging uniquement, le filtrage est dans le Reader)
      */
     public void setForceMode(boolean force) {
         this.forceMode = force;
@@ -38,20 +37,10 @@ public class DownloadProcessor implements ItemProcessor<LawDocument, LawDocument
     @Override
     public LawDocument process(LawDocument document) throws IOException, NoSuchAlgorithmException {
         String docId = document.getDocumentId();
-        boolean pdfExists = fileStorageService.pdfExists(document.getType(), docId);
-        boolean isDownloaded = document.getStatus() == LawDocument.ProcessingStatus.DOWNLOADED;
         
-        // Skip si déjà téléchargé ET fichier présent, SAUF en mode force
-        if (!forceMode && isDownloaded && pdfExists) {
-            log.debug("⏭️ [{}] PDF already downloaded and file exists, skipping", docId);
-            return null;
-        }
-        
-        // Log les différents cas de téléchargement
+        // Log selon le contexte
         if (forceMode) {
-            log.info("🔄 [{}] Force mode: re-downloading", docId);
-        } else if (isDownloaded && !pdfExists) {
-            log.info("📥 [{}] Status DOWNLOADED but PDF missing on disk → re-downloading", docId);
+            log.debug("🔄 [{}] Force mode: downloading", docId);
         } else {
             log.debug("📥 [{}] Downloading PDF", docId);
         }
@@ -104,8 +93,15 @@ public class DownloadProcessor implements ItemProcessor<LawDocument, LawDocument
                 }
             }
         } catch (IOException e) {
-            log.error("Error downloading {}: {}", document.getDocumentId(), e.getMessage());
-            throw e;
+            log.error("❌ [{}] Erreur téléchargement: {} - Document marqué FAILED", 
+                     document.getDocumentId(), e.getMessage());
+            document.setStatus(LawDocument.ProcessingStatus.FAILED);
+            return document; // Ne pas throw - continue le job
+        } catch (Exception e) {
+            log.error("❌ [{}] Erreur inattendue: {} - Document marqué FAILED", 
+                     document.getDocumentId(), e.getMessage(), e);
+            document.setStatus(LawDocument.ProcessingStatus.FAILED);
+            return document; // Ne pas throw - continue le job
         }
     }
 }

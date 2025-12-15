@@ -3,8 +3,7 @@ package bj.gouv.sgg.processor;
 import bj.gouv.sgg.model.LawDocument;
 import bj.gouv.sgg.modele.JsonResult;
 import bj.gouv.sgg.service.FileStorageService;
-import bj.gouv.sgg.service.IAService;
-import bj.gouv.sgg.service.OcrTransformer;
+import bj.gouv.sgg.service.LawTransformationService;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import lombok.RequiredArgsConstructor;
@@ -17,20 +16,43 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
+/**
+ * Processeur Spring Batch pour la transformation PDF → JSON avec stratégie de fallback en cascade.
+ * 
+ * <p><b>Workflow (géré par LawTransformationService)</b> :
+ * <pre>
+ * 1. OCR + Corrections CSV + Check qualité
+ * 2. Si mauvais → AI Correction OCR
+ * 3. Extraction Articles + Check qualité JSON
+ * 4. Si mauvais → AI Correction JSON  
+ * 5. Si toujours mauvais → AI Extraction complète (PDF direct)
+ * 6. Si toujours mauvais → FAILED
+ * </pre>
+ * 
+ * @see LawTransformationService
+ */
 @Component
 @RequiredArgsConstructor
 @Slf4j
 public class PdfToJsonProcessor implements ItemProcessor<LawDocument, LawDocument> {
 
     private final FileStorageService fileStorageService;
-    private final IAService iaService;
-    private final OcrTransformer ocrTransformer;
+    private final LawTransformationService transformationService;
     private final Gson gson;
     
+    
+    /**
+     * Transforme un document PDF en JSON via le service d'orchestration.
+     * 
+     * <p>Délègue toute la logique de fallback au {@link LawTransformationService}.
+     * 
+     * <p><b>⚠️ RÉSILIENCE</b> : Ne doit JAMAIS throw d'exception. En cas d'erreur,
+     * marque le document FAILED et retourne pour continuer le job.
+     */
     @Override
-    public LawDocument process(LawDocument document) throws Exception {
+    public LawDocument process(LawDocument document) {
         String docId = document.getDocumentId();
-        log.info("🔄 [{}] Démarrage transformation PDF → JSON", docId);
+        log.info("🔄 [{}] Démarrage transformation PDF → JSON avec fallback cascade", docId);
         
         // 1. Vérifier que le PDF existe
         Path pdfPath = fileStorageService.pdfPath(document.getType(), docId);
@@ -40,7 +62,7 @@ public class PdfToJsonProcessor implements ItemProcessor<LawDocument, LawDocumen
             return document;
         }
         
-        // 2. Lire JSON existant (si présent)
+        // 2. Lire JSON existant pour comparaison
         Path jsonPath = fileStorageService.jsonPath(document.getType(), docId);
         Optional<JsonResult> existingJson = readExistingJson(jsonPath);
         
@@ -49,27 +71,15 @@ public class PdfToJsonProcessor implements ItemProcessor<LawDocument, LawDocumen
                      docId, existingJson.get().getConfidence(), existingJson.get().getSource());
         }
         
-        // 3. Appliquer stratégie fallback IA → OCR programmatique
+        // 3. Transformation via service d'orchestration
         JsonResult result;
         try {
-            // Tenter extraction via IA (Ollama ou Groq si disponibles)
-            result = iaService.transform(document, pdfPath);
+            result = transformationService.transform(document, pdfPath);
             
-        } catch (Exception iaException) {
-            // IA a échoué ou n'est pas disponible → Fallback OCR programmatique
-            log.warn("⚠️ [{}] IA non disponible ou échouée: {} → Fallback OCR programmatique", 
-                     docId, iaException.getMessage());
-            
-            try {
-                result = ocrTransformer.transform(document, pdfPath);
-                log.info("✅ [{}] Fallback OCR programmatique réussi", docId);
-                
-            } catch (Exception ocrException) {
-                log.error("❌ [{}] Échec IA + OCR: IA={}, OCR={}", 
-                         docId, iaException.getMessage(), ocrException.getMessage());
-                document.setStatus(LawDocument.ProcessingStatus.FAILED);
-                return document;
-            }
+        } catch (Exception e) {
+            log.error("❌ [{}] Échec transformation: {}", docId, e.getMessage(), e);
+            document.setStatus(LawDocument.ProcessingStatus.FAILED);
+            return document;
         }
         
         // 4. Comparer confiance avec JSON existant
@@ -80,9 +90,8 @@ public class PdfToJsonProcessor implements ItemProcessor<LawDocument, LawDocumen
             if (newConfidence <= existingConfidence) {
                 log.info("⏭️ [{}] Conserver JSON existant (confiance {} > nouvelle {})", 
                          docId, existingConfidence, newConfidence);
-                // Garder le JSON existant, ne pas l'écraser
                 document.setStatus(LawDocument.ProcessingStatus.EXTRACTED);
-                document.setOcrContent(null); // Ne pas écraser le fichier
+                document.setOcrContent(null); // Ne pas écraser
                 return document;
             } else {
                 log.info("📝 [{}] Remplacer JSON existant (confiance {} → {})", 
@@ -91,13 +100,11 @@ public class PdfToJsonProcessor implements ItemProcessor<LawDocument, LawDocumen
         }
         
         // 5. Sauvegarder nouveau résultat (Writer le fera)
-        log.info("✅ [{}] Extraction réussie via {} (confiance: {})", 
+        log.info("✅ [{}] Transformation réussie via {} (confiance: {})", 
                  docId, result.getSource(), result.getConfidence());
         
         document.setStatus(LawDocument.ProcessingStatus.EXTRACTED);
-        
-        // Stocker le JSON dans un champ transient pour que le Writer le récupère
-        document.setOcrContent(result.getJson()); // Réutilisation du champ transient
+        document.setOcrContent(result.getJson()); // Réutilisation champ transient pour Writer
         
         return document;
     }
@@ -110,7 +117,7 @@ public class PdfToJsonProcessor implements ItemProcessor<LawDocument, LawDocumen
      * {
      *   "_metadata": {
      *     "confidence": 0.95,
-     *     "source": "ollama-qwen2.5:7b"
+     *     "source": "ollama-gemma3n"
      *   },
      *   ...
      * }

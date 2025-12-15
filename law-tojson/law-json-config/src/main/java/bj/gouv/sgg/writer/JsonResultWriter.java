@@ -82,17 +82,25 @@ public class JsonResultWriter implements ItemWriter<LawDocument> {
                 // 2. Nettoyer champ transient avant sauvegarde DB
                 document.setOcrContent(null);
                 
-                // 3. ✅ UPSERT: Mettre à jour document en base
+                // 3. ✅ UPSERT avec flush immédiat pour garantir commit
                 // Note: JPA save() fait automatiquement UPDATE si entity.id existe, INSERT sinon
                 // Le document provient déjà du reader donc a un ID, c'est donc un UPDATE
-                lawDocumentRepository.save(document);
+                LawDocument saved = lawDocumentRepository.saveAndFlush(document);
+                
+                // Vérification post-sauvegarde
+                if (saved.getStatus() != document.getStatus()) {
+                    log.error("❌ [{}] CRITICAL: Status not persisted! Expected {} but got {}", 
+                             docId, document.getStatus(), saved.getStatus());
+                }
                 
                 log.info("✅ [{}] Document mis à jour - Status: {}", 
-                         docId, document.getStatus());
+                         docId, saved.getStatus());
                 
             } catch (Exception e) {
-                log.error("❌ [{}] Erreur sauvegarde résultat: {}", docId, e.getMessage(), e);
-                throw e;
+                log.error("❌ [{}] Erreur sauvegarde résultat: {} - Document ignoré, job continue", 
+                         docId, e.getMessage(), e);
+                // NE PAS throw - logger et continuer avec les autres documents
+                // Le document garde son ancien statut en base
             }
         }
     }

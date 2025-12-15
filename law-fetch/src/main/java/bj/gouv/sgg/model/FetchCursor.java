@@ -8,6 +8,10 @@ import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 
+/**
+ * Cursor pour le job fetchPrevious
+ * Sauvegarde la position courante du scan des années précédentes (1960 à année-1)
+ */
 @Data
 @Builder
 @NoArgsConstructor
@@ -15,9 +19,12 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "fetch_cursor",
     uniqueConstraints = @UniqueConstraint(columnNames = {"cursorType", "documentType"}),
-    indexes = @Index(name = "idx_cursor_type", columnList = "cursorType")
+    indexes = @Index(name = "idx_cursor_type_document_type", columnList = "cursorType, documentType")
 )
 public class FetchCursor {
+
+    public static final String CURSOR_TYPE_FETCH_PREVIOUS = "fetch-previous";
+    public static final String CURSOR_TYPE_FETCH_CURRENT = "fetch-current";
     
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -37,4 +44,10 @@ public class FetchCursor {
     
     @Column(nullable = false)
     private LocalDateTime updatedAt;
+    
+    @PrePersist
+    @PreUpdate
+    protected void onUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }
