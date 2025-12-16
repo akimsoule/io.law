@@ -54,8 +54,7 @@ Exception: Paramètre --doc obligatoire pour fullJob
 ```bash
 java -jar law-app-1.0-SNAPSHOT.jar \
   --job=fullJob \
-  --doc=loi-2024-15 \
-  --spring.main.web-application-type=none
+  --doc=loi-2024-15
 ```
 
 ### Traitement d'un décret
@@ -63,8 +62,7 @@ java -jar law-app-1.0-SNAPSHOT.jar \
 ```bash
 java -jar law-app-1.0-SNAPSHOT.jar \
   --job=fullJob \
-  --doc=decret-2024-1632 \
-  --spring.main.web-application-type=none
+  --doc=decret-2024-1632
 ```
 
 ### Traitement d'une loi de 2025
@@ -72,8 +70,7 @@ java -jar law-app-1.0-SNAPSHOT.jar \
 ```bash
 java -jar law-app-1.0-SNAPSHOT.jar \
   --job=fullJob \
-  --doc=loi-2025-18 \
-  --spring.main.web-application-type=none
+  --doc=loi-2025-18
 ```
 
 ### 🔄 Retraitement avec --force
@@ -84,8 +81,7 @@ Forcer le retraitement complet d'un document déjà consolidé :
 java -jar law-app-1.0-SNAPSHOT.jar \
   --job=fullJob \
   --doc=loi-2024-15 \
-  --force \
-  --spring.main.web-application-type=none
+  --force
 ```
 
 **Note** : Le mode `--force` active le retraitement même si le document est déjà dans un état final (`CONSOLIDATED`). Tous les steps seront réexécutés.
@@ -182,7 +178,7 @@ java -jar law-app.jar --job=consolidateJob
 # Script pour traiter plusieurs documents
 for doc in loi-2025-17 loi-2025-18 loi-2025-19; do
   echo "Traitement de $doc..."
-  java -jar law-app.jar --job=fullJob --doc=$doc --spring.main.web-application-type=none
+  java -jar law-app.jar --job=fullJob --doc=$doc
   if [ $? -eq 0 ]; then
     echo "✅ $doc traité avec succès"
   else

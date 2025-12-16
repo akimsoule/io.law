@@ -93,8 +93,7 @@ INFO  [docId] Top unrecognized words (word=count): béninoise=11, rjuillet=1, co
 ```zsh
 # Forcer OCR→JSON et enregistrer les mots non reconnus
 java -jar law-app/target/law-app-1.0-SNAPSHOT.jar \
-  --job=pdfToJsonJob --doc=decret-2024-1632 --force \
-  --spring.main.web-application-type=none
+  --job=pdfToJsonJob --doc=decret-2024-1632 --force
 
 # Compter et visualiser le fichier
 wc -l data/word_non_recognize.txt

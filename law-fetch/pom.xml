@@ -8,7 +8,7 @@
     <parent>
         <groupId>bj.gouv.sgg</groupId>
         <artifactId>io.law</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>law-fetch</artifactId>

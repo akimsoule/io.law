@@ -332,7 +332,7 @@ java -jar law-app-1.0-SNAPSHOT.jar --job=fixJob
 mvn spring-boot:run -pl law-app -Dspring-boot.run.arguments="--job=fixJob"
 
 # Sans démarrer serveur web
-java -jar law-app.jar --job=fixJob --spring.main.web-application-type=none
+java -jar law-app.jar --job=fixJob
 ```
 
 ### Exécution Quotidienne (Recommandé)

@@ -22,6 +22,8 @@ public class DocumentRecord {
     private int year;
     private int number;
     private ProcessingStatus status;
+    private String url; // URL sur sgg.gouv.bj
+    private String title; // Titre du document
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private String pdfPath;
@@ -30,7 +32,7 @@ public class DocumentRecord {
     private String errorMessage;
     
     public String getDocumentId() {
-        if (documentId == null && type != null) {
+        if (documentId == null && type != null && !type.isEmpty()) {
             documentId = String.format("%s-%d-%d", type, year, number);
         }
         return documentId;

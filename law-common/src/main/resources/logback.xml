@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    
+    <!-- Console Appender -->
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd HH:mm:ss} - %msg%n</pattern>
+        </encoder>
+    </appender>
+    
+    <!-- Loggers Hibernate (WARN pour tout désactiver sauf erreurs/warnings) -->
+    <logger name="org.hibernate" level="WARN"/>
+    <logger name="org.hibernate.SQL" level="WARN"/>
+    <logger name="org.hibernate.type" level="WARN"/>
+    <logger name="org.hibernate.orm" level="WARN"/>
+    <logger name="org.hibernate.engine" level="WARN"/>
+    <logger name="org.hibernate.resource" level="WARN"/>
+    <logger name="org.hibernate.boot" level="WARN"/>
+    <logger name="org.hibernate.jpa" level="WARN"/>
+    <logger name="org.hibernate.stat" level="WARN"/>
+    
+    <!-- Application logs -->
+    <logger name="bj.gouv.sgg" level="INFO"/>
+    
+    <!-- Root logger -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+    </root>
+    
+</configuration>

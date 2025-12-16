@@ -26,6 +26,21 @@ public enum ProcessingStatus {
     EXTRACTED,
     
     /**
+     * Articles extraits depuis OCR (fichier .json créé avec méthode OCR)
+     */
+    ARTICLES_EXTRACTED,
+    
+    /**
+     * Articles validés par contrôle qualité
+     */
+    VALIDATED,
+    
+    /**
+     * Articles améliorés par IA (Ollama/Groq)
+     */
+    AI_ENHANCED,
+    
+    /**
      * Données consolidées en base de données ou fichiers finaux
      */
     CONSOLIDATED,
@@ -51,7 +66,9 @@ public enum ProcessingStatus {
      * Vérifie si le statut indique un succès.
      */
     public boolean isSuccess() {
-        return this == FETCHED || this == DOWNLOADED || this == EXTRACTED || this == CONSOLIDATED;
+        return this == FETCHED || this == DOWNLOADED || this == EXTRACTED 
+            || this == ARTICLES_EXTRACTED || this == VALIDATED 
+            || this == AI_ENHANCED || this == CONSOLIDATED;
     }
     
     /**
