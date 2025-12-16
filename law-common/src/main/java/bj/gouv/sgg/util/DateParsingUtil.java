@@ -4,7 +4,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Utilitaire pour parser et formater les dates.
@@ -41,29 +43,29 @@ public class DateParsingUtil {
      * @param day Jour du mois (1-31)
      * @param month Nom du mois en français (janvier, février, etc.)
      * @param year Année (4 chiffres)
-     * @return Date au format YYYY-MM-DD ou null si parsing échoue
+     * @return Optional contenant la date au format YYYY-MM-DD ou empty si parsing échoue
      */
-    public static String formatDate(String day, String month, String year) {
+    public static Optional<String> formatDate(String day, String month, String year) {
         if (day == null || month == null || year == null) {
-            return null;
+            return Optional.empty();
         }
         
         try {
             Integer monthNum = FRENCH_MONTHS.get(month.toLowerCase());
             if (monthNum == null) {
                 log.debug("Unknown month: {}", month);
-                return null;
+                return Optional.empty();
             }
             
             int dayNum = Integer.parseInt(day);
             int yearNum = Integer.parseInt(year);
             
             LocalDate date = LocalDate.of(yearNum, monthNum, dayNum);
-            return date.format(ISO_DATE_FORMATTER);
+            return Optional.of(date.format(ISO_DATE_FORMATTER));
             
-        } catch (Exception e) {
+        } catch (NumberFormatException | DateTimeParseException e) {
             log.debug("Failed to format date: {} {} {}: {}", day, month, year, e.getMessage());
-            return null;
+            return Optional.empty();
         }
     }
     
@@ -71,18 +73,18 @@ public class DateParsingUtil {
      * Parse une date depuis une chaîne au format ISO (YYYY-MM-DD).
      * 
      * @param dateStr Chaîne représentant une date ISO
-     * @return LocalDate ou null si parsing échoue
+     * @return Optional contenant LocalDate ou empty si parsing échoue
      */
-    public static LocalDate parseDate(String dateStr) {
+    public static Optional<LocalDate> parseDate(String dateStr) {
         if (dateStr == null || dateStr.trim().isEmpty()) {
-            return null;
+            return Optional.empty();
         }
         
         try {
-            return LocalDate.parse(dateStr.trim(), ISO_DATE_FORMATTER);
-        } catch (Exception e) {
+            return Optional.of(LocalDate.parse(dateStr.trim(), ISO_DATE_FORMATTER));
+        } catch (DateTimeParseException e) {
             log.debug("Failed to parse date: {}: {}", dateStr, e.getMessage());
-            return null;
+            return Optional.empty();
         }
     }
     
@@ -92,11 +94,11 @@ public class DateParsingUtil {
      * 
      * @param parts Tableau de chaînes
      * @param index Index de la date dans le tableau
-     * @return LocalDate ou null si parsing échoue ou index invalide
+     * @return Optional contenant LocalDate ou empty si parsing échoue ou index invalide
      */
-    public static LocalDate parseDate(String[] parts, int index) {
+    public static Optional<LocalDate> parseDate(String[] parts, int index) {
         if (parts == null || parts.length <= index) {
-            return null;
+            return Optional.empty();
         }
         return parseDate(parts[index]);
     }

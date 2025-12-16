@@ -1,0 +1,110 @@
+package bj.gouv.sgg.service.correction.impl;
+
+import bj.gouv.sgg.service.correction.CorrectOcrText;
+import lombok.extern.slf4j.Slf4j;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
+import java.util.Map;
+
+/**
+ * Implémentation des corrections OCR depuis corrections.csv.
+ * Pattern Singleton pour éviter de charger le fichier plusieurs fois.
+ */
+@Slf4j
+public class CsvCorrectOcr implements CorrectOcrText {
+
+    private static CsvCorrectOcr instance;
+    private final Map<String, String> corrections;
+
+    private CsvCorrectOcr() {
+        this.corrections = loadCorrections();
+        log.info("✅ Loaded {} OCR corrections from corrections.csv", corrections.size());
+    }
+    
+    /**
+     * Récupère l'instance unique (Singleton).
+     */
+    public static synchronized CsvCorrectOcr getInstance() {
+        if (instance == null) {
+            instance = new CsvCorrectOcr();
+        }
+        return instance;
+    }
+
+    /**
+     * Charge les corrections depuis corrections.csv dans les resources
+     */
+    private Map<String, String> loadCorrections() {
+        Map<String, String> correctionMap = new LinkedHashMap<>();
+
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("corrections.csv")) {
+            assert is != null;
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+
+                String line;
+                int lineNumber = 0;
+                while ((line = reader.readLine()) != null) {
+                    lineNumber++;
+                    line = line.trim();
+
+                    // Skip empty lines and comments
+                    if (line.isEmpty() || line.startsWith("#")) {
+                        continue;
+                    }
+
+                    // Parse correction line (format: wrong,correct)
+                    if (line.contains(",")) {
+                        String[] parts = line.split(",", 2);
+                        if (parts.length == 2) {
+                            String wrong = parts[0].trim();
+                            String correct = parts[1].trim();
+                            if (!wrong.isEmpty() && !correct.isEmpty()) {
+                                correctionMap.put(wrong, correct);
+                            }
+                        } else {
+                            log.warn("⚠️ Invalid correction format at line {}: {}", lineNumber, line);
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            log.error("❌ Failed to load corrections.csv: {}", e.getMessage(), e);
+        }
+
+        return correctionMap;
+    }
+
+    @Override
+    public String applyCorrections(String text) {
+        if (text == null || text.isEmpty()) {
+            return text;
+        }
+
+        String correctedText = text;
+        int appliedCorrections = 0;
+
+        // Appliquer chaque correction dans l'ordre du CSV
+        for (Map.Entry<String, String> entry : corrections.entrySet()) {
+            String wrong = entry.getKey();
+            String correct = entry.getValue();
+
+            // Remplacer toutes les occurrences (case-sensitive)
+            if (correctedText.contains(wrong)) {
+                correctedText = correctedText.replace(wrong, correct);
+                appliedCorrections++;
+                log.trace("Applied correction: '{}' → '{}'", wrong, correct);
+            }
+        }
+
+        if (appliedCorrections > 0) {
+            log.info("✅ Applied {} OCR corrections to text ({} chars)", appliedCorrections, correctedText.length());
+        }
+
+        return correctedText;
+    }
+}

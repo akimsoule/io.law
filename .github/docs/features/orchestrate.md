@@ -31,7 +31,7 @@ Chaque cycle exécute séquentiellement :
 
 ```bash
 # Démarrer l'orchestration continue
-java -jar law-app-1.0-SNAPSHOT.jar --job=orchestrate --spring.main.web-application-type=none
+java -jar law-app-1.0-SNAPSHOT.jar --job=orchestrate
 ```
 
 ### Arrêt

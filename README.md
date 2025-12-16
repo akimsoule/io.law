@@ -265,7 +265,6 @@ java -jar target/law-api-1.0-SNAPSHOT.jar --job=fetchPreviousJob --year=2024
 
 # Mode headless (sans serveur web)
 java -jar target/law-api-1.0-SNAPSHOT.jar \
-  --spring.main.web-application-type=none \
   --job=downloadJob
 ```
 

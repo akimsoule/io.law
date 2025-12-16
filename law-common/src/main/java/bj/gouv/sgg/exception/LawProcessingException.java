@@ -1,12 +1,9 @@
 package bj.gouv.sgg.exception;
 
-import lombok.Getter;
-
 /**
- * Exception de base pour toutes les erreurs métier de l'application.
- * Les exceptions spécifiques héritent de cette classe.
+ * Exception de base pour toutes les exceptions métier de l'application.
+ * Cette exception est non-bloquante car catchée dans les services.
  */
-@Getter
 public class LawProcessingException extends RuntimeException {
     
     private final String documentId;
@@ -15,13 +12,13 @@ public class LawProcessingException extends RuntimeException {
     public LawProcessingException(String message) {
         super(message);
         this.documentId = null;
-        this.errorCode = null;
+        this.errorCode = "UNKNOWN";
     }
     
     public LawProcessingException(String message, Throwable cause) {
         super(message, cause);
         this.documentId = null;
-        this.errorCode = null;
+        this.errorCode = "UNKNOWN";
     }
     
     public LawProcessingException(String documentId, String errorCode, String message) {
@@ -35,5 +32,12 @@ public class LawProcessingException extends RuntimeException {
         this.documentId = documentId;
         this.errorCode = errorCode;
     }
-
+    
+    public String getDocumentId() {
+        return documentId;
+    }
+    
+    public String getErrorCode() {
+        return errorCode;
+    }
 }

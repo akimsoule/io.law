@@ -1,132 +1,48 @@
 package bj.gouv.sgg.job.download;
 
-import bj.gouv.sgg.config.AppConfig;
-import bj.gouv.sgg.model.DocumentRecord;
-import bj.gouv.sgg.model.ProcessingStatus;
-import bj.gouv.sgg.service.DocumentService;
-import bj.gouv.sgg.service.FileStorageService;
-import bj.gouv.sgg.service.PdfDownloadService;
+import bj.gouv.sgg.service.DownloadService;
+import bj.gouv.sgg.service.impl.DownloadServiceImpl;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.*;
 
 /**
  * Job de téléchargement sans Spring Batch.
  * Télécharge les PDFs des documents FETCHED.
+ * 
+ * Ce job délègue toute la logique au DownloadService.
  */
 @Slf4j
 public class DownloadJob {
     
-    private final AppConfig config;
-    private final DocumentService documentService;
-    private final FileStorageService fileStorageService;
-    private final PdfDownloadService pdfDownloadService;
-    private final ExecutorService executor;
+    private final DownloadService downloadService;
     
     public DownloadJob() {
-        this.config = AppConfig.get();
-        this.documentService = new DocumentService();
-        this.fileStorageService = new FileStorageService();
-        this.pdfDownloadService = new PdfDownloadService();
-        this.executor = Executors.newFixedThreadPool(config.getMaxThreads());
+        this.downloadService = DownloadServiceImpl.getInstance();
     }
     
+    /**
+     * Télécharge un document spécifique (mode ciblé).
+     * Thread-safe pour exécution concurrente.
+     * 
+     * @param documentId ID du document (ex: loi-2018-27)
+     */
+    public synchronized void runDocument(String documentId) {
+        downloadService.runDocument(documentId);
+    }
+    
+    /**
+     * Télécharge tous les documents FETCHED d'un type.
+     * 
+     * @param type Type de document (loi/decret)
+     * @param maxDocuments Nombre maximum de documents à télécharger
+     */
     public void run(String type, int maxDocuments) {
-        log.info("⬇️  downloadJob: type={}, max={}", type, maxDocuments);
-        
-        // Récupérer documents FETCHED
-        List<DocumentRecord> documents = documentService.findByTypeAndStatus(type, ProcessingStatus.FETCHED)
-            .stream()
-            .limit(maxDocuments > 0 ? maxDocuments : Long.MAX_VALUE)
-            .toList();
-        
-        log.info("📋 {} documents à télécharger", documents.size());
-        
-        List<Future<DocumentRecord>> futures = new ArrayList<>();
-        for (DocumentRecord doc : documents) {
-            futures.add(executor.submit(() -> downloadDocument(doc)));
-        }
-        
-        int success = 0;
-        int failed = 0;
-        
-        for (Future<DocumentRecord> future : futures) {
-            try {
-                DocumentRecord result = future.get();
-                if (result != null) {
-                    documentService.save(result);
-                    if (result.getStatus() == ProcessingStatus.DOWNLOADED) {
-                        success++;
-                    } else {
-                        failed++;
-                    }
-                }
-            } catch (InterruptedException | ExecutionException e) {
-                log.error("❌ Error downloading: {}", e.getMessage());
-                failed++;
-                Thread.currentThread().interrupt();
-            }
-        }
-        
-        log.info("✅ downloadJob terminé: {} réussis, {} échecs", success, failed);
+        downloadService.runType(type);
     }
     
-    private DocumentRecord downloadDocument(DocumentRecord doc) {
-        try {
-            // Vérifier si déjà téléchargé
-            Path pdfPath = fileStorageService.pdfPath(doc.getType(), doc.getDocumentId());
-            if (Files.exists(pdfPath)) {
-                log.debug("⏭️ Already downloaded: {}", doc.getDocumentId());
-                doc.setStatus(ProcessingStatus.DOWNLOADED);
-                doc.setPdfPath(pdfPath.toString());
-                return doc;
-            }
-            
-            // Télécharger via service
-            String sha256 = pdfDownloadService.downloadPdf(
-                doc.getType(), 
-                doc.getYear(), 
-                doc.getNumber(), 
-                pdfPath
-            );
-            
-            // Valider format PDF
-            if (!pdfDownloadService.validatePdfFormat(pdfPath)) {
-                log.warn("⚠️ Invalid PDF format: {}", doc.getDocumentId());
-                Files.deleteIfExists(pdfPath);
-                doc.setStatus(ProcessingStatus.FAILED);
-                doc.setErrorMessage("Invalid PDF format");
-                return doc;
-            }
-            
-            doc.setStatus(ProcessingStatus.DOWNLOADED);
-            doc.setPdfPath(pdfPath.toString());
-            
-            log.info("✅ Downloaded: {} ({})", doc.getDocumentId(), sha256.substring(0, 8));
-            return doc;
-            
-        } catch (IOException e) {
-            log.error("❌ Error downloading {}: {}", doc.getDocumentId(), e.getMessage());
-            doc.setStatus(ProcessingStatus.FAILED);
-            doc.setErrorMessage(e.getMessage());
-            return doc;
-        }
-    }
-    
+    /**
+     * Ferme les ressources.
+     */
     public void shutdown() {
-        executor.shutdown();
-        try {
-            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-                executor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            executor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
+        log.info("🛑 DownloadJob shutdown");
     }
 }

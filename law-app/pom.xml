@@ -8,7 +8,7 @@
     <parent>
         <groupId>bj.gouv.sgg</groupId>
         <artifactId>io.law</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>${revision}</version>
     </parent>
 
     <artifactId>law-app</artifactId>
@@ -32,6 +32,37 @@
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
             <artifactId>law-download</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>bj.gouv.sgg</groupId>
+            <artifactId>law-consolidate</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
+        <!-- Law-to-json modules (dépendances explicites requises pour accès direct aux classes Job) -->
+        <dependency>
+            <groupId>bj.gouv.sgg</groupId>
+            <artifactId>law-pdf-ocr</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>bj.gouv.sgg</groupId>
+            <artifactId>law-ocr-json</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>bj.gouv.sgg</groupId>
+            <artifactId>law-ai</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        
+        <dependency>
+            <groupId>bj.gouv.sgg</groupId>
+            <artifactId>law-qa</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -92,18 +123,31 @@
                         </goals>
                         <configuration>
                             <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <!-- Supprimer le warning MANIFEST.MF (inoffensif) -->
+                            <minimizeJar>false</minimizeJar>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <mainClass>bj.gouv.sgg.cli.LawCli</mainClass>
                                 </transformer>
+                                <!-- Fusionner les META-INF/services pour éviter les doublons -->
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                             </transformers>
                             <filters>
                                 <filter>
                                     <artifact>*:*</artifact>
                                     <excludes>
+                                        <!-- Signatures -->
                                         <exclude>META-INF/*.SF</exclude>
                                         <exclude>META-INF/*.DSA</exclude>
                                         <exclude>META-INF/*.RSA</exclude>
+                                        <!-- Module-info (Java 9+) -->
+                                        <exclude>module-info.class</exclude>
+                                        <exclude>META-INF/versions/*/module-info.class</exclude>
+                                        <!-- Licences (conserver une seule copie) -->
+                                        <exclude>META-INF/LICENSE</exclude>
+                                        <exclude>META-INF/LICENSE.txt</exclude>
+                                        <exclude>META-INF/NOTICE</exclude>
+                                        <exclude>META-INF/NOTICE.txt</exclude>
                                     </excludes>
                                 </filter>
                             </filters>

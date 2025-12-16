@@ -7,10 +7,10 @@ import bj.gouv.sgg.model.DocumentMetadata;
 import bj.gouv.sgg.model.Signatory;
 import bj.gouv.sgg.service.OcrExtractionService;
 import bj.gouv.sgg.service.UnrecognizedWordsService;
+import bj.gouv.sgg.service.correction.CorrectOcrText;
+import bj.gouv.sgg.service.correction.impl.CsvCorrectOcr;
 import bj.gouv.sgg.util.DateParsingUtil;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,18 +24,28 @@ import java.util.regex.Pattern;
  * Utilise ArticleExtractorConfig pour charger les patterns depuis patterns.properties
  */
 @Slf4j
-@Component
-@RequiredArgsConstructor
 public class ArticleRegexExtractor implements OcrExtractionService {
     
     private final ArticleExtractorConfig config;
     private final UnrecognizedWordsService unrecognizedWordsService;
+    private final CorrectOcrText ocrCorrector;
+    
+    public ArticleRegexExtractor(ArticleExtractorConfig config,
+                                UnrecognizedWordsService unrecognizedWordsService) {
+        this.config = config;
+        this.unrecognizedWordsService = unrecognizedWordsService;
+        this.ocrCorrector = new CsvCorrectOcr();
+    }
     
     @Override
     public List<Article> extractArticles(String text) {
         if (text == null || text.trim().isEmpty()) {
             throw new OcrExtractionException("OCR text is null or empty");
         }
+        
+        // Appliquer les corrections OCR AVANT parsing
+        String correctedText = ocrCorrector.applyCorrections(text);
+        text = correctedText;
         
         List<Article> articles = new ArrayList<>();
         
@@ -295,7 +305,7 @@ public class ArticleRegexExtractor implements OcrExtractionService {
     }
     
     private String formatDate(String day, String month, String year) {
-        return DateParsingUtil.formatDate(day, month, year);
+        return DateParsingUtil.formatDate(day, month, year).orElse("");
     }
     
     private boolean isArticleStart(String line) {

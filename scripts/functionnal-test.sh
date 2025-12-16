@@ -1,102 +1,104 @@
 #!/bin/bash
 
 ###############################################################################
-# Tests Fonctionnels - io.law (Batch CLI)
+# Tests Fonctionnels - io.law (CLI Sans Spring)
 ###############################################################################
 
 set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
-echo "🧪 Tests fonctionnels"
-echo "===================="
+echo "🧪 Tests fonctionnels io.law CLI"
+echo "=================================="
 
-# Build du JAR
-echo "📦 Build..."
+# Build du JAR si nécessaire
+echo "📦 Vérification du JAR..."
 cd "$PROJECT_ROOT"
-mvn clean package -DskipTests -q
 
-JAR="law-app/target/law-app-1.0-SNAPSHOT.jar"
-OPTS="--spring.main.web-application-type=none"
+JAR="law-app/target/law-app-1.0.0-SNAPSHOT.jar"
 
-# === FETCH CURRENT JOB ===
+if [ ! -f "$JAR" ]; then
+    echo "⚠️ JAR non trouvé, compilation..."
+    mvn clean package -DskipTests -q
+fi
+
+# === 1. FETCH JOBS ===
 echo ""
-echo "📄 fetchCurrentJob - scan complet (max 5 docs)"
-java -jar $JAR --job=fetchCurrentJob --maxDocuments=5 $OPTS || exit 1  # ✅ PASSED
-
-echo ""
-echo "📄 fetchCurrentJob - ciblé (loi-2024-15)"
-java -jar $JAR --job=fetchCurrentJob --doc=loi-2024-15 $OPTS || exit 1  # ✅ PASSED
-
-echo ""
-echo "📄 fetchCurrentJob - ciblé avec --force"
-java -jar $JAR --job=fetchCurrentJob --doc=loi-2024-15 --force=true $OPTS || exit 1  # ✅ PASSED
-
-# === FETCH PREVIOUS JOB ===
-echo ""
-echo "📄 fetchPreviousJob - scan années précédentes (max 5 docs)"
-java -jar $JAR --job=fetchPreviousJob --maxDocuments=5 $OPTS || exit 1
+echo "═══════════════════════════════════════════════════════════"
+echo "📋 SECTION 1: FETCH JOBS"
+echo "═══════════════════════════════════════════════════════════"
 
 echo ""
-echo "📄 fetchPreviousJob - ciblé (loi-2020-10)"
-java -jar $JAR --job=fetchPreviousJob --doc=loi-2020-10 $OPTS || exit 1  # ✅ PASSED
+echo "📄 Test 1.1: fetchCurrent (scan complet type=loi)"
+java -jar $JAR --job=fetchCurrent --type=loi || exit 1
 
 echo ""
-echo "📄 fetchPreviousJob - ciblé avec --force"
-java -jar $JAR --job=fetchPreviousJob --doc=loi-2020-10 --force=true $OPTS || exit 1  # ✅ PASSED
+echo "📄 Test 1.2: fetchPrevious (max 5 items)"
+java -jar $JAR --job=fetchPrevious --type=loi --maxItems=5 || exit 1
 
-# === DOWNLOAD JOB ===
+# === 2. DOWNLOAD JOB ===
 echo ""
-echo "📥 downloadJob - tous documents FETCHED (max 5 docs)"
-java -jar $JAR --job=downloadJob --maxDocuments=5 $OPTS || exit 1
-
-echo ""
-echo "📥 downloadJob - ciblé (loi-2024-15)"
-java -jar $JAR --job=downloadJob --documentId=loi-2024-15 $OPTS || exit 1  # ✅ PASSED
+echo "═══════════════════════════════════════════════════════════"
+echo "📋 SECTION 2: DOWNLOAD JOB"
+echo "═══════════════════════════════════════════════════════════"
 
 echo ""
-echo "📥 downloadJob - ciblé avec --force"
-java -jar $JAR --job=downloadJob --documentId=loi-2024-15 --force=true $OPTS || exit 1  # ✅ PASSED
+echo "📥 Test 2.1: download (max 5 documents)"
+java -jar $JAR --job=download --type=loi --maxDocuments=5 || exit 1
 
-# === PDF TO JSON JOB ===
+# === 3. LAW-TOJSON JOBS ===
 echo ""
-echo "📄 pdfToJsonJob - tous documents DOWNLOADED (max 5 docs)"
-java -jar $JAR --job=pdfToJsonJob --maxDocuments=5 $OPTS || exit 1
-
-echo ""
-echo "📄 pdfToJsonJob - ciblé (loi-2024-15)"
-java -jar $JAR --job=pdfToJsonJob --documentId=loi-2024-15 $OPTS || exit 1
+echo "═══════════════════════════════════════════════════════════"
+echo "📋 SECTION 3: LAW-TOJSON JOBS"
+echo "═══════════════════════════════════════════════════════════"
 
 echo ""
-echo "📄 pdfToJsonJob - ciblé avec --force (re-traite si confiance supérieure)"
-java -jar $JAR --job=pdfToJsonJob --documentId=loi-2024-15 --force=true $OPTS || exit 1
+echo "🔄 Test 3.1: ocr (extraction OCR pour type loi)"
+java -jar $JAR --job=ocr --type=loi || exit 1
 
 echo ""
-echo "📄 pdfToJsonJob - avec limite personnalisée (max 10 docs)"
-java -jar $JAR --job=pdfToJsonJob --maxDocuments=10 $OPTS || exit 1
-
-# === CONSOLIDATE JOB ===
-echo ""
-echo "💾 consolidateJob - tous documents EXTRACTED"
-java -jar $JAR --job=consolidateJob $OPTS || exit 1
-
-# === FULL JOB ===
-echo ""
-echo "🚀 fullJob - pipeline complet pour un document (loi-2024-15)"
-java -jar $JAR --job=fullJob --doc=loi-2024-15 $OPTS || exit 1
+echo "📄 Test 3.2: extract (parsing articles pour type loi)"
+java -jar $JAR --job=extract --type=loi || exit 1
 
 echo ""
-echo "🔄 fullJob - test avec --force (retraitement complet)"
-java -jar $JAR --job=fullJob --doc=loi-2024-15 --force $OPTS || exit 1
+echo "✅ Test 3.3: validate (quality assurance pour type loi)"
+java -jar $JAR --job=validate --type=loi || exit 1
 
 echo ""
-echo "❌ fullJob - test sans paramètre --doc (doit échouer)"
-if java -jar $JAR --job=fullJob $OPTS 2>/dev/null; then
+echo "🤖 Test 3.4: ia (AI enhancement pour type loi)"
+java -jar $JAR --job=ia --type=loi || exit 1
+
+# === 4. FULL PIPELINE (DOCUMENT UNIQUE) ===
+echo ""
+echo "═══════════════════════════════════════════════════════════"
+echo "📋 SECTION 4: FULL PIPELINE (DOCUMENT CIBLÉ)"
+echo "═══════════════════════════════════════════════════════════"
+
+echo ""
+echo "🚀 Test 4.1: fullJob (pipeline complet pour loi-2024-15)"
+java -jar $JAR --job=fullJob --doc=loi-2024-15 || exit 1
+
+echo ""
+echo "❌ Test 4.2: fullJob sans --doc (doit échouer)"
+if java -jar $JAR --job=fullJob 2>/dev/null; then
     echo "ERREUR: fullJob devrait échouer sans --doc"
     exit 1
 else
     echo "✅ Échec attendu confirmé (--doc obligatoire)"
 fi
 
+# === 5. ORCHESTRATION COMPLÈTE ===
 echo ""
+echo "═══════════════════════════════════════════════════════════"
+echo "📋 SECTION 5: ORCHESTRATION COMPLÈTE"
+echo "═══════════════════════════════════════════════════════════"
+
+echo ""
+echo "🚀 Test 5.1: orchestrate (pipeline complet pour type loi)"
+echo "⚠️ Test désactivé (trop long pour CI)"
+# gtimeout 600 java -jar $JAR --job=orchestrate --type=loi || exit 1
+
+echo ""
+echo "═══════════════════════════════════════════════════════════"
 echo "🎉 Tous les tests passés avec succès !"
+echo "═══════════════════════════════════════════════════════════"

@@ -1,139 +1,66 @@
 package bj.gouv.sgg.job.fetch;
 
-import bj.gouv.sgg.config.AppConfig;
-import bj.gouv.sgg.model.DocumentRecord;
-import bj.gouv.sgg.model.ProcessingStatus;
-import bj.gouv.sgg.service.DocumentService;
-import bj.gouv.sgg.service.HttpCheckService;
+import bj.gouv.sgg.service.FetchCurrentService;
+import bj.gouv.sgg.service.FetchPreviousService;
+import bj.gouv.sgg.service.FetchService;
+import bj.gouv.sgg.service.impl.FetchCurrentServiceImpl;
+import bj.gouv.sgg.service.impl.FetchPreviousServiceImpl;
 import lombok.extern.slf4j.Slf4j;
-
-import java.time.LocalDate;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.*;
 
 /**
  * Job de fetch sans Spring Batch.
  * Récupère les métadonnées des documents depuis le site SGG.
+ * 
+ * Ce job délègue toute la logique aux services spécialisés.
  */
 @Slf4j
 public class FetchJob {
     
-    private final AppConfig config;
-    private final DocumentService documentService;
-    private final HttpCheckService httpCheckService;
-    private final ExecutorService executor;
+    private final FetchService fetchService;
+    private final FetchCurrentService fetchCurrentService;
+    private final FetchPreviousService fetchPreviousService;
     
     public FetchJob() {
-        this.config = AppConfig.get();
-        this.documentService = new DocumentService();
-        this.httpCheckService = new HttpCheckService();
-        this.executor = Executors.newFixedThreadPool(config.getMaxThreads());
+        // Les services étendent AbstractFetchService
+        this.fetchCurrentService = FetchCurrentServiceImpl.getInstance();
+        this.fetchPreviousService = FetchPreviousServiceImpl.getInstance();
+        // Utiliser fetchCurrentService pour runDocument (cast vers FetchService)
+        this.fetchService = (FetchService) fetchCurrentService;
+    }
+    
+    /**
+     * Exécute le fetch pour un document spécifique (mode ciblé).
+     * Thread-safe pour exécution concurrente.
+     * 
+     * @param documentId ID du document (ex: loi-2018-27)
+     */
+    public synchronized void runDocument(String documentId) {
+        fetchService.runDocument(documentId);
     }
     
     /**
      * Exécute le fetch pour l'année courante (mode current).
+     * 
+     * @param type Type de document (loi/decret)
      */
     public void runCurrent(String type) {
-        int currentYear = LocalDate.now().getYear();
-        log.info("🔍 fetchCurrent: type={}, year={}", type, currentYear);
-        
-        List<DocumentRecord> documentsToCheck = new ArrayList<>();
-        for (int num = 1; num <= 2000; num++) {
-            documentsToCheck.add(DocumentRecord.create(type, currentYear, num));
-        }
-        
-        processDocuments(documentsToCheck);
-        log.info("✅ fetchCurrent terminé: {} documents vérifiés", documentsToCheck.size());
+        fetchCurrentService.run(type);
     }
     
     /**
      * Exécute le fetch pour les années précédentes (mode previous).
+     * 
+     * @param type Type de document (loi/decret)
+     * @param maxItems Nombre maximum de documents à traiter
      */
     public void runPrevious(String type, int maxItems) {
-        int currentYear = LocalDate.now().getYear();
-        log.info("🔍 fetchPrevious: type={}, years=1960-{}", type, currentYear - 1);
-        
-        List<DocumentRecord> documentsToCheck = new ArrayList<>();
-        int count = 0;
-        
-        // Générer documents des années précédentes
-        for (int year = currentYear - 1; year >= 1960 && count < maxItems; year--) {
-            for (int num = 1; num <= 2000 && count < maxItems; num++) {
-                documentsToCheck.add(DocumentRecord.create(type, year, num));
-                count++;
-            }
-        }
-        
-        processDocuments(documentsToCheck);
-        log.info("✅ fetchPrevious terminé: {} documents vérifiés", documentsToCheck.size());
+        fetchPreviousService.run(type, maxItems);
     }
     
-    private void processDocuments(List<DocumentRecord> documents) {
-        List<Future<DocumentRecord>> futures = new ArrayList<>();
-        
-        for (DocumentRecord doc : documents) {
-            futures.add(executor.submit(() -> checkDocument(doc)));
-        }
-        
-        int found = 0;
-        int notFound = 0;
-        
-        for (Future<DocumentRecord> future : futures) {
-            try {
-                DocumentRecord result = future.get();
-                if (result != null && result.getStatus() == ProcessingStatus.FETCHED) {
-                    documentService.save(result);
-                    found++;
-                } else {
-                    notFound++;
-                }
-            } catch (InterruptedException | ExecutionException e) {
-                log.error("❌ Error processing document: {}", e.getMessage());
-                Thread.currentThread().interrupt();
-            }
-        }
-        
-        log.info("📊 Résultats: {} trouvés, {} non trouvés", found, notFound);
-    }
-    
-    private DocumentRecord checkDocument(DocumentRecord doc) {
-        // Vérifier si déjà fetched
-        if (documentService.exists(doc.getDocumentId())) {
-            return null; // Skip, déjà traité
-        }
-        
-        try {
-            boolean exists = httpCheckService.checkDocumentExists(
-                doc.getType(), 
-                doc.getYear(), 
-                doc.getNumber()
-            );
-            
-            if (exists) {
-                doc.setStatus(ProcessingStatus.FETCHED);
-                log.debug("✅ Found: {}", doc.getDocumentId());
-                return doc;
-            } else {
-                log.debug("❌ Not found: {}", doc.getDocumentId());
-                return null;
-            }
-            
-        } catch (Exception e) {
-            log.warn("⚠️ Error checking {}: {}", doc.getDocumentId(), e.getMessage());
-            return null;
-        }
-    }
-    
+    /**
+     * Ferme les ressources.
+     */
     public void shutdown() {
-        executor.shutdown();
-        try {
-            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
-                executor.shutdownNow();
-            }
-        } catch (InterruptedException e) {
-            executor.shutdownNow();
-            Thread.currentThread().interrupt();
-        }
+        log.info("🛑 FetchJob shutdown");
     }
 }

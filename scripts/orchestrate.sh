@@ -3,8 +3,8 @@
 # Arrêt: Ctrl+C
 #
 # Usage:
-#   ./scripts/orchestrate.sh                    # Skip fetchCurrent si déjà exécuté aujourd'hui (défaut)
-#   ./scripts/orchestrate.sh --no-skip-fetch    # Forcer fetchCurrent à chaque cycle
+#   ./scripts/orchestrate.sh                 # Skip fetchCurrent (défaut)
+#   ./scripts/orchestrate.sh --fetch-current # Exécuter fetchCurrent
 
 set -e
 
@@ -15,17 +15,18 @@ if [ -f "/app/app.jar" ]; then
     LOG_DIR="/app/logs"
 else
     # Mode local
-    JAR_PATH="law-app/target/law-app-1.0-SNAPSHOT.jar"
+    JAR_PATH="law-app/target/law-app-1.0.0-SNAPSHOT.jar"
     LOG_DIR="logs"
 fi
 
-LOG_FILE="${LOG_DIR}/orchestrator-$(date +%Y%m%d-%H%M%S).log"
+LOG_FILE="${LOG_DIR}/orchestrator.log"
+# LOG_FILE="${LOG_DIR}/orchestrator-$(date +%Y%m%d-%H%M%S).log"
 
 # Parser options
-SKIP_FETCH_DAILY="true"
-if [ "$1" = "--no-skip-fetch" ]; then
-    SKIP_FETCH_DAILY="false"
-    echo "⚙️  Option: Exécuter fetchCurrentJob à chaque cycle"
+SKIP_FETCH_CURRENT="true"
+if [ "$1" = "--fetch-current" ]; then
+    SKIP_FETCH_CURRENT="false"
+    echo "⚙️  Option: Exécuter fetchCurrent à chaque cycle"
 fi
 
 # Vérifications
@@ -42,9 +43,9 @@ mkdir -p "$LOG_DIR"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo "🚀 Démarrage Orchestration Continue"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "📋 Pipeline: fetchCurrent → fetchPrevious → download → extract → consolidate → fix"
+echo "📋 Pipeline: fetch → download → ocr → extract → validate → ia"
 echo "🔄 Mode: Continu (arrêt: Ctrl+C)"
-echo "⚙️  Skip fetchCurrent si déjà exécuté: $SKIP_FETCH_DAILY"
+echo "⚙️  Skip fetchCurrent: $SKIP_FETCH_CURRENT"
 echo "📝 Logs: $LOG_FILE"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
@@ -53,8 +54,7 @@ echo ""
 java $JAVA_OPTS -jar "$JAR_PATH" \
     --job=orchestrate \
     --type=loi \
-    --skip-fetch-daily="$SKIP_FETCH_DAILY" \
-    --spring.main.web-application-type=none \
+    --skipFetchCurrent="$SKIP_FETCH_CURRENT" \
     2>&1 | tee "$LOG_FILE"
 
 # Fin

@@ -392,7 +392,7 @@ java -jar law-api.jar --job=fetchPreviousJob --year=2024
 java -jar law-api.jar --job=fullPipelineJob
 
 # Mode headless (sans serveur web)
-java -jar law-api.jar --spring.main.web-application-type=none --job=downloadJob
+java -jar law-api.jar --job=downloadJob
 ```
 
 **Dépendances** :
