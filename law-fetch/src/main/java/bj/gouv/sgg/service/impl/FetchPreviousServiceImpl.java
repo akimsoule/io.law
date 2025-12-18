@@ -1,27 +1,34 @@
 package bj.gouv.sgg.service.impl;
 
 import bj.gouv.sgg.entity.FetchCursorEntity;
+import bj.gouv.sgg.entity.LawDocumentEntity;
+import bj.gouv.sgg.model.ProcessingStatus;
 import bj.gouv.sgg.service.FetchCursorService;
 import bj.gouv.sgg.service.FetchPreviousService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
-import java.util.Optional;
+import java.util.*;
 
 /**
  * Implémentation du service de fetch pour les années précédentes.
  * Étend AbstractFetchService pour réutiliser la logique commune.
- * Gère le cursor pour reprendre le scan là où il s'est arrêté.
+ * Utilise un cursor pour reprendre là où le scan s'est arrêté.
  */
 @Slf4j
 public class FetchPreviousServiceImpl extends AbstractFetchService implements FetchPreviousService {
     
     private static FetchPreviousServiceImpl instance;
+    
     private final FetchCursorService cursorService;
+    private final List<LawDocumentEntity> lawDocumentEntityResult;
+    private int newFoundNumber;
+    private int newNotFoundNumber;
     
     private FetchPreviousServiceImpl() {
         super();
         this.cursorService = new FetchCursorService();
+        this.lawDocumentEntityResult = new ArrayList<>();
     }
     
     public static synchronized FetchPreviousServiceImpl getInstance() {
@@ -39,6 +46,7 @@ public class FetchPreviousServiceImpl extends AbstractFetchService implements Fe
     
     @Override
     public void run(String type, int maxItems) {
+        // start reader
         int currentYear = LocalDate.now().getYear();
         
         // Charger le cursor existant ou partir de (currentYear-1, 1)
@@ -60,42 +68,97 @@ public class FetchPreviousServiceImpl extends AbstractFetchService implements Fe
                      type, startYear, maxItems);
         }
         
-        int count = 0;
-        int found = 0;
+        int totalChecked = 0;
+        this.newFoundNumber = 0;
+        this.newNotFoundNumber = 0;
+
+        // Préparer les documents déjà fetchés pour idempotence (requête optimisée)
+        List<LawDocumentEntity> alreadyFetched = lawDocumentService.findFetchedByTypeAndYearRange(
+                type, 1960, startYear
+        );
+        
+        // Créer un Set pour recherche rapide O(1)
+        Set<String> alreadyFetchedIds = new HashSet<>();
+        for (LawDocumentEntity doc : alreadyFetched) {
+            alreadyFetchedIds.add(doc.getDocumentId());
+        }
+        
+        log.info("Documents déjà fetchés: {} (seront ignorés)", alreadyFetchedIds.size());
         
         // Générer et traiter documents des années précédentes
-        boolean stop = false;
-        for (int year = startYear; year >= 1960 && !stop; year--) {
+        Set<String> documentIds = new LinkedHashSet<>();
+        boolean limitReached = false;
+        
+        for (int year = startYear; year >= 1960 && !limitReached; year--) {
             int numStart = (year == startYear) ? startNumber : 1;
             
-            for (int num = numStart; num <= 2000; num++) {
-                if (count >= maxItems) {
-                    log.info("⏹️ Limite atteinte: {} documents vérifiés", maxItems);
-                    // Sauvegarder position actuelle avant de s'arrêter
+            for (int num = numStart; num <= 2000 && !limitReached; num++) {
+                String documentId = String.format("%s-%d-%d", type, year, num);
+                String documentIdPadded1 = null;
+                String documentIdPadded2 = null;
+                
+                if (num < 10) {
+                    documentIdPadded1 = String.format("%s-%d-0%d", type, year, num);
+                    documentIdPadded2 = String.format("%s-%d-00%d", type, year, num);
+                }
+                
+                // Ignorer les documents déjà fetchés (toutes variantes)
+                if (alreadyFetchedIds.contains(documentId) ||
+                    (documentIdPadded1 != null && alreadyFetchedIds.contains(documentIdPadded1)) ||
+                    (documentIdPadded2 != null && alreadyFetchedIds.contains(documentIdPadded2))) {
+                    continue;
+                }
+                
+                // Vérifier la limite APRÈS avoir filtré les déjà fetchés
+                if (totalChecked >= maxItems) {
+                    log.info("⏹️ Limite atteinte: {} nouveaux documents à vérifier", maxItems);
+                    // Sauvegarder cursor avant de s'arrêter
                     saveCursor(type, year, num);
-                    stop = true;
+                    limitReached = true;
                     break;
                 }
                 
-                String documentId = String.format("%s-%d-%d", type, year, num);
+                // Ajouter le document principal
+                documentIds.add(documentId);
+                totalChecked++;
                 
-                try {
-                    runDocument(documentId);
-                    found++;
-                } catch (Exception e) {
-                    log.debug("Document {} non trouvé ou erreur", documentId);
+                // Ajouter les variantes avec padding pour num < 10
+                if (num < 10) {
+                    documentIds.add(documentIdPadded1);
+                    documentIds.add(documentIdPadded2);
                 }
                 
-                count++;
-                
                 // Sauvegarder cursor tous les 100 documents
-                if (count % 100 == 0) {
+                if (totalChecked % 100 == 0) {
                     saveCursor(type, year, num);
                 }
             }
         }
+
+        // end reader
         
-        log.info("✅ FetchPrevious terminé: {} documents vérifiés, {} trouvés", count, found);
+
+        // start processor
+        // Traiter les documents
+        log.info("Nombre de documents à vérifier: {}", documentIds.size());
+        for (String documentId : documentIds) {
+            runDocument(documentId);
+        }
+        // end processor
+
+        // start writer
+        // Sauvegarder tous les résultats
+        lawDocumentService.saveAll(this.lawDocumentEntityResult);
+        // end writer
+        
+        // Compter les documents trouvés
+        long totalFound = 0;
+        for (int year = startYear; year >= 1960; year--) {
+            totalFound += lawDocumentService.findByTypeAndYearAndStatus(type, year, ProcessingStatus.FETCHED).size();
+        }
+        
+        log.info("🔔 FetchPrevious terminé: type={}, totalChecked={}, newFound={}, newNotFound={}, totalFound={}",
+                type, totalChecked, this.newFoundNumber, this.newNotFoundNumber, totalFound);
     }
     
     /**
@@ -104,8 +167,83 @@ public class FetchPreviousServiceImpl extends AbstractFetchService implements Fe
     private void saveCursor(String type, int year, int number) {
         try {
             cursorService.updateCursor(type, "fetch-previous", year, number);
+            log.debug("💾 Cursor sauvegardé: type={}, year={}, number={}", type, year, number);
         } catch (Exception e) {
             log.warn("⚠️ Erreur lors de la sauvegarde du cursor: {}", e.getMessage());
+        }
+    }
+    
+    @Override
+    public void runDocument(String documentId) {
+        log.info("🔍 run: documentId={}", documentId);
+        
+        // Vérifier si documentId est null
+        if (documentId == null || documentId.isEmpty()) {
+            log.warn("⚠️ documentId null ou vide, ignoring");
+            return;
+        }
+        
+        try {
+            // Parse documentId
+            String[] parts = documentId.split("-");
+            if (parts.length != 3) {
+                log.warn("⚠️ Format invalide: {}", documentId);
+                return;
+            }
+            
+            String type = parts[0];
+            int year = Integer.parseInt(parts[1]);
+            String number = parts[2];
+            
+            // Vérifier si déjà fetched
+            Optional<LawDocumentEntity> optionalExistingDoc = lawDocumentService.findByDocumentId(documentId);
+            if (optionalExistingDoc.isPresent()) {
+                LawDocumentEntity existingDoc = optionalExistingDoc.get();
+                if (existingDoc.isFetched()) {
+                    log.info("ℹ️ Déjà fetché: {}", documentId);
+                    return;
+                }
+            }
+            
+            // Vérifier existence via HTTP
+            boolean found = httpCheckService.checkDocumentExists(type, year, number);
+            
+            if (found) {
+                // Créer/mettre à jour document
+                LawDocumentEntity doc = LawDocumentEntity.builder()
+                        .type(type)
+                        .year(year)
+                        .number(number)
+                        .status(ProcessingStatus.FETCHED)
+                        .build();
+                this.lawDocumentEntityResult.add(doc);
+                log.info("✅ Found: {}", documentId);
+                this.newFoundNumber++;
+            } else {
+                // Ajouter les not found à la liste
+                LawDocumentEntity doc = LawDocumentEntity.builder()
+                        .type(type)
+                        .year(year)
+                        .number(number)
+                        .status(ProcessingStatus.NOT_FOUND)
+                        .build();
+                this.lawDocumentEntityResult.add(doc);
+                log.info("❌ Not Found: {}", documentId);
+                this.newNotFoundNumber++;
+            }
+            
+        } catch (NumberFormatException e) {
+            log.warn("⚠️ Format numérique invalide dans documentId: {}", documentId);
+        } catch (bj.gouv.sgg.exception.FetchHttpException e) {
+            log.error("❌ Erreur HTTP fetch {}: {} (status: {})", documentId,
+                    e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName(),
+                    e.getStatusCode());
+        } catch (bj.gouv.sgg.exception.FetchTimeoutException e) {
+            log.error("❌ Timeout fetch {}: {}", documentId,
+                    e.getMessage() != null ? e.getMessage() : "Timeout after retries");
+        } catch (Exception e) {
+            String errorMsg = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+            log.error("❌ Erreur fetch {} [{}]: {}", documentId, e.getClass().getSimpleName(), errorMsg, e);
         }
     }
 }

@@ -13,7 +13,7 @@
 
     <artifactId>law-fetch</artifactId>
     <packaging>jar</packaging>
-    <name>Law Fetch Module (Sans Spring)</name>
+    <name>Law Fetch</name>
     <description>Module de récupération des métadonnées de documents (loi/décret) via HTTP HEAD</description>
 
     <dependencies>
@@ -21,21 +21,18 @@
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
             <artifactId>law-common</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <!-- Lombok pour annotations -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <scope>provided</scope>
         </dependency>
 
-        <!-- SLF4J API (fourni par law-common) -->
+        <!-- SLF4J API -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <!-- Tests -->
@@ -68,6 +65,40 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+            </plugin>
+
+            <!-- Maven Shade Plugin pour créer un uber-jar exécutable -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>3.5.1</version>
+                <executions>
+                    <execution>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                        <configuration>
+                            <createDependencyReducedPom>false</createDependencyReducedPom>
+                            <transformers>
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                    <mainClass>bj.gouv.sgg.app.FetchCurrentApp</mainClass>
+                                </transformer>
+                            </transformers>
+                            <filters>
+                                <filter>
+                                    <artifact>*:*</artifact>
+                                    <excludes>
+                                        <exclude>META-INF/*.SF</exclude>
+                                        <exclude>META-INF/*.DSA</exclude>
+                                        <exclude>META-INF/*.RSA</exclude>
+                                    </excludes>
+                                </filter>
+                            </filters>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
