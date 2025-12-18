@@ -1,8 +1,11 @@
 package bj.gouv.sgg.service;
 
 import bj.gouv.sgg.config.AppConfig;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
+import jakarta.annotation.PostConstruct;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -12,20 +15,24 @@ import java.nio.file.Paths;
  * Service de gestion du stockage des fichiers (PDF, OCR, JSON).
  * Fournit les chemins normalisés et les opérations de lecture/écriture.
  */
+@Service
 @Slf4j
+@RequiredArgsConstructor
 public class FileStorageService {
     
-    private final String basePath;
-    private final String pdfDir;
-    private final String ocrDir;
-    private final String jsonDir;
+    private final AppConfig config;
+    private String basePath;
+    private String pdfDir;
+    private String ocrDir;
+    private String jsonDir;
     
-    public FileStorageService() {
-        AppConfig config = AppConfig.get();
-        this.basePath = config.getProperty("law.storage.base-path", "data");
-        this.pdfDir = config.getProperty("law.storage.pdf-dir", "pdfs");
-        this.ocrDir = config.getProperty("law.storage.ocr-dir", "ocr");
-        this.jsonDir = config.getProperty("law.storage.json-dir", "articles");
+    @PostConstruct
+    public void init() {
+        this.basePath = config.getStorageBasePath();
+        this.pdfDir = "pdfs";
+        this.ocrDir = "ocr";
+        this.jsonDir = "articles";
+        log.info("✅ FileStorageService initialized with basePath={}", basePath);
     }
     
     /**

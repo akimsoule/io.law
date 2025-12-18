@@ -16,73 +16,60 @@
     <description>Common module avec Spring Context et Spring Data JPA</description>
 
     <dependencies>
-        <!-- Spring Boot Starter -->
+        <!-- Spring Boot Starter (version gérée par parent) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
         
-        <!-- Spring Data JPA -->
+        <!-- Spring Data JPA (version gérée par parent) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
 
-        <!-- Lombok -->
+        <!-- Lombok (version gérée par parent) -->
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+            <version>1.18.30</version>
+            <optional>true</optional>
         </dependency>
 
-        <!-- Gson -->
+        <!-- Gson (version gérée par parent) -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
+            <version>2.10.1</version>
         </dependency>
 
         <!-- Commons IO -->
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
+            <version>2.15.1</version>
         </dependency>
 
-        <!-- MySQL Driver -->
+        <!-- MySQL Driver (version gérée par parent) -->
         <dependency>
             <groupId>com.mysql</groupId>
             <artifactId>mysql-connector-j</artifactId>
+            <version>8.2.0</version>
+            <scope>runtime</scope>
         </dependency>
         
-        <!-- H2 pour tests -->
+        <!-- H2 pour tests (version gérée par parent) -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
+            <version>2.2.224</version>
             <scope>test</scope>
         </dependency>
 
-        <!-- Tests -->
+        <!-- Spring Boot Test (version gérée par parent) -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-test</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.assertj</groupId>
-            <artifactId>assertj-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

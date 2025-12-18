@@ -22,13 +22,13 @@ import java.util.stream.Collectors;
 @Slf4j
 @RequiredArgsConstructor
 @Transactional
-public class LawDocumentService {
+public class DocumentService {
     
     private final LawDocumentRepository repository;
     
     @PostConstruct
     public void init() {
-        log.info("✅ LawDocumentService initialized with Spring Data JPA");
+        log.info("✅ DocumentService initialized with Spring Data JPA");
     }
     
     /**
@@ -45,13 +45,6 @@ public class LawDocumentService {
         if (document.getType() == null || document.getType().isEmpty()) {
             throw new IllegalArgumentException("Document type cannot be null or empty");
         }
-
-        Optional<LawDocumentEntity> optionalLawDocumentEntity = repository.findByTypeAndYearAndNumber(
-                document.getType(),
-                document.getYear(),
-                document.getNumber()
-            );
-        optionalLawDocumentEntity.ifPresent(existingEntity -> document.setId(existingEntity.getId()));
         
         return repository.save(document);
     }
@@ -126,23 +119,6 @@ public class LawDocumentService {
         }
         
         return repository.findByTypeAndYear(type, year);
-    }
-    
-    /**
-     * Trouve tous les documents fetchés d'un type sur une plage d'années.
-     * Optimisé pour éviter les multiples requêtes en boucle.
-     * 
-     * @param type Type de document ("loi" ou "decret")
-     * @param minYear Année minimale (inclusive)
-     * @param maxYear Année maximale (inclusive) 
-     * @return Liste des documents avec status success sur la plage d'années
-     */
-    public List<LawDocumentEntity> findFetchedByTypeAndYearRange(String type, int minYear, int maxYear) {
-        if (type == null || type.isEmpty()) {
-            return List.of();
-        }
-        
-        return repository.findFetchedByTypeAndYearRange(type, minYear, maxYear);
     }
     
     /**
