@@ -17,7 +17,7 @@
     <artifactId>io.law</artifactId>
     <version>${revision}</version>
     <packaging>pom</packaging>
-    
+
     <name>IO.Law Parent</name>
     <description>Application batch extraction lois/décrets béninois - Spring Batch</description>
 
@@ -36,22 +36,71 @@
     <properties>
         <!-- Version centralisée -->
         <revision>2.0.0-SNAPSHOT</revision>
-        
+
         <java.version>17</java.version>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        
+
         <!-- Spring Boot version -->
         <spring-boot.version>3.5.9</spring-boot.version>
-        
+
         <!-- Versions dépendances non gérées par Spring Boot -->
         <commons-io.version>2.15.1</commons-io.version>
         <pdfbox.version>3.0.3</pdfbox.version>
         <tesseract.version>5.3.4-1.5.10</tesseract.version>
-        
+
 
     </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.mysql</groupId>
+            <artifactId>mysql-connector-j</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Lombok - Utilisé par TOUS les modules -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- SLF4J - Logging pour TOUS les modules (version gérée par Spring Boot) -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <!-- Spring Boot Test - Tests pour TOUS les modules (version gérée par Spring Boot) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- JUnit Jupiter - Tests pour TOUS les modules -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit-jupiter.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Mockito - Tests pour TOUS les modules -->
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
     <dependencyManagement>
         <dependencies>
@@ -63,38 +112,38 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
-            
+
             <!-- Modules internes -->
             <dependency>
                 <groupId>bj.gouv.sgg</groupId>
                 <artifactId>law-common</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>bj.gouv.sgg</groupId>
                 <artifactId>law-fetch</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>bj.gouv.sgg</groupId>
                 <artifactId>law-download</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>bj.gouv.sgg</groupId>
                 <artifactId>law-tojson</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>bj.gouv.sgg</groupId>
                 <artifactId>law-consolidate</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>bj.gouv.sgg</groupId>
                 <artifactId>law-fix</artifactId>
@@ -107,30 +156,17 @@
                 <artifactId>spring-boot-starter</artifactId>
                 <version>${spring-boot.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-batch</artifactId>
                 <version>${spring-boot.version}</version>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-data-jpa</artifactId>
                 <version>${spring-boot.version}</version>
-            </dependency>
-            
-            <!-- Base de données -->
-            <dependency>
-                <groupId>com.mysql</groupId>
-                <artifactId>mysql-connector-j</artifactId>
-            </dependency>
-            
-            <dependency>
-                <groupId>com.h2database</groupId>
-                <artifactId>h2</artifactId>
-                <version>2.2.224</version>
-                <scope>test</scope>
             </dependency>
 
             <!-- JSON -->
@@ -173,7 +209,7 @@
                 <version>${spring-boot.version}</version>
                 <scope>test</scope>
             </dependency>
-            
+
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
