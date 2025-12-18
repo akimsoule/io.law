@@ -5,6 +5,7 @@ import bj.gouv.sgg.model.ProcessingStatus;
 import bj.gouv.sgg.repository.LawDocumentRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
+import jakarta.persistence.PersistenceException;
 import jakarta.persistence.TypedQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -50,7 +51,7 @@ public class JpaLawDocumentRepository implements LawDocumentRepository {
     }
     
     @Override
-    public Optional<LawDocumentEntity> findByTypeAndYearAndNumber(String type, int year, int number) {
+    public Optional<LawDocumentEntity> findByTypeAndYearAndNumber(String type, int year, String number) {
         if (type == null || type.isEmpty()) {
             return Optional.empty();
         }
@@ -129,6 +130,32 @@ public class JpaLawDocumentRepository implements LawDocumentRepository {
     }
     
     @Override
+    public List<LawDocumentEntity> findFetchedByTypeAndYearRange(String type, int minYear, int maxYear) {
+        if (type == null || type.isEmpty()) {
+            return List.of();
+        }
+        
+        TypedQuery<LawDocumentEntity> query = entityManager.createQuery(
+            "SELECT d FROM LawDocumentEntity d " +
+            "WHERE d.type = :type " +
+            "AND d.year BETWEEN :minYear AND :maxYear " +
+            "AND (d.status = bj.gouv.sgg.model.ProcessingStatus.FETCHED " +
+            "     OR d.status = bj.gouv.sgg.model.ProcessingStatus.DOWNLOADED " +
+            "     OR d.status = bj.gouv.sgg.model.ProcessingStatus.EXTRACTED " +
+            "     OR d.status = bj.gouv.sgg.model.ProcessingStatus.ARTICLES_EXTRACTED " +
+            "     OR d.status = bj.gouv.sgg.model.ProcessingStatus.VALIDATED " +
+            "     OR d.status = bj.gouv.sgg.model.ProcessingStatus.AI_ENHANCED " +
+            "     OR d.status = bj.gouv.sgg.model.ProcessingStatus.CONSOLIDATED) " +
+            "ORDER BY d.year DESC, d.number ASC",
+            LawDocumentEntity.class
+        );
+        query.setParameter("type", type);
+        query.setParameter("minYear", minYear);
+        query.setParameter("maxYear", maxYear);
+        return query.getResultList();
+    }
+    
+    @Override
     public long countByStatus(ProcessingStatus status) {
         if (status == null) {
             return 0;
@@ -157,8 +184,12 @@ public class JpaLawDocumentRepository implements LawDocumentRepository {
             throw new IllegalArgumentException("Entity cannot be null");
         }
         
+        boolean shouldManageTransaction = !entityManager.getTransaction().isActive();
+        
         try {
-            entityManager.getTransaction().begin();
+            if (shouldManageTransaction) {
+                entityManager.getTransaction().begin();
+            }
             
             if (entity.getId() == null) {
                 // Insert
@@ -170,15 +201,17 @@ public class JpaLawDocumentRepository implements LawDocumentRepository {
                 log.debug("✅ Updated document: {}", entity.getDocumentId());
             }
             
-            entityManager.getTransaction().commit();
+            if (shouldManageTransaction) {
+                entityManager.getTransaction().commit();
+            }
             return entity;
             
         } catch (Exception e) {
-            if (entityManager.getTransaction().isActive()) {
+            if (shouldManageTransaction && entityManager.getTransaction().isActive()) {
                 entityManager.getTransaction().rollback();
             }
             log.error("❌ Failed to save document: {}", entity.getDocumentId(), e);
-            throw new RuntimeException("Failed to save entity", e);
+            throw new PersistenceException("Failed to save entity: " + entity.getDocumentId(), e);
         }
     }
     
@@ -188,8 +221,12 @@ public class JpaLawDocumentRepository implements LawDocumentRepository {
             return List.of();
         }
         
+        boolean shouldManageTransaction = !entityManager.getTransaction().isActive();
+        
         try {
-            entityManager.getTransaction().begin();
+            if (shouldManageTransaction) {
+                entityManager.getTransaction().begin();
+            }
             
             for (LawDocumentEntity entity : entities) {
                 if (entity.getId() == null) {
@@ -199,16 +236,18 @@ public class JpaLawDocumentRepository implements LawDocumentRepository {
                 }
             }
             
-            entityManager.getTransaction().commit();
+            if (shouldManageTransaction) {
+                entityManager.getTransaction().commit();
+            }
             log.debug("✅ Saved {} documents", entities.size());
             return entities;
             
         } catch (Exception e) {
-            if (entityManager.getTransaction().isActive()) {
+            if (shouldManageTransaction && entityManager.getTransaction().isActive()) {
                 entityManager.getTransaction().rollback();
             }
             log.error("❌ Failed to save {} documents", entities.size(), e);
-            throw new RuntimeException("Failed to save entities", e);
+            throw new PersistenceException("Failed to save " + entities.size() + " entities", e);
         }
     }
     
@@ -218,8 +257,12 @@ public class JpaLawDocumentRepository implements LawDocumentRepository {
             return;
         }
         
+        boolean shouldManageTransaction = !entityManager.getTransaction().isActive();
+        
         try {
-            entityManager.getTransaction().begin();
+            if (shouldManageTransaction) {
+                entityManager.getTransaction().begin();
+            }
             
             if (entityManager.contains(entity)) {
                 entityManager.remove(entity);
@@ -227,35 +270,43 @@ public class JpaLawDocumentRepository implements LawDocumentRepository {
                 entityManager.remove(entityManager.merge(entity));
             }
             
-            entityManager.getTransaction().commit();
+            if (shouldManageTransaction) {
+                entityManager.getTransaction().commit();
+            }
             log.debug("✅ Deleted document: {}", entity.getDocumentId());
             
         } catch (Exception e) {
-            if (entityManager.getTransaction().isActive()) {
+            if (shouldManageTransaction && entityManager.getTransaction().isActive()) {
                 entityManager.getTransaction().rollback();
             }
             log.error("❌ Failed to delete document: {}", entity.getDocumentId(), e);
-            throw new RuntimeException("Failed to delete entity", e);
+            throw new PersistenceException("Failed to delete entity: " + entity.getDocumentId(), e);
         }
     }
     
     @Override
     public void deleteAll() {
+        boolean shouldManageTransaction = !entityManager.getTransaction().isActive();
+        
         try {
-            entityManager.getTransaction().begin();
+            if (shouldManageTransaction) {
+                entityManager.getTransaction().begin();
+            }
             
             int count = entityManager.createQuery("DELETE FROM LawDocumentEntity")
                 .executeUpdate();
             
-            entityManager.getTransaction().commit();
+            if (shouldManageTransaction) {
+                entityManager.getTransaction().commit();
+            }
             log.warn("⚠️ Deleted all {} documents", count);
             
         } catch (Exception e) {
-            if (entityManager.getTransaction().isActive()) {
+            if (shouldManageTransaction && entityManager.getTransaction().isActive()) {
                 entityManager.getTransaction().rollback();
             }
             log.error("❌ Failed to delete all documents", e);
-            throw new RuntimeException("Failed to delete all entities", e);
+            throw new PersistenceException("Failed to delete all entities", e);
         }
     }
 }

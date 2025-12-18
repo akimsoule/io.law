@@ -10,7 +10,6 @@
         
         <!-- Entités JPA -->
         <class>bj.gouv.sgg.entity.LawDocumentEntity</class>
-        <class>bj.gouv.sgg.entity.NotFoundRecordEntity</class>
         
         <properties>
             <!-- Configuration surchargée par DatabaseConfig -->

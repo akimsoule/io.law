@@ -18,12 +18,12 @@ import java.util.stream.Collectors;
  * Utilise directement LawDocumentEntity sans couche intermédiaire.
  */
 @Slf4j
-public class DocumentService {
+public class LawDocumentService {
     
     private final LawDocumentRepository repository;
     private final EntityManager entityManager;
     
-    public DocumentService() {
+    public LawDocumentService() {
         DatabaseConfig dbConfig = DatabaseConfig.getInstance();
         this.entityManager = dbConfig.createEntityManager();
         this.repository = new JpaLawDocumentRepository(entityManager);
@@ -45,6 +45,13 @@ public class DocumentService {
         if (document.getType() == null || document.getType().isEmpty()) {
             throw new IllegalArgumentException("Document type cannot be null or empty");
         }
+
+        Optional<LawDocumentEntity> optionalLawDocumentEntity = repository.findByTypeAndYearAndNumber(
+                document.getType(),
+                document.getYear(),
+                document.getNumber()
+            );
+        optionalLawDocumentEntity.ifPresent(existingEntity -> document.setId(existingEntity.getId()));
         
         return repository.save(document);
     }
@@ -77,7 +84,7 @@ public class DocumentService {
     /**
      * Trouve un document par type, année et numéro.
      */
-    public Optional<LawDocumentEntity> findByTypeAndYearAndNumber(String type, int year, int number) {
+    public Optional<LawDocumentEntity> findByTypeAndYearAndNumber(String type, int year, String number) {
         if (type == null || type.isEmpty()) {
             return Optional.empty();
         }
@@ -119,6 +126,23 @@ public class DocumentService {
         }
         
         return repository.findByTypeAndYear(type, year);
+    }
+    
+    /**
+     * Trouve tous les documents fetchés d'un type sur une plage d'années.
+     * Optimisé pour éviter les multiples requêtes en boucle.
+     * 
+     * @param type Type de document ("loi" ou "decret")
+     * @param minYear Année minimale (inclusive)
+     * @param maxYear Année maximale (inclusive) 
+     * @return Liste des documents avec status success sur la plage d'années
+     */
+    public List<LawDocumentEntity> findFetchedByTypeAndYearRange(String type, int minYear, int maxYear) {
+        if (type == null || type.isEmpty()) {
+            return List.of();
+        }
+        
+        return repository.findFetchedByTypeAndYearRange(type, minYear, maxYear);
     }
     
     /**

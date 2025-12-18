@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>law-common</artifactId>
-    <name>Law Common (Sans Spring)</name>
+    <name>Law Common</name>
     <description>Common module sans Spring: models, services, exceptions</description>
 
     <dependencies>
