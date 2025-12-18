@@ -1,6 +1,6 @@
 package bj.gouv.sgg.app;
 
-import bj.gouv.sgg.job.fetch.FetchJob;
+import bj.gouv.sgg.job.FetchJob;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
