@@ -50,10 +50,7 @@
         <pdfbox.version>3.0.3</pdfbox.version>
         <tesseract.version>5.3.4-1.5.10</tesseract.version>
         
-        <!-- Versions tests -->
-        <junit.version>5.10.1</junit.version>
-        <mockito.version>5.8.0</mockito.version>
-        <assertj.version>3.24.2</assertj.version>
+
     </properties>
 
     <dependencyManagement>
@@ -104,13 +101,31 @@
                 <version>${project.version}</version>
             </dependency>
 
-            <!-- Spring Batch -->
+            <!-- Spring Boot Starters -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            
             <dependency>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-starter-batch</artifactId>
+                <version>${spring-boot.version}</version>
             </dependency>
             
-            <!-- H2 pour tests -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-data-jpa</artifactId>
+                <version>${spring-boot.version}</version>
+            </dependency>
+            
+            <!-- Base de données -->
+            <dependency>
+                <groupId>com.mysql</groupId>
+                <artifactId>mysql-connector-j</artifactId>
+            </dependency>
+            
             <dependency>
                 <groupId>com.h2database</groupId>
                 <artifactId>h2</artifactId>
@@ -122,22 +137,10 @@
                 <artifactId>gson</artifactId>
             </dependency>
 
-            <!-- Logging - Spring Boot gère -->
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-            </dependency>
-
-            <dependency>
-                <groupId>ch.qos.logback</groupId>
-                <artifactId>logback-classic</artifactId>
-            </dependency>
-
             <!-- Annotations -->
             <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
-                <scope>provided</scope>
             </dependency>
 
             <!-- File utils -->
@@ -161,13 +164,14 @@
                 <version>${tesseract.version}</version>
             </dependency>
 
-            <!-- MySQL Driver - Spring Boot gère -->
-            <dependency>
-                <groupId>com.mysql</groupId>
-                <artifactId>mysql-connector-j</artifactId>
-            </dependency>
-
             <!-- Tests -->
+            <dependency>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-starter-test</artifactId>
+                <version>${spring-boot.version}</version>
+                <scope>test</scope>
+            </dependency>
+            
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
@@ -186,39 +190,10 @@
                 <scope>test</scope>
             </dependency>
 
-            <dependency>
-                <groupId>org.assertj</groupId>
-                <artifactId>assertj-core</artifactId>
-                <version>${assertj.version}</version>
-                <scope>test</scope>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-surefire-plugin</artifactId>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.springframework.boot</groupId>
-                    <artifactId>spring-boot-maven-plugin</artifactId>
-                    <configuration>
-                        <createIndex>true</createIndex>
-                        <excludeDevtools>true</excludeDevtools>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-        
         <plugins>
             <!-- Flatten plugin pour résoudre ${revision} -->
             <plugin>
