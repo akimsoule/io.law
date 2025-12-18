@@ -21,7 +21,6 @@
         <dependency>
             <groupId>bj.gouv.sgg</groupId>
             <artifactId>law-common</artifactId>
-            <version>${project.version}</version>
         </dependency>
 
         <!-- Apache Commons IO pour file utils -->
@@ -34,14 +33,12 @@
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <!-- SLF4J API (fourni par law-common) -->
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <scope>provided</scope>
         </dependency>
 
         <!-- Tests -->
