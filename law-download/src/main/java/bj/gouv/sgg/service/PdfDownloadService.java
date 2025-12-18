@@ -4,9 +4,7 @@ import bj.gouv.sgg.config.AppConfig;
 import bj.gouv.sgg.exception.DownloadException;
 import bj.gouv.sgg.exception.DownloadHttpException;
 import bj.gouv.sgg.exception.DownloadEmptyPdfException;
-import bj.gouv.sgg.exception.DownloadHashException;
-import bj.gouv.sgg.entity.DownloadResultEntity;
-import bj.gouv.sgg.repository.impl.JpaDownloadResultRepository;
+import bj.gouv.sgg.util.RateLimitHandler;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -20,178 +18,187 @@ import java.nio.file.Path;
 import java.security.MessageDigest;
 import java.time.Duration;
 import java.util.HexFormat;
-import java.util.Optional;
 
 /**
  * Service de téléchargement de PDFs avec validation.
+ * Service stateless : pas de persistance, juste téléchargement et retour du hash.
  */
 @Slf4j
 public class PdfDownloadService {
     
+    private static final int TIMEOUT_MS = 30000;  // 30 secondes
+    private static final int MAX_RETRIES = 3;     // 3 tentatives
+    private static final long RETRY_DELAY_MS = 2000L;  // 2 secondes
+    
     private final HttpClient httpClient;
     private final String baseUrl;
     private final String userAgent;
-    private final int timeout;
-    private final int maxRetries;
-    private final long retryDelay;
-    private final JpaDownloadResultRepository repository;
+    private final RateLimitHandler rateLimitHandler;
     
     public PdfDownloadService() {
         AppConfig config = AppConfig.get();
         this.baseUrl = config.getBaseUrl();
         this.userAgent = config.getUserAgent();
-        this.timeout = config.getHttpTimeout();
-        this.maxRetries = config.getMaxRetries();
-        this.retryDelay = config.getRetryDelay();
-        this.repository = new JpaDownloadResultRepository(
-            bj.gouv.sgg.config.DatabaseConfig.getInstance().createEntityManager()
-        );
+        this.rateLimitHandler = new RateLimitHandler();
         
         this.httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(Duration.ofMillis(timeout))
+                .connectTimeout(Duration.ofMillis(TIMEOUT_MS))
                 .build();
     }
     
     /**
      * Télécharge un PDF et calcule son SHA-256.
-     * Sauvegarde le résultat dans le repository pour idempotence.
+     * Service stateless : ne sauvegarde rien en base.
      * 
      * @param type Type du document
      * @param year Année
-     * @param number Numéro
+     * @param number Numéro (peut être String avec padding)
      * @param destinationPath Chemin de destination
      * @return Le hash SHA-256 du fichier téléchargé
      * @throws DownloadHttpException si erreur HTTP
      * @throws DownloadEmptyPdfException si fichier trop petit
-     * @throws DownloadHashException si erreur calcul hash
      */
-    public String downloadPdf(String type, int year, int number, Path destinationPath) {
-        String documentId = String.format("%s-%d-%d", type, year, number);
-        
-        // Vérifier si déjà téléchargé (idempotence)
-        Optional<DownloadResultEntity> existingResult = repository.findByDocumentId(documentId);
-        if (existingResult.isPresent() && existingResult.get().isSuccess()) {
-            if (Files.exists(destinationPath)) {
-                log.debug("⏭️ Déjà téléchargé: {}", documentId);
-                return existingResult.get().getSha256Hash();
-            }
-        }
-        
+    public String downloadPdf(String type, int year, String number, Path destinationPath) {
+        String documentId = String.format("%s-%d-%s", type, year, number);
         String url = buildUrl(type, year, number);
         
-        for (int attempt = 1; attempt <= maxRetries; attempt++) {
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
-                HttpRequest request = HttpRequest.newBuilder()
-                        .uri(URI.create(url))
-                        .GET()
-                        .header("User-Agent", userAgent)
-                        .timeout(Duration.ofMillis(timeout))
-                        .build();
-                
-                HttpResponse<InputStream> response = httpClient.send(
-                        request, 
-                        HttpResponse.BodyHandlers.ofInputStream()
-                );
-                
-                if (response.statusCode() != 200) {
-                    throw new DownloadHttpException(url, response.statusCode());
-                }
-                
-                // Créer répertoire parent si nécessaire
-                try {
-                    Files.createDirectories(destinationPath.getParent());
-                } catch (IOException e) {
-                    throw new DownloadException("Failed to create directory for " + documentId, e);
-                }
-                
-                // Télécharger et calculer hash en une passe
-                String hash;
-                try (InputStream in = response.body()) {
-                    hash = downloadAndHash(in, destinationPath, documentId);
-                }
-                
-                // Valider taille minimale (éviter PDFs vides ou corrompus)
-                long fileSize;
-                try {
-                    fileSize = Files.size(destinationPath);
-                } catch (IOException e) {
-                    throw new DownloadException("Failed to check file size for " + documentId, e);
-                }
-                
-                if (fileSize < 1024) { // Moins de 1 KB = suspect
-                    try {
-                        Files.deleteIfExists(destinationPath);
-                    } catch (IOException ignored) {}
-                    throw new DownloadEmptyPdfException(documentId, String.format("File size: %d bytes", fileSize));
-                }
-                
-                log.debug("✅ Downloaded: {} ({} bytes, sha256: {})", 
-                         destinationPath.getFileName(), fileSize, hash.substring(0, 8));
-                
-                // Sauvegarder succès
-                DownloadResultEntity result = DownloadResultEntity.builder()
-                    .documentId(documentId)
-                    .type(type)
-                    .year(year)
-                    .number(number)
-                    .success(true)
-                    .fileSize(fileSize)
-                    .sha256Hash(hash)
-                    .build();
-                repository.save(result);
-                
-                return hash;
+                return attemptDownload(destinationPath, documentId, url, attempt);
                 
             } catch (DownloadException e) {
-                // Ne pas retry les erreurs métier
-                DownloadResultEntity result = DownloadResultEntity.builder()
-                    .documentId(documentId)
-                    .type(type)
-                    .year(year)
-                    .number(number)
-                    .success(false)
-                    .errorMessage(e.getMessage())
-                    .build();
-                repository.save(result);
-                throw e;
+                throw e;  // Remonter directement les erreurs métier
                 
             } catch (IOException | InterruptedException e) {
-                if (attempt == maxRetries) {
-                    log.error("❌ Failed to download {} after {} attempts", url, maxRetries);
-                    DownloadResultEntity result = DownloadResultEntity.builder()
-                        .documentId(documentId)
-                        .type(type)
-                        .year(year)
-                        .number(number)
-                        .success(false)
-                        .errorMessage(e.getMessage())
-                        .build();
-                    repository.save(result);
+                if (attempt == MAX_RETRIES) {
+                    log.error("❌ Failed to download {} after {} attempts", url, MAX_RETRIES);
                     throw new DownloadHttpException(url, e);
                 }
-                
-                log.debug("Retry {}/{} for {}: {}", attempt, maxRetries, url, e.getMessage());
-                
-                try {
-                    Thread.sleep(retryDelay * attempt);
-                } catch (InterruptedException ie) {
-                    Thread.currentThread().interrupt();
-                    throw new DownloadHttpException(url, ie);
-                }
+                handleRetryDelay(url, attempt, e);
             }
         }
         
-        DownloadResultEntity result = DownloadResultEntity.builder()
-            .documentId(documentId)
-            .type(type)
-            .year(year)
-            .number(number)
-            .success(false)
-            .errorMessage("Failed after " + maxRetries + " attempts")
-            .build();
-        repository.save(result);
-        throw new DownloadHttpException(url, new IOException("Failed after " + maxRetries + " attempts"));
+        // Ne devrait jamais arriver ici
+        throw new DownloadHttpException(url, new IOException("Failed after " + MAX_RETRIES + " attempts"));
+    }
+    
+    /**
+     * Tente un téléchargement unique.
+     */
+    private String attemptDownload(Path destinationPath, 
+                                   String documentId, String url, int attempt) 
+            throws IOException, InterruptedException {
+        // Appliquer rate limiting avant chaque requête
+        rateLimitHandler.beforeRequest();
+        
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(url))
+                .GET()
+                .header("User-Agent", userAgent)
+                .timeout(Duration.ofMillis(TIMEOUT_MS))
+                .build();
+        
+        HttpResponse<InputStream> response = httpClient.send(
+                request, 
+                HttpResponse.BodyHandlers.ofInputStream()
+        );
+        
+        // Gérer erreur 429 (Too Many Requests)
+        if (response.statusCode() == 429) {
+            handleRateLimitError(url, documentId, attempt);
+        }
+        
+        if (response.statusCode() != 200) {
+            throw new DownloadHttpException(url, response.statusCode());
+        }
+        
+        return processSuccessfulResponse(response, destinationPath, documentId);
+    }
+    
+    /**
+     * Gère une erreur 429 (rate limit).
+     */
+    private void handleRateLimitError(String url, String documentId, int attempt) throws IOException, InterruptedException {
+        rateLimitHandler.on429(url);
+        if (attempt < MAX_RETRIES) {
+            log.warn("⚠️ Rate limit hit, retrying {} (attempt {}/{})", documentId, attempt, MAX_RETRIES);
+            Thread.sleep(rateLimitHandler.getStats().currentDelayMs);
+            throw new IOException("Rate limit, will retry");
+        }
+        throw new DownloadHttpException(url, 429);
+    }
+    
+    /**
+     * Traite une réponse HTTP réussie.
+     */
+    private String processSuccessfulResponse(HttpResponse<InputStream> response, 
+                                             Path destinationPath, String documentId) throws IOException {
+        ensureDirectoryExists(destinationPath, documentId);
+        
+        String hash;
+        try (InputStream in = response.body()) {
+            hash = downloadAndHash(in, destinationPath, documentId);
+        }
+        
+        long fileSize = validateFileSize(destinationPath, documentId);
+        
+        log.debug("✅ Downloaded: {} ({} bytes, sha256: {})", 
+                 destinationPath.getFileName(), fileSize, hash.substring(0, 8));
+        
+        return hash;
+    }
+    
+    /**
+     * Gère le délai entre les retries.
+     */
+    private void handleRetryDelay(String url, int attempt, Exception e) {
+        log.debug("Retry {}/{} for {}: {}", attempt, MAX_RETRIES, url, e.getMessage());
+        try {
+            Thread.sleep(RETRY_DELAY_MS * attempt);
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new DownloadHttpException(url, ie);
+        }
+    }
+    
+    /**
+     * Crée le répertoire parent si nécessaire.
+     */
+    private void ensureDirectoryExists(Path destinationPath, String documentId) {
+        try {
+            Files.createDirectories(destinationPath.getParent());
+        } catch (IOException e) {
+            throw new DownloadException("Failed to create directory for " + documentId, e);
+        }
+    }
+    
+    /**
+     * Valide la taille du fichier téléchargé.
+     */
+    private long validateFileSize(Path destinationPath, String documentId) {
+        try {
+            long fileSize = Files.size(destinationPath);
+            if (fileSize < 1024) { // Moins de 1 KB = suspect
+                deleteQuietly(destinationPath);
+                throw new DownloadEmptyPdfException(documentId, String.format("File size: %d bytes", fileSize));
+            }
+            return fileSize;
+        } catch (IOException e) {
+            throw new DownloadException("Failed to check file size for " + documentId, e);
+        }
+    }
+    
+    /**
+     * Supprime un fichier sans lever d'exception.
+     */
+    private void deleteQuietly(Path path) {
+        try {
+            Files.deleteIfExists(path);
+        } catch (IOException e) {
+            // Suppression best-effort, l'erreur n'est pas critique
+            log.debug("Failed to delete file {}: {}", path, e.getMessage());
+        }
     }
     
     /**
@@ -217,16 +224,12 @@ public class PdfDownloadService {
             
         } catch (java.security.NoSuchAlgorithmException e) {
             // Nettoyer fichier partiel en cas d'erreur
-            try {
-                Files.deleteIfExists(destination);
-            } catch (IOException ignored) {}
+            deleteQuietly(destination);
             throw new DownloadException("SHA-256 algorithm not available for " + documentId, e);
             
         } catch (IOException e) {
             // Nettoyer fichier partiel en cas d'erreur
-            try {
-                Files.deleteIfExists(destination);
-            } catch (IOException ignored) {}
+            deleteQuietly(destination);
             throw new DownloadException("Failed to download and hash " + documentId, e);
         }
     }
@@ -262,7 +265,7 @@ public class PdfDownloadService {
     /**
      * Construit l'URL de téléchargement d'un document.
      */
-    private String buildUrl(String type, int year, int number) {
-        return String.format("%s/%s/%s-%d-%d.pdf", baseUrl, type, type, year, number);
+    private String buildUrl(String type, int year, String number) {
+        return String.format("%s/%s/%s-%d-%s.pdf", baseUrl, type, type, year, number);
     }
 }

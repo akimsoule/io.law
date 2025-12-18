@@ -13,7 +13,7 @@
 
     <artifactId>law-download</artifactId>
     <packaging>jar</packaging>
-    <name>Law Download Module (Sans Spring)</name>
+    <name>Law Download Module</name>
     <description>Module de téléchargement des PDFs de lois/décrets via HTTP GET</description>
 
     <dependencies>

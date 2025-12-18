@@ -2,7 +2,7 @@ package bj.gouv.sgg.service;
 
 /**
  * Service de téléchargement des PDFs.
- * Télécharge les documents depuis le site SGG.
+ * Suit le pattern Reader-Processor-Writer.
  */
 public interface DownloadService {
     
@@ -14,7 +14,7 @@ public interface DownloadService {
     void runDocument(String documentId);
     
     /**
-     * Télécharge tous les documents d'un type.
+     * Télécharge tous les documents FETCHED d'un type.
      * 
      * @param type Type de document (loi/decret)
      */
