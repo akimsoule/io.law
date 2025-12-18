@@ -6,7 +6,7 @@ import bj.gouv.sgg.provider.IAProvider;
 import bj.gouv.sgg.provider.IAProviderFactory;
 import bj.gouv.sgg.ai.transformation.IATransformation;
 import bj.gouv.sgg.exception.IAException;
-import bj.gouv.sgg.model.LawDocument;
+import bj.gouv.sgg.entity.LawDocumentEntity;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 
@@ -51,7 +51,7 @@ public class AIOrchestrator {
      * @return Texte OCR corrigé
      * @throws IAException Si correction échoue
      */
-    public String correctOcr(LawDocument document, String rawOcrText) throws IAException {
+    public String correctOcr(LawDocumentEntity document, String rawOcrText) throws IAException {
         log.info("🔧 [{}] Correcting OCR text ({} chars)", 
                 document.getDocumentId(), rawOcrText.length());
         
@@ -79,7 +79,7 @@ public class AIOrchestrator {
      * @return JSON structuré
      * @throws IAException Si extraction échoue
      */
-    public JsonObject ocrToJson(LawDocument document, String ocrText) throws IAException {
+    public JsonObject ocrToJson(LawDocumentEntity document, String ocrText) throws IAException {
         log.info("📄 [{}] Extracting JSON from OCR ({} chars)", 
                 document.getDocumentId(), ocrText.length());
         
@@ -107,7 +107,7 @@ public class AIOrchestrator {
      * @return JSON corrigé
      * @throws IAException Si correction échoue
      */
-    public JsonObject correctJson(LawDocument document, JsonObject jsonToCorrect) throws IAException {
+    public JsonObject correctJson(LawDocumentEntity document, JsonObject jsonToCorrect) throws IAException {
         log.info("📝 [{}] Correcting JSON attributes", document.getDocumentId());
         
         IATransformation<JsonObject, JsonObject> transformation = findTransformation("JSON_CORRECTION");
@@ -135,7 +135,7 @@ public class AIOrchestrator {
      * @return Texte extrait
      * @throws IAException Si extraction échoue
      */
-    public String pdfToOcr(LawDocument document, Path pdfPath) throws IAException {
+    public String pdfToOcr(LawDocumentEntity document, Path pdfPath) throws IAException {
         log.info("📄 [{}] Extracting OCR from PDF: {}", 
                 document.getDocumentId(), pdfPath);
         
@@ -163,7 +163,7 @@ public class AIOrchestrator {
      * @return JSON structuré
      * @throws IAException Si extraction échoue
      */
-    public JsonObject pdfToJson(LawDocument document, Path pdfPath) throws IAException {
+    public JsonObject pdfToJson(LawDocumentEntity document, Path pdfPath) throws IAException {
         log.info("📄 [{}] Extracting JSON directly from PDF: {}", 
                 document.getDocumentId(), pdfPath);
         
@@ -231,7 +231,7 @@ public class AIOrchestrator {
         return (IATransformation<I, O>) found.get();
     }
     
-    private TransformationContext buildContext(LawDocument document, 
+    private TransformationContext buildContext(LawDocumentEntity document, 
                                                boolean requiresVision, 
                                                int estimatedSize) {
         IAProvider provider = providerFactory.selectProvider(

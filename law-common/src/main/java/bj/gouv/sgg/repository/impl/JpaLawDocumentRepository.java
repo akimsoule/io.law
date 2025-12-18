@@ -1,7 +1,7 @@
 package bj.gouv.sgg.repository.impl;
 
 import bj.gouv.sgg.entity.LawDocumentEntity;
-import bj.gouv.sgg.model.ProcessingStatus;
+import bj.gouv.sgg.entity.ProcessingStatus;
 import bj.gouv.sgg.repository.LawDocumentRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
@@ -139,13 +139,13 @@ public class JpaLawDocumentRepository implements LawDocumentRepository {
             "SELECT d FROM LawDocumentEntity d " +
             "WHERE d.type = :type " +
             "AND d.year BETWEEN :minYear AND :maxYear " +
-            "AND (d.status = bj.gouv.sgg.model.ProcessingStatus.FETCHED " +
-            "     OR d.status = bj.gouv.sgg.model.ProcessingStatus.DOWNLOADED " +
-            "     OR d.status = bj.gouv.sgg.model.ProcessingStatus.EXTRACTED " +
-            "     OR d.status = bj.gouv.sgg.model.ProcessingStatus.ARTICLES_EXTRACTED " +
-            "     OR d.status = bj.gouv.sgg.model.ProcessingStatus.VALIDATED " +
-            "     OR d.status = bj.gouv.sgg.model.ProcessingStatus.AI_ENHANCED " +
-            "     OR d.status = bj.gouv.sgg.model.ProcessingStatus.CONSOLIDATED) " +
+            "AND (d.status = bj.gouv.sgg.entity.ProcessingStatus.FETCHED " +
+            "     OR d.status = bj.gouv.sgg.entity.ProcessingStatus.DOWNLOADED " +
+            "     OR d.status = bj.gouv.sgg.entity.ProcessingStatus.EXTRACTED " +
+            "     OR d.status = bj.gouv.sgg.entity.ProcessingStatus.ARTICLES_EXTRACTED " +
+            "     OR d.status = bj.gouv.sgg.entity.ProcessingStatus.VALIDATED " +
+            "     OR d.status = bj.gouv.sgg.entity.ProcessingStatus.AI_ENHANCED " +
+            "     OR d.status = bj.gouv.sgg.entity.ProcessingStatus.CONSOLIDATED) " +
             "ORDER BY d.year DESC, d.number ASC",
             LawDocumentEntity.class
         );

@@ -10,7 +10,7 @@
     <version>${revision}</version>
     <packaging>pom</packaging>
     
-    <name>IO.Law Parent (Sans Spring)</name>
+    <name>IO.Law Parent</name>
     <description>Application batch extraction lois/décrets béninois - Java pur sans Spring</description>
 
     <modules>
@@ -35,7 +35,7 @@
         <gson.version>2.10.1</gson.version>
         <slf4j.version>2.0.9</slf4j.version>
         <logback.version>1.4.14</logback.version>
-        <lombok.version>1.18.30</lombok.version>
+        <lombok.version>1.18.34</lombok.version>
         <commons-io.version>2.15.1</commons-io.version>
         <pdfbox.version>3.0.3</pdfbox.version>
         <tesseract.version>5.3.4-1.5.10</tesseract.version>

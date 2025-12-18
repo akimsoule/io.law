@@ -1,6 +1,7 @@
 package bj.gouv.sgg.service.impl;
 
 import bj.gouv.sgg.config.AppConfig;
+import bj.gouv.sgg.exception.CorruptedPdfException;
 import bj.gouv.sgg.exception.TesseractInitializationException;
 import bj.gouv.sgg.service.OcrService;
 import bj.gouv.sgg.util.FileExistenceHelper;
@@ -73,6 +74,9 @@ public class OcrServiceImpl implements OcrService {
             
             log.info("✅ OCR completed: {} -> {} ({} chars)", 
                      pdfFile.getName(), ocrFile.getName(), text.length());
+        } catch (CorruptedPdfException e) {
+            log.error("🚨 PDF corrompu: {}", pdfFile.getName());
+            throw e; // Remonter pour traitement spécifique
         } catch (IOException | bj.gouv.sgg.exception.OcrProcessingException e) {
             log.error("❌ OCR failed for {}: {}", pdfFile.getName(), e.getMessage());
             throw new IllegalStateException("I/O error during OCR for " + pdfFile, e);
@@ -80,8 +84,24 @@ public class OcrServiceImpl implements OcrService {
     }
     
     private String extractTextFromFile(Path pdfPath) throws IOException {
-        try (PDDocument document = Loader.loadPDF(pdfPath.toFile())) {
-            return extractTextFromDocument(document, pdfPath.getFileName().toString());
+        try {
+            try (PDDocument document = Loader.loadPDF(pdfPath.toFile())) {
+                return extractTextFromDocument(document, pdfPath.getFileName().toString());
+            }
+        } catch (IOException e) {
+            // Détecter PDF corrompu via messages d'erreur PDFBox
+            String errorMsg = e.getMessage();
+            if (errorMsg != null && (
+                errorMsg.contains("Missing root object") ||
+                errorMsg.contains("Header doesn't contain versioninfo") ||
+                errorMsg.contains("expected='endobj'") ||
+                errorMsg.contains("COSStream has been closed") ||
+                errorMsg.contains("Error: Expected a long type")
+            )) {
+                String documentId = pdfPath.getFileName().toString().replace(".pdf", "");
+                throw new CorruptedPdfException(documentId, "PDF corrompu: " + errorMsg, e);
+            }
+            throw e;
         }
     }
     

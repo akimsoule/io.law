@@ -5,7 +5,7 @@ import bj.gouv.sgg.exception.IAException;
 import bj.gouv.sgg.job.ArticleExtractionJob;
 import bj.gouv.sgg.job.OcrJob;
 import bj.gouv.sgg.model.JsonResult;
-import bj.gouv.sgg.model.LawDocument;
+import bj.gouv.sgg.entity.LawDocumentEntity;
 import bj.gouv.sgg.service.FileStorageService;
 import bj.gouv.sgg.service.OcrTransformer;
 import lombok.extern.slf4j.Slf4j;
@@ -56,7 +56,7 @@ public class OcrTransformerImpl implements OcrTransformer {
     }
     
     @Override
-    public JsonResult transform(LawDocument document, Path pdfPath) throws IAException {
+    public JsonResult transform(LawDocumentEntity document, Path pdfPath) throws IAException {
         String documentId = document.getDocumentId();
         
         try {

@@ -1,4 +1,4 @@
-package bj.gouv.sgg.model;
+package bj.gouv.sgg.entity;
 
 /**
  * Statuts de traitement des documents de loi/décret.
@@ -28,12 +28,12 @@ public enum ProcessingStatus {
     /**
      * Extraction OCR effectuée (fichier .txt créé)
      */
-    EXTRACTED,
+    OCRED,
     
     /**
      * Articles extraits depuis OCR (fichier .json créé avec méthode OCR)
      */
-    ARTICLES_EXTRACTED,
+    EXTRACTED,
     
     /**
      * Articles validés par contrôle qualité
@@ -51,35 +51,38 @@ public enum ProcessingStatus {
     CONSOLIDATED,
     
     /**
-     * Erreur générique lors du traitement
+     * Échec lors du téléchargement du PDF
      */
-    FAILED,
+    FAILED_DOWNLOAD,
+    
+    /**
+     * Échec lors de l'extraction OCR du PDF
+     */
+    FAILED_OCR,
+    
+    /**
+     * Échec lors de l'extraction des articles depuis OCR
+     */
+    FAILED_EXTRACTION,
+    
+    /**
+     * Échec lors de la validation des articles
+     */
+    FAILED_VALIDATION,
+    
+    /**
+     * Échec lors de l'amélioration IA
+     */
+    FAILED_AI,
+    
+    /**
+     * Échec lors de la consolidation finale
+     */
+    FAILED_CONSOLIDATION,
     
     /**
      * Fichier PDF corrompu (PNG déguisé, tronqué, etc.)
      */
-    CORRUPTED;
-    
-    /**
-     * Vérifie si le statut indique un traitement terminé (succès ou échec).
-     */
-    public boolean isTerminal() {
-        return this == CONSOLIDATED || this == FAILED || this == CORRUPTED || this == NOT_FOUND;
-    }
-    
-    /**
-     * Vérifie si le statut indique un succès.
-     */
-    public boolean isSuccess() {
-        return this == FETCHED || this == DOWNLOADED || this == EXTRACTED 
-            || this == ARTICLES_EXTRACTED || this == VALIDATED 
-            || this == AI_ENHANCED || this == CONSOLIDATED;
-    }
-    
-    /**
-     * Vérifie si le statut indique un échec.
-     */
-    public boolean isFailure() {
-        return this == FAILED || this == CORRUPTED || this == NOT_FOUND;
-    }
+    FAILED_CORRUPTED;
+
 }

@@ -4,7 +4,7 @@ import bj.gouv.sgg.ai.service.AIOrchestrator;
 import bj.gouv.sgg.config.AppConfig;
 import bj.gouv.sgg.exception.IAException;
 import bj.gouv.sgg.model.JsonResult;
-import bj.gouv.sgg.model.LawDocument;
+import bj.gouv.sgg.entity.LawDocumentEntity;
 import bj.gouv.sgg.service.JsonQualityService;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -54,11 +54,9 @@ public class LawTransformationService {
     private final OcrTransformer ocrTransformer;
     private final AIOrchestrator aiOrchestrator;
     private final JsonQualityService jsonQualityService;
-    private final FileStorageService fileStorageService;
     private final Gson gson;
     private final AppConfig config;
     
-    private static final double DEFAULT_OCR_THRESHOLD = 0.3;
     private static final double DEFAULT_JSON_THRESHOLD = 0.5;
     private static final String LOG_SEPARATOR = "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━";
     
@@ -66,13 +64,11 @@ public class LawTransformationService {
             OcrTransformer ocrTransformer,
             AIOrchestrator aiOrchestrator,
             JsonQualityService jsonQualityService,
-            FileStorageService fileStorageService,
             Gson gson,
             AppConfig config) {
         this.ocrTransformer = ocrTransformer;
         this.aiOrchestrator = aiOrchestrator;
         this.jsonQualityService = jsonQualityService;
-        this.fileStorageService = fileStorageService;
         this.gson = gson;
         this.config = config;
     }
@@ -85,7 +81,7 @@ public class LawTransformationService {
      * @return JsonResult avec JSON structuré et confiance
      * @throws IAException Si toutes les stratégies échouent
      */
-    public JsonResult transform(LawDocument document, Path pdfPath) throws IAException {
+    public JsonResult transform(LawDocumentEntity document, Path pdfPath) throws IAException {
         String docId = document.getDocumentId();
         log.info(LOG_SEPARATOR);
         log.info("🚀 [{}] Démarrage transformation PDF → JSON avec fallback cascade", docId);
@@ -101,72 +97,17 @@ public class LawTransformationService {
         double ocrConfidence = ocrResult.getConfidence();
         log.info("🎯 [{}] Confiance OCR brut: {} (seuil: {})", docId, ocrConfidence, ocrQualityThreshold);
         
-        JsonResult currentResult = ocrResult;
+        JsonResult currentResult = handleOcrCorrection(document, docId, ocrResult, ocrQualityThreshold);
         
-        // ÉTAPE 2 : Si OCR mauvaise qualité → AI Correction OCR
-        if (ocrConfidence < ocrQualityThreshold) {
-            log.warn("⚠️ [{}] Confiance OCR < seuil → Tentative AI correction OCR", docId);
-            try {
-                JsonResult aiOcrResult = transformWithAiOcrCorrection(document);
-                if (aiOcrResult.getConfidence() > currentResult.getConfidence()) {
-                    log.info("✅ [{}] AI correction OCR améliore confiance: {} → {}", 
-                             docId, currentResult.getConfidence(), aiOcrResult.getConfidence());
-                    currentResult = aiOcrResult;
-                } else {
-                    log.info("⏭️ [{}] AI correction OCR n'améliore pas, garder OCR brut", docId);
-                }
-            } catch (Exception e) {
-                log.warn("⚠️ [{}] AI correction OCR échouée: {}, continuer avec OCR brut", docId, e.getMessage());
-            }
-        } else {
-            log.info("✅ [{}] OCR confiance OK, skip AI correction OCR", docId);
-        }
+        // ÉTAPE 3 : Check et correction qualité JSON
+        QualityResult qualityResult = handleJsonCorrection(document, docId, currentResult, jsonQualityThreshold);
+        currentResult = qualityResult.result;
+        double jsonQuality = qualityResult.quality;
         
-        // ÉTAPE 3 : Check qualité JSON
-        double jsonQuality = calculateJsonQuality(currentResult.getJson());
-        log.info("📊 [{}] Qualité JSON: {} (seuil: {})", docId, jsonQuality, jsonQualityThreshold);
-        
-        // ÉTAPE 4 : Si JSON mauvaise qualité → AI Correction JSON
-        if (jsonQuality < jsonQualityThreshold) {
-            log.warn("⚠️ [{}] Qualité JSON < seuil → Tentative AI correction JSON", docId);
-            try {
-                JsonResult aiJsonResult = transformWithAiJsonCorrection(document, currentResult);
-                double aiJsonQuality = calculateJsonQuality(aiJsonResult.getJson());
-                
-                if (aiJsonQuality > jsonQuality) {
-                    log.info("✅ [{}] AI correction JSON améliore qualité: {} → {}", 
-                             docId, jsonQuality, aiJsonQuality);
-                    currentResult = aiJsonResult;
-                    jsonQuality = aiJsonQuality;
-                } else {
-                    log.info("⏭️ [{}] AI correction JSON n'améliore pas", docId);
-                }
-            } catch (Exception e) {
-                log.warn("⚠️ [{}] AI correction JSON échouée: {}", docId, e.getMessage());
-            }
-        } else {
-            log.info("✅ [{}] JSON qualité OK, skip AI correction JSON", docId);
-        }
-        
-        // ÉTAPE 5 : Si toujours mauvaise qualité → Fallback AI complet (PDF direct)
-        if (jsonQuality < jsonQualityThreshold) {
-            log.warn("⚠️ [{}] Qualité JSON toujours < seuil → Fallback AI extraction complète", docId);
-            try {
-                JsonResult aiFullResult = transformWithAiFull(document, pdfPath);
-                double aiFullQuality = calculateJsonQuality(aiFullResult.getJson());
-                
-                if (aiFullQuality > jsonQuality) {
-                    log.info("✅ [{}] AI extraction complète améliore qualité: {} → {}", 
-                             docId, jsonQuality, aiFullQuality);
-                    currentResult = aiFullResult;
-                    jsonQuality = aiFullQuality;
-                } else {
-                    log.warn("⚠️ [{}] AI extraction complète n'améliore pas", docId);
-                }
-            } catch (Exception e) {
-                log.error("❌ [{}] AI extraction complète échouée: {}", docId, e.getMessage());
-            }
-        }
+        // ÉTAPE 5 : Fallback AI complet si nécessaire
+        qualityResult = handleFullAiFallback(document, docId, currentResult, jsonQuality, jsonQualityThreshold);
+        currentResult = qualityResult.result;
+        jsonQuality = qualityResult.quality;
         
         // ÉTAPE 6 : Vérification finale
         if (jsonQuality < jsonQualityThreshold) {
@@ -192,7 +133,7 @@ public class LawTransformationService {
     /**
      * ÉTAPE 1 : Extraction OCR de base + Corrections CSV.
      */
-    private JsonResult transformWithOcr(LawDocument document, Path pdfPath) throws IAException {
+    private JsonResult transformWithOcr(LawDocumentEntity document, Path pdfPath) throws IAException {
         String docId = document.getDocumentId();
         log.info("▶️  1️⃣ [{}] Extraction OCR + Corrections CSV", docId);
         
@@ -208,7 +149,7 @@ public class LawTransformationService {
      * 
      * <p>Stratégie : L'IA corrige les erreurs OCR AVANT l'extraction des articles.
      */
-    private JsonResult transformWithAiOcrCorrection(LawDocument document) throws IAException {
+    private JsonResult transformWithAiOcrCorrection(LawDocumentEntity document) throws IAException {
         String docId = document.getDocumentId();
         log.info("▶️  2️⃣ [{}] AI Correction OCR", docId);
         
@@ -237,9 +178,9 @@ public class LawTransformationService {
      * ÉTAPE 3 : AI Correction du JSON extrait.
      * 
      * <p>Stratégie : L'IA améliore le JSON déjà extrait (complète métadonnées manquantes, etc.).
-     * <p><b>TODO</b> : Implémenter via AIOrchestrator.correctJson().
+     * <p>Fonctionnalité désactivée car non implémentée dans AIOrchestrator.
      */
-    private JsonResult transformWithAiJsonCorrection(LawDocument document, JsonResult currentResult) throws IAException {
+    private JsonResult transformWithAiJsonCorrection(LawDocumentEntity document, JsonResult currentResult) throws IAException {
         String docId = document.getDocumentId();
         log.info("▶️  3️⃣ [{}] AI Correction JSON", docId);
         
@@ -252,13 +193,13 @@ public class LawTransformationService {
      * ÉTAPE 4 : AI Extraction complète (PDF direct → JSON).
      * 
      * <p>Stratégie : L'IA lit le PDF directement et génère le JSON complet.
-     * <p><b>TODO</b> : Implémenter via AIOrchestrator.pdfToJson().
+     * <p>Fonctionnalité désactivée car non implémentée dans AIOrchestrator.
      */
-    private JsonResult transformWithAiFull(LawDocument document, Path pdfPath) throws IAException {
+    private JsonResult transformWithAiFull(LawDocumentEntity document) throws IAException {
         String docId = document.getDocumentId();
         log.info("▶️  4️⃣ [{}] AI Extraction Complète (PDF → JSON direct)", docId);
         
-        // Pour l'instant, on lève une exception
+        // Fonctionnalité désactivée
         throw new IAException("[" + docId + "] AI extraction complète non implémentée");
     }
     
@@ -277,7 +218,7 @@ public class LawTransformationService {
     /**
      * Lit le texte OCR depuis le fichier disque.
      */
-    private String readOcrText(LawDocument document) throws IAException {
+    private String readOcrText(LawDocumentEntity document) throws IAException {
         try {
             Path ocrPath = config.getOcrDir()
                 .resolve(document.getType())
@@ -319,8 +260,105 @@ public class LawTransformationService {
      * Récupère le seuil de qualité JSON depuis la configuration.
      */
     private double getJsonThreshold() {
-        // Pour l'instant, utiliser la valeur par défaut
-        // TODO: Ajouter law.quality.json-threshold dans AppConfig
         return DEFAULT_JSON_THRESHOLD;
+    }
+    
+    /**
+     * ÉTAPE 2 : Gestion de la correction OCR si nécessaire.
+     */
+    private JsonResult handleOcrCorrection(LawDocumentEntity document, String docId, JsonResult ocrResult, double ocrQualityThreshold) {
+        double ocrConfidence = ocrResult.getConfidence();
+        JsonResult currentResult = ocrResult;
+        
+        if (ocrConfidence < ocrQualityThreshold) {
+            log.warn("⚠️ [{}] Confiance OCR < seuil → Tentative AI correction OCR", docId);
+            try {
+                JsonResult aiOcrResult = transformWithAiOcrCorrection(document);
+                if (aiOcrResult.getConfidence() > currentResult.getConfidence()) {
+                    log.info("✅ [{}] AI correction OCR améliore confiance: {} → {}", 
+                             docId, currentResult.getConfidence(), aiOcrResult.getConfidence());
+                    return aiOcrResult;
+                } else {
+                    log.info("⏭️ [{}] AI correction OCR n'améliore pas, garder OCR brut", docId);
+                }
+            } catch (Exception e) {
+                log.warn("⚠️ [{}] AI correction OCR échouée: {}, continuer avec OCR brut", docId, e.getMessage());
+            }
+        } else {
+            log.info("✅ [{}] OCR confiance OK, skip AI correction OCR", docId);
+        }
+        
+        return currentResult;
+    }
+    
+    /**
+     * ÉTAPE 3-4 : Gestion de la correction JSON si nécessaire.
+     */
+    private QualityResult handleJsonCorrection(LawDocumentEntity document, String docId, JsonResult currentResult, double jsonQualityThreshold) {
+        double jsonQuality = calculateJsonQuality(currentResult.getJson());
+        log.info("📊 [{}] Qualité JSON: {} (seuil: {})", docId, jsonQuality, jsonQualityThreshold);
+        
+        if (jsonQuality < jsonQualityThreshold) {
+            log.warn("⚠️ [{}] Qualité JSON < seuil → Tentative AI correction JSON", docId);
+            try {
+                JsonResult aiJsonResult = transformWithAiJsonCorrection(document, currentResult);
+                double aiJsonQuality = calculateJsonQuality(aiJsonResult.getJson());
+                
+                if (aiJsonQuality > jsonQuality) {
+                    log.info("✅ [{}] AI correction JSON améliore qualité: {} → {}", 
+                             docId, jsonQuality, aiJsonQuality);
+                    return new QualityResult(aiJsonResult, aiJsonQuality);
+                } else {
+                    log.info("⏭️ [{}] AI correction JSON n'améliore pas", docId);
+                }
+            } catch (Exception e) {
+                log.warn("⚠️ [{}] AI correction JSON échouée: {}", docId, e.getMessage());
+            }
+        } else {
+            log.info("✅ [{}] JSON qualité OK, skip AI correction JSON", docId);
+        }
+        
+        return new QualityResult(currentResult, jsonQuality);
+    }
+    
+    /**
+     * ÉTAPE 5 : Fallback AI complet si qualité toujours insuffisante.
+     */
+    private QualityResult handleFullAiFallback(LawDocumentEntity document, String docId, JsonResult currentResult, 
+                                               double currentQuality, double jsonQualityThreshold) {
+        if (currentQuality >= jsonQualityThreshold) {
+            return new QualityResult(currentResult, currentQuality);
+        }
+        
+        log.warn("⚠️ [{}] Qualité JSON toujours < seuil → Fallback AI extraction complète", docId);
+        try {
+            JsonResult aiFullResult = transformWithAiFull(document);
+            double aiFullQuality = calculateJsonQuality(aiFullResult.getJson());
+            
+            if (aiFullQuality > currentQuality) {
+                log.info("✅ [{}] AI extraction complète améliore qualité: {} → {}", 
+                         docId, currentQuality, aiFullQuality);
+                return new QualityResult(aiFullResult, aiFullQuality);
+            } else {
+                log.warn("⚠️ [{}] AI extraction complète n'améliore pas", docId);
+            }
+        } catch (Exception e) {
+            log.error("❌ [{}] AI extraction complète échouée: {}", docId, e.getMessage());
+        }
+        
+        return new QualityResult(currentResult, currentQuality);
+    }
+    
+    /**
+     * Classe interne pour retourner résultat + qualité.
+     */
+    private static class QualityResult {
+        final JsonResult result;
+        final double quality;
+        
+        QualityResult(JsonResult result, double quality) {
+            this.result = result;
+            this.quality = quality;
+        }
     }
 }

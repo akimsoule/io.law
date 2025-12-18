@@ -1,8 +1,9 @@
 package bj.gouv.sgg.service.impl;
 
 import bj.gouv.sgg.entity.LawDocumentEntity;
-import bj.gouv.sgg.model.ProcessingStatus;
+import bj.gouv.sgg.entity.ProcessingStatus;
 import bj.gouv.sgg.service.FetchCurrentService;
+import bj.gouv.sgg.service.LawDocumentValidator;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
@@ -60,9 +61,10 @@ public class FetchCurrentServiceImpl extends AbstractFetchService implements Fet
         }
 
         // Retirer les documents déjà fetchés pour l'idempotence
+        LawDocumentValidator validator = LawDocumentValidator.getInstance();
         List<LawDocumentEntity> lawDocumentEntityFetched = lawDocumentService.findByTypeAndYear(type, currentYear)
                 .stream()
-                .filter(LawDocumentEntity::isFetched)
+                .filter(validator::isFetched)
                 .toList();
 
         // logger les documents déjà fetchés
@@ -84,10 +86,6 @@ public class FetchCurrentServiceImpl extends AbstractFetchService implements Fet
         }
 
         // end processor
-
-        // start writer
-        lawDocumentService.saveAll(this.lawDocumentEntityResult);
-        // end writer
 
         long totalFound = lawDocumentService.findByTypeAndYearAndStatus(type, currentYear, ProcessingStatus.FETCHED).size();
 
@@ -122,7 +120,7 @@ public class FetchCurrentServiceImpl extends AbstractFetchService implements Fet
             Optional<LawDocumentEntity> optionalExistingDoc = lawDocumentService.findByDocumentId(documentId);
             if (optionalExistingDoc.isPresent()) {
                 LawDocumentEntity existingDoc = optionalExistingDoc.get();
-                if (existingDoc.isFetched()) {
+                if (LawDocumentValidator.getInstance().isFetched(existingDoc)) {
                     log.info("ℹ️ Déjà fetché: {}", documentId);
                     return;
                 }
@@ -142,6 +140,10 @@ public class FetchCurrentServiceImpl extends AbstractFetchService implements Fet
                 this.lawDocumentEntityResult.add(doc);
                 log.info("✅ Found: {}", documentId);
                 this.newFoundNumber = newFoundNumber + 1;
+
+                // start writer
+                lawDocumentService.save(doc);
+                // end writer
             }
 
         } catch (NumberFormatException e) {

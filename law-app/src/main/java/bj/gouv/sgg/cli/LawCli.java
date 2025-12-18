@@ -47,7 +47,7 @@ public final class LawCli {
             case "fetchCurrent":
             case "fetchCurrentJob":
             case "fetch":
-                JobRunner.fetchCurrent(type, params);
+                JobRunner.fetchCurrent(type);
                 break;
             case "fetchPrevious":
             case "fetchPreviousJob":
@@ -109,7 +109,7 @@ public final class LawCli {
 
     private static void logHeader(String job, String type) {
         log.info(SEPARATOR);
-        log.info("🚀 io.law CLI (Sans Spring)");
+        log.info("🚀 io.law CLI");
         log.info(SEPARATOR);
         log.info("📋 Job: {}", job);
         log.info("🎯 Type: {}", type);

@@ -2,7 +2,7 @@ package bj.gouv.sgg;
 
 import bj.gouv.sgg.config.DatabaseConfig;
 import bj.gouv.sgg.entity.LawDocumentEntity;
-import bj.gouv.sgg.model.ProcessingStatus;
+import bj.gouv.sgg.entity.ProcessingStatus;
 import bj.gouv.sgg.service.LawDocumentService;
 import org.junit.jupiter.api.*;
 
@@ -154,7 +154,7 @@ class LawDocumentServiceIntegrationTest {
         LawDocumentEntity badRecord = LawDocumentEntity.builder()
             .type(null)  // ❌ This should be rejected by DB
             .year(2025)
-            .number(888)
+            .number("888")
             .status(ProcessingStatus.PENDING)
             .build();
         

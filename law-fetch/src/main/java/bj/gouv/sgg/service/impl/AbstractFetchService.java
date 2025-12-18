@@ -1,14 +1,10 @@
 package bj.gouv.sgg.service.impl;
 
 import bj.gouv.sgg.config.AppConfig;
-import bj.gouv.sgg.entity.LawDocumentEntity;
-import bj.gouv.sgg.model.ProcessingStatus;
 import bj.gouv.sgg.service.FetchService;
 import bj.gouv.sgg.service.HttpCheckService;
 import bj.gouv.sgg.service.LawDocumentService;
 import lombok.extern.slf4j.Slf4j;
-
-import java.util.Optional;
 
 /**
  * Classe abstraite de base pour les services de fetch.

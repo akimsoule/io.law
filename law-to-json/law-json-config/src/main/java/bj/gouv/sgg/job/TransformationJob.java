@@ -87,10 +87,8 @@ public class TransformationJob implements JobService {
             }
             
             // Créer le document
-            bj.gouv.sgg.model.LawDocument document = new bj.gouv.sgg.model.LawDocument();
-            document.setType(type);
-            document.setYear(year);
-            document.setNumber(number);
+            bj.gouv.sgg.entity.LawDocumentEntity document = 
+                bj.gouv.sgg.entity.LawDocumentEntity.create(type, year, number);
             
             // Transformer
             Path pdfPath = fileStorageService.getPdfPath(type, documentId);
@@ -197,10 +195,8 @@ public class TransformationJob implements JobService {
                 int number = Integer.parseInt(parts[2]);
                 
                 // Créer le document
-                bj.gouv.sgg.model.LawDocument document = new bj.gouv.sgg.model.LawDocument();
-                document.setType(type);
-                document.setYear(year);
-                document.setNumber(number);
+                bj.gouv.sgg.entity.LawDocumentEntity document = 
+                    bj.gouv.sgg.entity.LawDocumentEntity.create(type, year, number);
                 
                 // Transformer
                 Path pdfPath = fileStorageService.getPdfPath(type, documentId);

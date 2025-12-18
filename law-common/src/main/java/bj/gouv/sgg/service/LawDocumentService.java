@@ -2,7 +2,7 @@ package bj.gouv.sgg.service;
 
 import bj.gouv.sgg.config.DatabaseConfig;
 import bj.gouv.sgg.entity.LawDocumentEntity;
-import bj.gouv.sgg.model.ProcessingStatus;
+import bj.gouv.sgg.entity.ProcessingStatus;
 import bj.gouv.sgg.repository.LawDocumentRepository;
 import bj.gouv.sgg.repository.impl.JpaLawDocumentRepository;
 import jakarta.persistence.EntityManager;

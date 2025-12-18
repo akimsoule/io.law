@@ -1,7 +1,7 @@
 package bj.gouv.sgg.ai.model;
 
 import bj.gouv.sgg.provider.IAProvider;
-import bj.gouv.sgg.model.LawDocument;
+import bj.gouv.sgg.entity.LawDocumentEntity;
 import lombok.Builder;
 import lombok.Value;
 
@@ -25,7 +25,7 @@ public class TransformationContext {
     /**
      * Document en cours de traitement (pour métadonnées).
      */
-    LawDocument document;
+    LawDocumentEntity document;
     
     /**
      * Provider IA à utiliser pour cette transformation.
