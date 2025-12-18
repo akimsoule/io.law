@@ -1,7 +1,7 @@
 package bj.gouv.sgg.cli;
 
+import bj.gouv.sgg.job.FetchJob;
 import bj.gouv.sgg.job.download.DownloadJob;
-import bj.gouv.sgg.job.fetch.FetchJob;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.Map;
@@ -15,7 +15,7 @@ final class JobRunner {
 
     private JobRunner() {}
 
-    static void fetchCurrent(String type, Map<String, String> params) {
+    static void fetchCurrent(String type) {
         log.info("🔍 Fetch Current Year ({})", type);
         FetchJob job = new FetchJob();
         try {
@@ -37,11 +37,10 @@ final class JobRunner {
     }
 
     static void download(String type, Map<String, String> params) {
-        int maxDocs = Integer.parseInt(params.getOrDefault("maxDocuments", "0"));
-        log.info("⬇️  Download PDFs ({}, max={})", type, maxDocs);
+        log.info("⬇️  Download PDFs ({})", type);
         DownloadJob job = new DownloadJob();
         try {
-            job.run(type, maxDocs);
+            job.run(type);
         } finally {
             job.shutdown();
         }
@@ -50,13 +49,21 @@ final class JobRunner {
     static void ocr(String type) {
         log.info("🔄 OCR Extraction ({})", type);
         bj.gouv.sgg.job.OcrJob job = new bj.gouv.sgg.job.OcrJob();
-        job.runType(type);
+        try {
+            job.run(type);
+        } finally {
+            job.shutdown();
+        }
     }
 
     static void extract(String type) {
         log.info("📄 Article Extraction ({})", type);
         bj.gouv.sgg.job.ArticleExtractionJob job = new bj.gouv.sgg.job.ArticleExtractionJob();
-        job.runType(type);
+        try {
+            job.run(type);
+        } finally {
+            job.shutdown();
+        }
     }
 
     static void validate(String type) {
@@ -134,7 +141,7 @@ final class JobRunner {
         if (skipFetchCurrent) {
             log.info("⏭️  Fetch Current skippé (skipFetchCurrent=true)");
         } else {
-            fetchCurrent(type, params);
+            fetchCurrent(type);
         }
         fetchPrevious(type, params);
         

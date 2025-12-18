@@ -1,7 +1,7 @@
 package bj.gouv.sgg.repository;
 
 import bj.gouv.sgg.entity.LawDocumentEntity;
-import bj.gouv.sgg.model.ProcessingStatus;
+import bj.gouv.sgg.entity.ProcessingStatus;
 
 import java.util.List;
 import java.util.Optional;

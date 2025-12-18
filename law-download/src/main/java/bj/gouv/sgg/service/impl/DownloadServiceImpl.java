@@ -2,10 +2,11 @@ package bj.gouv.sgg.service.impl;
 
 import bj.gouv.sgg.config.AppConfig;
 import bj.gouv.sgg.entity.LawDocumentEntity;
-import bj.gouv.sgg.model.ProcessingStatus;
+import bj.gouv.sgg.entity.ProcessingStatus;
 import bj.gouv.sgg.service.LawDocumentService;
 import bj.gouv.sgg.service.DownloadService;
 import bj.gouv.sgg.service.FileStorageService;
+import bj.gouv.sgg.service.LawDocumentValidator;
 import bj.gouv.sgg.service.PdfDownloadService;
 import lombok.extern.slf4j.Slf4j;
 
@@ -105,7 +106,7 @@ public class DownloadServiceImpl implements DownloadService {
         );
         
         // Ajouter documents CORRUPTED (à retélécharger)
-        List<LawDocumentEntity> corruptedDocs = lawDocumentService.findByTypeAndStatus(type, ProcessingStatus.CORRUPTED);
+        List<LawDocumentEntity> corruptedDocs = lawDocumentService.findByTypeAndStatus(type, ProcessingStatus.FAILED_CORRUPTED);
         documents.addAll(corruptedDocs);
         
         log.info("📖 READER: {} documents FETCHED, {} documents CORRUPTED", 
@@ -138,7 +139,7 @@ public class DownloadServiceImpl implements DownloadService {
             Path pdfPath = fileStorageService.pdfPath(doc.getType(), documentId);
             
             // Si document CORRUPTED, supprimer le fichier avant de retélécharger
-            if (doc.getStatus() == ProcessingStatus.CORRUPTED) {
+            if (doc.getStatus() == ProcessingStatus.FAILED_CORRUPTED) {
                 if (Files.exists(pdfPath)) {
                     log.warn("🗑️ Suppression fichier corrompu: {}", documentId);
                     Files.delete(pdfPath);
@@ -173,7 +174,7 @@ public class DownloadServiceImpl implements DownloadService {
             
         } catch (Exception e) {
             log.error("❌ Erreur download {}: {}", documentId, e.getMessage());
-            doc.setStatus(ProcessingStatus.FAILED);
+            doc.setStatus(ProcessingStatus.FAILED_DOWNLOAD);
             doc.setErrorMessage(e.getMessage());
             this.downloadResults.add(doc);
             failedCount++;
@@ -216,9 +217,10 @@ public class DownloadServiceImpl implements DownloadService {
             }
             
             LawDocumentEntity doc = docOpt.get();
-            
+
+
             // Vérifier statut
-            if (doc.getStatus() != ProcessingStatus.FETCHED) {
+            if (!LawDocumentValidator.getInstance().mustDownload(doc)) {
                 log.warn("⚠️ Statut incorrect: {} (attendu: FETCHED)", doc.getStatus());
                 return;
             }

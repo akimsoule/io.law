@@ -16,6 +16,7 @@ import java.util.Map;
  * Pattern Singleton pour éviter de charger le fichier plusieurs fois.
  */
 @Slf4j
+@SuppressWarnings("java:S6548") // Singleton pattern justifié pour cache corrections CSV
 public class CsvCorrectOcr implements CorrectOcrText {
 
     private static CsvCorrectOcr instance;
@@ -43,33 +44,18 @@ public class CsvCorrectOcr implements CorrectOcrText {
         Map<String, String> correctionMap = new LinkedHashMap<>();
 
         try (InputStream is = getClass().getClassLoader().getResourceAsStream("corrections.csv")) {
-            assert is != null;
+            if (is == null) {
+                log.error("❌ corrections.csv not found in resources");
+                return correctionMap;
+            }
+            
             try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-
                 String line;
                 int lineNumber = 0;
+                
                 while ((line = reader.readLine()) != null) {
                     lineNumber++;
-                    line = line.trim();
-
-                    // Skip empty lines and comments
-                    if (line.isEmpty() || line.startsWith("#")) {
-                        continue;
-                    }
-
-                    // Parse correction line (format: wrong,correct)
-                    if (line.contains(",")) {
-                        String[] parts = line.split(",", 2);
-                        if (parts.length == 2) {
-                            String wrong = parts[0].trim();
-                            String correct = parts[1].trim();
-                            if (!wrong.isEmpty() && !correct.isEmpty()) {
-                                correctionMap.put(wrong, correct);
-                            }
-                        } else {
-                            log.warn("⚠️ Invalid correction format at line {}: {}", lineNumber, line);
-                        }
-                    }
+                    parseAndAddCorrection(line, lineNumber, correctionMap);
                 }
             }
         } catch (IOException e) {
@@ -77,6 +63,36 @@ public class CsvCorrectOcr implements CorrectOcrText {
         }
 
         return correctionMap;
+    }
+    
+    /**
+     * Parse une ligne du CSV et ajoute la correction à la map si valide.
+     */
+    private void parseAndAddCorrection(String line, int lineNumber, Map<String, String> correctionMap) {
+        line = line.trim();
+        
+        // Skip empty lines and comments
+        if (line.isEmpty() || line.startsWith("#")) {
+            return;
+        }
+        
+        // Parse correction line (format: wrong,correct)
+        if (!line.contains(",")) {
+            return;
+        }
+        
+        String[] parts = line.split(",", 2);
+        if (parts.length != 2) {
+            log.warn("⚠️ Invalid correction format at line {}: {}", lineNumber, line);
+            return;
+        }
+        
+        String wrong = parts[0].trim();
+        String correct = parts[1].trim();
+        
+        if (!wrong.isEmpty() && !correct.isEmpty()) {
+            correctionMap.put(wrong, correct);
+        }
     }
 
     @Override

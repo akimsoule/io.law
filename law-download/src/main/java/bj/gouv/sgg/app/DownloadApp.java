@@ -20,11 +20,11 @@ public class DownloadApp {
         try {
             // Test 1: Télécharger un document spécifique
 //            log.info("\n📥 Test 1: Téléchargement document spécifique");
-            downloadJob.runDocument("loi-2025-02");
+//            downloadJob.runDocument("loi-2012-43");
             
             // Test 2: Télécharger plusieurs documents d'un type
 //            log.info("\n📥 Test 2: Téléchargement type 'loi'");
-//            downloadJob.run("loi");
+            downloadJob.run("loi");
 //
             // Test 3: Télécharger décrets
 //            log.info("\n📥 Test 3: Téléchargement type 'decret'");

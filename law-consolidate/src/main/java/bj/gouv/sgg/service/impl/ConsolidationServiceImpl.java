@@ -1,12 +1,10 @@
 package bj.gouv.sgg.service.impl;
 
 import bj.gouv.sgg.config.AppConfig;
-import bj.gouv.sgg.exception.ConsolidationException;
-import bj.gouv.sgg.model.ConsolidationResult;
-import bj.gouv.sgg.model.DocumentRecord;
-import bj.gouv.sgg.model.ProcessingStatus;
+import bj.gouv.sgg.entity.LawDocumentEntity;
+import bj.gouv.sgg.entity.ProcessingStatus;
 import bj.gouv.sgg.service.ConsolidationService;
-import bj.gouv.sgg.service.DocumentService;
+import bj.gouv.sgg.service.LawDocumentService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -26,12 +24,12 @@ public class ConsolidationServiceImpl implements ConsolidationService {
     
     private final AppConfig config;
     private final Path jsonDir;
-    private final DocumentService documentService;
+    private final LawDocumentService lawDocumentService;
     
     private ConsolidationServiceImpl() {
         this.config = AppConfig.get();
         this.jsonDir = config.getStoragePath().resolve("articles");
-        this.documentService = new DocumentService();
+        this.lawDocumentService = new LawDocumentService();
     }
     
     public static synchronized ConsolidationServiceImpl getInstance() {
@@ -67,7 +65,7 @@ public class ConsolidationServiceImpl implements ConsolidationService {
             }
             
             // Vérifier si déjà consolidé
-            Optional<DocumentRecord> docOpt = documentService.findByDocumentId(documentId);
+            Optional<LawDocumentEntity> docOpt = lawDocumentService.findByDocumentId(documentId);
             
             if (docOpt.isEmpty()) {
                 String errorMsg = "Document non trouvé dans DB: " + documentId;
@@ -75,14 +73,14 @@ public class ConsolidationServiceImpl implements ConsolidationService {
                 return;
             }
             
-            DocumentRecord doc = docOpt.get();
+            LawDocumentEntity doc = docOpt.get();
             
             if (doc.getStatus() == ProcessingStatus.CONSOLIDATED) {
                 log.debug("⏭️ Déjà consolidé (status): {}", documentId);
                 return;
             }
             
-            if (doc.getStatus() != ProcessingStatus.EXTRACTED) {
+            if (doc.getStatus() != ProcessingStatus.OCRED) {
                 String errorMsg = "Status incorrect: " + doc.getStatus() + " (attendu: EXTRACTED)";
                 log.warn("⚠️ {}", errorMsg);
                 return;
@@ -90,7 +88,7 @@ public class ConsolidationServiceImpl implements ConsolidationService {
             
             // Consolider
             doc.setStatus(ProcessingStatus.CONSOLIDATED);
-            documentService.save(doc);
+            lawDocumentService.save(doc);
             
             log.info("✅ Consolidé: {}", documentId);
             

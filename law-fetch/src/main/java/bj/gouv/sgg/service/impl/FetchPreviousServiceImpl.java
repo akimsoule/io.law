@@ -2,9 +2,10 @@ package bj.gouv.sgg.service.impl;
 
 import bj.gouv.sgg.entity.FetchCursorEntity;
 import bj.gouv.sgg.entity.LawDocumentEntity;
-import bj.gouv.sgg.model.ProcessingStatus;
+import bj.gouv.sgg.entity.ProcessingStatus;
 import bj.gouv.sgg.service.FetchCursorService;
 import bj.gouv.sgg.service.FetchPreviousService;
+import bj.gouv.sgg.service.LawDocumentValidator;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.LocalDate;
@@ -199,7 +200,7 @@ public class FetchPreviousServiceImpl extends AbstractFetchService implements Fe
             Optional<LawDocumentEntity> optionalExistingDoc = lawDocumentService.findByDocumentId(documentId);
             if (optionalExistingDoc.isPresent()) {
                 LawDocumentEntity existingDoc = optionalExistingDoc.get();
-                if (existingDoc.isFetched()) {
+                if (LawDocumentValidator.getInstance().isFetched(existingDoc)) {
                     log.info("ℹ️ Déjà fetché: {}", documentId);
                     return;
                 }

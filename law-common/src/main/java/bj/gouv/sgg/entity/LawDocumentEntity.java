@@ -1,6 +1,5 @@
 package bj.gouv.sgg.entity;
 
-import bj.gouv.sgg.model.ProcessingStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -43,7 +42,7 @@ public class LawDocumentEntity {
     private String number;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(nullable = false, length = 100)
     private ProcessingStatus status;
 
     // ========== Processing Paths ==========
@@ -83,12 +82,6 @@ public class LawDocumentEntity {
         }
     }
 
-    public boolean isFetched() {
-        return status == ProcessingStatus.FETCHED ||
-                status == ProcessingStatus.DOWNLOADED ||
-                status == ProcessingStatus.CONSOLIDATED;
-    }
-
     @PreUpdate
     protected void onUpdate() {
         updatedAt = LocalDateTime.now();
@@ -108,11 +101,33 @@ public class LawDocumentEntity {
                 .updatedAt(LocalDateTime.now())
                 .build();
     }
-    
+
     /**
      * Factory method pour créer un nouveau document (surcharge avec number en int).
      */
     public static LawDocumentEntity create(String type, int year, int number) {
         return create(type, year, String.valueOf(number));
     }
+
+    /**
+     * Factory method pour créer une entité à partir d'un documentId.
+     * Format attendu: type-year-number (ex: loi-2024-15)
+     */
+    public static LawDocumentEntity createFromDocumentId(String documentId, String type) {
+        String[] parts = documentId.split("-");
+        if (parts.length != 3) {
+            throw new IllegalArgumentException("Format documentId invalide: " + documentId);
+        }
+        
+        return LawDocumentEntity.builder()
+            .documentId(documentId)
+            .type(type)
+            .year(Integer.parseInt(parts[1]))
+            .number(parts[2])
+            .status(ProcessingStatus.PENDING)
+            .createdAt(LocalDateTime.now())
+            .updatedAt(LocalDateTime.now())
+            .build();
+    }
+
 }

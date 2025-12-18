@@ -80,12 +80,10 @@ public class IAServiceImpl implements IAService {
         try {
             log.debug("🔧 Correcting OCR text ({} chars) with IA", rawOcrText.length());
             
-            // Créer un LawDocument minimal pour l'orchestrator
+            // Créer un LawDocumentEntity minimal pour l'orchestrator
             // Dans une utilisation réelle (via IAExtractionJob), un vrai document sera passé
-            bj.gouv.sgg.model.LawDocument minimalDoc = new bj.gouv.sgg.model.LawDocument();
-            minimalDoc.setType("loi");
-            minimalDoc.setYear(java.time.Year.now().getValue());
-            minimalDoc.setNumber(0);
+            bj.gouv.sgg.entity.LawDocumentEntity minimalDoc = bj.gouv.sgg.entity.LawDocumentEntity.create(
+                "loi", java.time.Year.now().getValue(), 0);
             
             // Utiliser l'orchestrator pour corriger le texte OCR
             String correctedText = orchestrator.correctOcr(minimalDoc, rawOcrText);
@@ -108,11 +106,9 @@ public class IAServiceImpl implements IAService {
         try {
             log.debug("📄 Extracting JSON from OCR text ({} chars)", ocrText.length());
             
-            // Créer un LawDocument minimal pour l'orchestrator
-            bj.gouv.sgg.model.LawDocument minimalDoc = new bj.gouv.sgg.model.LawDocument();
-            minimalDoc.setType("loi");
-            minimalDoc.setYear(java.time.Year.now().getValue());
-            minimalDoc.setNumber(0);
+            // Créer un LawDocumentEntity minimal pour l'orchestrator
+            bj.gouv.sgg.entity.LawDocumentEntity minimalDoc = bj.gouv.sgg.entity.LawDocumentEntity.create(
+                "loi", java.time.Year.now().getValue(), 0);
             
             // Utiliser l'orchestrator pour extraire le JSON
             JsonObject extractedJson = orchestrator.ocrToJson(minimalDoc, ocrText);

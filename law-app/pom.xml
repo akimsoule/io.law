@@ -12,7 +12,7 @@
     </parent>
 
     <artifactId>law-app</artifactId>
-    <name>Law App (Sans Spring)</name>
+    <name>Law App</name>
     <description>Application CLI sans Spring</description>
 
     <dependencies>

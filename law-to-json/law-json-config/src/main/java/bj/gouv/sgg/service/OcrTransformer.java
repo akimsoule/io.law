@@ -2,7 +2,7 @@ package bj.gouv.sgg.service;
 
 import bj.gouv.sgg.exception.IAException;
 import bj.gouv.sgg.model.JsonResult;
-import bj.gouv.sgg.model.LawDocument;
+import bj.gouv.sgg.entity.LawDocumentEntity;
 
 import java.nio.file.Path;
 
@@ -29,5 +29,5 @@ public interface OcrTransformer {
      * @return JsonResult avec JSON structuré et confiance OCR
      * @throws IAException Si la transformation échoue
      */
-    JsonResult transform(LawDocument document, Path pdfPath) throws IAException;
+    JsonResult transform(LawDocumentEntity document, Path pdfPath) throws IAException;
 }
