@@ -1,14 +1,16 @@
 # io.law - Lois et Décrets du Bénin
 
-[![Java](https://img.shields.io/badge/Java-Latest-orange.svg)](https://openjdk.java.net/)
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2.0-brightgreen.svg)](https://spring.io/projects/spring-boot)
-[![Spring Batch](https://img.shields.io/badge/Spring%20Batch-5.1.0-blue.svg)](https://spring.io/projects/spring-batch)
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Java](https://img.shields.io/badge/Java-17+-orange.svg)](https://openjdk.java.net/)
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.5.9-brightgreen.svg)](https://spring.io/projects/spring-boot)
+[![Spring Batch](https://img.shields.io/badge/Spring%20Batch-5.2.1-blue.svg)](https://spring.io/projects/spring-batch)
+[![Migration](https://img.shields.io/badge/Migration-In%20Progress-yellow.svg)](MIGRATION-STATUS.md)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 
 Application Spring Batch multi-modules pour extraire, traiter et consolider les lois et décrets du gouvernement béninois depuis [sgg.gouv.bj/doc](https://sgg.gouv.bj/doc).
 
 ## 📋 Table des matières
 
+- [État de la Migration](#-état-de-la-migration)
 - [Architecture](#-architecture)
 - [Modules](#-modules)
 - [Prérequis](#-prérequis)
@@ -19,6 +21,25 @@ Application Spring Batch multi-modules pour extraire, traiter et consolider les 
 - [Workflow complet](#-workflow-complet)
 - [Contribuer](#-contribuer)
 - [Licence](#-licence)
+
+## 🚧 État de la Migration
+
+**Branche active**: `migration/spring-batch`  
+**Progression**: 1/6 modules migrés (16.7%)
+
+### ✅ Terminé
+- **law-common**: Migration Spring Boot 3.5.9 + Spring Data JPA
+  - Configuration Spring Boot complète
+  - Tests professionnels (12 tests, 100% succès)
+  - Convention BDD givenWhenThen
+
+### 🔄 En cours
+- **law-fetch**: Migration Spring Batch Jobs (prochain)
+
+### ⏳ À faire
+- law-download, law-tojson (4 sous-modules), law-app
+
+📊 **Voir**: [MIGRATION-STATUS.md](MIGRATION-STATUS.md) pour détails complets
 
 ## 🏗 Architecture
 
@@ -38,10 +59,11 @@ io.law/
 
 ### Technologies
 
-- **Java** - Pattern matching, records, text blocks
-- **Spring Boot 3.2.0** - Framework d'application
-- **Spring Batch 5.1.0** - Traitement batch
-- **MySQL 8** - Persistance des données
+- **Java 17+** - Pattern matching, records, text blocks
+- **Spring Boot 3.5.9** - Framework d'application
+- **Spring Batch 5.2.1** - Traitement batch (migration en cours)
+- **Spring Data JPA** - Persistance simplifiée ✅
+- **MySQL 8.4** - Persistance des données
 - **PDFBox 3.0** - Extraction de texte PDF
 - **Tesseract OCR** (JavaCPP) - Reconnaissance optique de caractères
 - **Ollama** (optionnel) - IA locale pour parsing
@@ -52,14 +74,17 @@ io.law/
 ## 📦 Modules
 
 ### law-common
-Socle commun partagé par tous les modules.
+Socle commun partagé par tous les modules. ✅ **Migré vers Spring Boot 3.5.9**
 
 **Contenu** :
-- **model/** : 7 entités JPA (`LawDocument`, `FetchResult`, `FetchCursor`, etc.)
-- **repository/** : 7 repositories JPA
+- **entity/** : 7 entités JPA (`LawDocumentEntity`, etc.)
+- **repository/** : 7 repositories Spring Data JPA ✅
+- **service/** : Services Spring avec `@Service` ✅
 - **exception/** : 21 exceptions métier spécifiques
-- **config/** : Configuration Spring (`LawProperties`, `GsonConfig`, `DatabaseConfig`)
-- **util/** : Utilitaires (`FileStorageService`, `DateUtils`, `StringUtils`, etc.)
+- **config/** : Configuration Spring Boot (`CommonConfiguration`, `AppConfig`)
+- **util/** : Utilitaires (`FileStorageService` avec `@Component`)
+
+**Tests** : 12 tests Spring Boot Test (100% succès) ✅
 
 ### law-fetch
 Récupération des métadonnées des documents disponibles.
