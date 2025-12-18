@@ -23,9 +23,9 @@
 
     <modules>
         <module>law-common</module>
+        <module>law-fetch</module>
         <!-- Temporairement désactivés pendant migration -->
         <!--
-        <module>law-fetch</module>
         <module>law-download</module>
         <module>law-to-json</module>
         <module>law-consolidate</module>
