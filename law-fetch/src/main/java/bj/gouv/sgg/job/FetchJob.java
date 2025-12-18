@@ -1,4 +1,4 @@
-package bj.gouv.sgg.job.fetch;
+package bj.gouv.sgg.job;
 
 import bj.gouv.sgg.service.FetchCurrentService;
 import bj.gouv.sgg.service.FetchPreviousService;

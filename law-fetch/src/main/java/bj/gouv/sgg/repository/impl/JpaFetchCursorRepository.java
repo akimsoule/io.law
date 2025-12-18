@@ -20,6 +20,7 @@ import java.util.Optional;
 public class JpaFetchCursorRepository {
     
     private final EntityManager entityManager;
+    private static final String PARAM_DOCUMENT_TYPE = "documentType";
     
     /**
      * Trouve le cursor unique pour cursorType et documentType.
@@ -35,7 +36,7 @@ public class JpaFetchCursorRepository {
                 FetchCursorEntity.class
             );
             query.setParameter("cursorType", cursorType);
-            query.setParameter("documentType", documentType);
+            query.setParameter(PARAM_DOCUMENT_TYPE, documentType);
             return Optional.of(query.getSingleResult());
         } catch (NoResultException e) {
             return Optional.empty();
@@ -54,7 +55,7 @@ public class JpaFetchCursorRepository {
             "SELECT COUNT(c) FROM FetchCursorEntity c WHERE c.documentType = :documentType",
             Long.class
         );
-        query.setParameter("documentType", documentType);
+        query.setParameter(PARAM_DOCUMENT_TYPE, documentType);
         return query.getSingleResult() > 0;
     }
     
@@ -71,7 +72,7 @@ public class JpaFetchCursorRepository {
             Long.class
         );
         query.setParameter("cursorType", cursorType);
-        query.setParameter("documentType", documentType);
+        query.setParameter(PARAM_DOCUMENT_TYPE, documentType);
         return query.getSingleResult() > 0;
     }
     
