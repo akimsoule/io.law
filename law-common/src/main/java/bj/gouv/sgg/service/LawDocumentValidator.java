@@ -3,8 +3,11 @@ package bj.gouv.sgg.service;
 import bj.gouv.sgg.config.AppConfig;
 import bj.gouv.sgg.entity.LawDocumentEntity;
 import bj.gouv.sgg.entity.ProcessingStatus;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
+import jakarta.annotation.PostConstruct;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
@@ -15,26 +18,19 @@ import java.time.LocalDate;
  * <p>Ce service combine la logique métier basée sur le status de l'entité
  * avec la vérification de l'existence réelle des fichiers sur le disque.
  *
- * <p>Pattern Singleton pour une instance unique partagée.
- *
  * @author io.law
  * @since 1.0.0
  */
+@Service
 @Slf4j
+@RequiredArgsConstructor
 public class LawDocumentValidator {
 
-    private static LawDocumentValidator instance;
     private final AppConfig config;
-
-    private LawDocumentValidator() {
-        this.config = AppConfig.get();
-    }
-
-    public static synchronized LawDocumentValidator getInstance() {
-        if (instance == null) {
-            instance = new LawDocumentValidator();
-        }
-        return instance;
+    
+    @PostConstruct
+    public void init() {
+        log.info("✅ LawDocumentValidator initialized with Spring");
     }
 
     // ========== FETCH VALIDATION ==========

@@ -61,13 +61,19 @@ public interface LawDocumentRepository extends JpaRepository<LawDocumentEntity, 
      * @param type Type de document ("loi" ou "decret")
      * @param minYear Année minimale (inclusive)
      * @param maxYear Année maximale (inclusive)
-     * @return Liste des documents avec status success sur la plage d'années
+     * @return Liste des documents avec status >= FETCHED sur la plage d'années
      */
     @Query("""
         SELECT d FROM LawDocumentEntity d 
         WHERE d.type = :type 
         AND d.year BETWEEN :minYear AND :maxYear
-        AND (d.fetchSuccess = true OR d.downloadSuccess = true OR d.ocrSuccess = true OR d.extractionSuccess = true)
+        AND d.status IN (
+            bj.gouv.sgg.entity.ProcessingStatus.FETCHED,
+            bj.gouv.sgg.entity.ProcessingStatus.DOWNLOADED,
+            bj.gouv.sgg.entity.ProcessingStatus.OCRED,
+            bj.gouv.sgg.entity.ProcessingStatus.EXTRACTED,
+            bj.gouv.sgg.entity.ProcessingStatus.CONSOLIDATED
+        )
         ORDER BY d.year DESC, d.number ASC
         """)
     List<LawDocumentEntity> findFetchedByTypeAndYearRange(

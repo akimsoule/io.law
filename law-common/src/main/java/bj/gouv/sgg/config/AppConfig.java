@@ -52,9 +52,6 @@ public class AppConfig {
     private transient Path jsonDir;
     private transient Path unrecognizedWordsFile;
     
-    // Backward compatibility - instance statique pour les anciens services
-    @Deprecated
-    private static AppConfig instance;
     
     @PostConstruct
     public void init() {
@@ -64,25 +61,12 @@ public class AppConfig {
         this.ocrDir = storagePath.resolve("ocr");
         this.jsonDir = storagePath.resolve("articles");
         this.unrecognizedWordsFile = storagePath.resolve("word_non_recognize.txt");
-        
-        // Backward compatibility
-        instance = this;
-        
         log.info("📋 Configuration loaded: baseUrl={}, storagePath={}", baseUrl, storagePath);
     }
     
     /**
      * Backward compatibility - A supprimer après migration complète.
      */
-    @Deprecated
-    public static synchronized AppConfig load() {
-        return instance != null ? instance : new AppConfig();
-    }
-    
-    @Deprecated
-    public static AppConfig get() {
-        return instance;
-    }
     
     // Méthodes utilitaires pour chemins
     public Path getDbPath() {
