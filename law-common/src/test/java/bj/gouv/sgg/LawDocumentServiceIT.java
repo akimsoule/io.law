@@ -14,12 +14,12 @@ import java.util.Optional;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Tests simples du LawDocumentService.
+ * Tests d'intégration du LawDocumentService.
  */
 @SpringBootTest(classes = CommonConfiguration.class)
 @TestPropertySource(locations = "classpath:application-test.yml")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
-class LawDocumentServiceSimpleTest {
+class LawDocumentServiceIT {
     
     @Autowired
     private LawDocumentService service;
@@ -39,7 +39,7 @@ class LawDocumentServiceSimpleTest {
     
     @Test
     @Order(1)
-    void givenMultipleDocumentsWhenSavedThenAllDocumentsPersisted() {
+    void testInsertMultipleDocuments() {
         for (int i = 100; i <= 102; i++) {
             LawDocumentEntity doc = LawDocumentEntity.create("loi", 2024, String.valueOf(i));
             doc.setStatus(ProcessingStatus.FETCHED);
@@ -53,7 +53,7 @@ class LawDocumentServiceSimpleTest {
     
     @Test
     @Order(2)
-    void givenFetchedDocumentsWhenCountedByStatusThenCorrectCountReturned() {
+    void testCountByStatus() {
         long total = service.countByStatus(ProcessingStatus.FETCHED);
         
         assertTrue(total >= 3, "Should have at least 3 FETCHED documents");
@@ -61,7 +61,7 @@ class LawDocumentServiceSimpleTest {
     
     @Test
     @Order(3)
-    void givenPersistedDocumentWhenSearchedByIdThenDocumentFoundWithCorrectStatus() {
+    void testFindByDocumentId() {
         Optional<LawDocumentEntity> doc = service.findByDocumentId(TEST_DOC_PREFIX + "100");
         
         assertTrue(doc.isPresent(), "Document should be found");
@@ -71,7 +71,7 @@ class LawDocumentServiceSimpleTest {
     
     @Test
     @Order(4)
-    void givenAllDocumentsWhenCheckedThenAllHaveValidType() {
+    void testAllDocumentsHaveValidType() {
         var allDocs = service.findByStatus(ProcessingStatus.FETCHED);
         long nullCount = allDocs.stream()
             .filter(d -> d.getType() == null || d.getType().isEmpty())
