@@ -83,7 +83,7 @@ public class IAServiceImpl implements IAService {
             // Créer un LawDocumentEntity minimal pour l'orchestrator
             // Dans une utilisation réelle (via IAExtractionJob), un vrai document sera passé
             bj.gouv.sgg.entity.LawDocumentEntity minimalDoc = bj.gouv.sgg.entity.LawDocumentEntity.create(
-                "loi", java.time.Year.now().getValue(), 0);
+                "loi", java.time.Year.now().getValue(), "0");
             
             // Utiliser l'orchestrator pour corriger le texte OCR
             String correctedText = orchestrator.correctOcr(minimalDoc, rawOcrText);
@@ -108,7 +108,7 @@ public class IAServiceImpl implements IAService {
             
             // Créer un LawDocumentEntity minimal pour l'orchestrator
             bj.gouv.sgg.entity.LawDocumentEntity minimalDoc = bj.gouv.sgg.entity.LawDocumentEntity.create(
-                "loi", java.time.Year.now().getValue(), 0);
+                "loi", java.time.Year.now().getValue(), "0");
             
             // Utiliser l'orchestrator pour extraire le JSON
             JsonObject extractedJson = orchestrator.ocrToJson(minimalDoc, ocrText);

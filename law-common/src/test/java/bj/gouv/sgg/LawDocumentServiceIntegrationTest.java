@@ -60,7 +60,7 @@ class LawDocumentServiceIntegrationTest {
         System.out.println("\n📊 Test 2: Insert Document");
         
         // Créer un document de test
-        LawDocumentEntity record = LawDocumentEntity.create("loi", 2025, 999);
+        LawDocumentEntity record = LawDocumentEntity.create("loi", 2025, "999");
         // record.setUrl("https://sgg.gouv.bj/doc/loi-2025-999.pdf");
         // record.setTitle("Loi de test MySQL");
         record.setStatus(ProcessingStatus.FETCHED);
@@ -72,7 +72,7 @@ class LawDocumentServiceIntegrationTest {
         assertEquals(TEST_DOC_ID, saved.getDocumentId(), "Document ID should match");
         assertEquals("loi", saved.getType(), "Type should be 'loi'");
         assertEquals(2025, saved.getYear(), "Year should be 2025");
-        assertEquals(999, saved.getNumber(), "Number should be 999");
+        assertEquals("999", saved.getNumber(), "Number should be 999");
         assertEquals(ProcessingStatus.FETCHED, saved.getStatus(), "Status should be FETCHED");
         
         System.out.println("✅ Document inserted: " + TEST_DOC_ID);
@@ -173,7 +173,7 @@ class LawDocumentServiceIntegrationTest {
         System.out.println("\n📊 Test 8: Prevent Duplicates (unique constraint)");
         
         // Créer un document avec même type/year/number
-        LawDocumentEntity duplicate = LawDocumentEntity.create("loi", 2025, 999);
+        LawDocumentEntity duplicate = LawDocumentEntity.create("loi", 2025, "999");
         // duplicate.setUrl("https://different-url.pdf");
         
         // La sauvegarde devrait mettre à jour, pas insérer

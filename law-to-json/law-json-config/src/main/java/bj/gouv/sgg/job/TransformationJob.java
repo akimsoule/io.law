@@ -88,7 +88,7 @@ public class TransformationJob implements JobService {
             
             // Créer le document
             bj.gouv.sgg.entity.LawDocumentEntity document = 
-                bj.gouv.sgg.entity.LawDocumentEntity.create(type, year, number);
+                bj.gouv.sgg.entity.LawDocumentEntity.create(type, year, String.valueOf(number));
             
             // Transformer
             Path pdfPath = fileStorageService.getPdfPath(type, documentId);
@@ -196,7 +196,7 @@ public class TransformationJob implements JobService {
                 
                 // Créer le document
                 bj.gouv.sgg.entity.LawDocumentEntity document = 
-                    bj.gouv.sgg.entity.LawDocumentEntity.create(type, year, number);
+                    bj.gouv.sgg.entity.LawDocumentEntity.create(type, year, String.valueOf(number));
                 
                 // Transformer
                 Path pdfPath = fileStorageService.getPdfPath(type, documentId);
