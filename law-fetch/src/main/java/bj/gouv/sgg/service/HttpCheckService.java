@@ -3,8 +3,6 @@ package bj.gouv.sgg.service;
 import bj.gouv.sgg.config.AppConfig;
 import bj.gouv.sgg.exception.FetchHttpException;
 import bj.gouv.sgg.exception.FetchTimeoutException;
-import bj.gouv.sgg.entity.FetchResultEntity;
-import bj.gouv.sgg.repository.impl.JpaFetchResultRepository;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -17,6 +15,7 @@ import java.util.Optional;
 
 /**
  * Service HTTP pour vérifier l'existence des documents via HEAD requests.
+ * Service stateless qui ne gère pas la persistance.
  */
 @Slf4j
 public class HttpCheckService {
@@ -27,7 +26,6 @@ public class HttpCheckService {
     private final int timeout;
     private final int maxRetries;
     private final long retryDelay;
-    private final JpaFetchResultRepository repository;
     
     public HttpCheckService() {
         AppConfig config = AppConfig.get();
@@ -36,9 +34,6 @@ public class HttpCheckService {
         this.timeout = config.getHttpTimeout();
         this.maxRetries = config.getMaxRetries();
         this.retryDelay = config.getRetryDelay();
-        this.repository = new JpaFetchResultRepository(
-            bj.gouv.sgg.config.DatabaseConfig.getInstance().createEntityManager()
-        );
         
         this.httpClient = HttpClient.newBuilder()
                 .followRedirects(HttpClient.Redirect.NORMAL)
@@ -48,7 +43,7 @@ public class HttpCheckService {
     
     /**
      * Vérifie si un document existe via HEAD request.
-     * Sauvegarde le résultat dans le repository pour idempotence.
+     * Service stateless : ne gère pas la persistance, juste la vérification HTTP.
      * 
      * @param type Type du document ("loi" ou "decret")
      * @param year Année du document
@@ -57,16 +52,8 @@ public class HttpCheckService {
      * @throws FetchHttpException si erreur HTTP autre que 404
      * @throws FetchTimeoutException si timeout après toutes les tentatives
      */
-    public boolean checkDocumentExists(String type, int year, int number) {
-        String documentId = String.format("%s-%d-%d", type, year, number);
-        
-        // Vérifier si déjà vérifié (idempotence)
-        Optional<FetchResultEntity> existingResult = repository.findByDocumentId(documentId);
-        if (existingResult.isPresent()) {
-            log.debug("⏭️ Déjà vérifié: {} → {}", documentId, existingResult.get().isFound());
-            return existingResult.get().isFound();
-        }
-        
+    public boolean checkDocumentExists(String type, int year, String number) {
+        String documentId = String.format("%s-%d-%s", type, year, number);
         String url = buildUrl(type, year, number);
         
         for (int attempt = 1; attempt <= maxRetries; attempt++) {
@@ -77,64 +64,26 @@ public class HttpCheckService {
                         .header("User-Agent", userAgent)
                         .timeout(Duration.ofMillis(timeout))
                         .build();
-                
+
+                log.info("fetching (HEAD) {} (attempt {}/{})", url, attempt, maxRetries);
                 HttpResponse<Void> response = httpClient.send(request, HttpResponse.BodyHandlers.discarding());
                 
                 int statusCode = response.statusCode();
                 
                 if (statusCode == 200) {
-                    // Sauvegarder succès
-                    FetchResultEntity result = FetchResultEntity.builder()
-                        .documentId(documentId)
-                        .type(type)
-                        .year(year)
-                        .number(number)
-                        .found(true)
-                        .httpStatus(statusCode)
-                        .build();
-                    repository.save(result);
+                    log.info("✅ Found: {}", documentId);
                     return true;
                 } else if (statusCode == 404) {
-                    // Sauvegarder échec
-                    FetchResultEntity result = FetchResultEntity.builder()
-                        .documentId(documentId)
-                        .type(type)
-                        .year(year)
-                        .number(number)
-                        .found(false)
-                        .httpStatus(statusCode)
-                        .errorMessage("Not found")
-                        .build();
-                    repository.save(result);
+                    log.debug("❌ Not found: {}", documentId);
                     return false;
                 } else {
                     log.warn("⚠️ Unexpected status {} for {}", statusCode, url);
-                    FetchResultEntity result = FetchResultEntity.builder()
-                        .documentId(documentId)
-                        .type(type)
-                        .year(year)
-                        .number(number)
-                        .found(false)
-                        .httpStatus(statusCode)
-                        .errorMessage("Unexpected status")
-                        .build();
-                    repository.save(result);
                     throw new FetchHttpException(url, statusCode);
                 }
                 
             } catch (IOException e) {
                 if (attempt == maxRetries) {
                     log.error("❌ IO error checking {} after {} retries", url, maxRetries);
-                    FetchResultEntity result = FetchResultEntity.builder()
-                        .documentId(documentId)
-                        .type(type)
-                        .year(year)
-                        .number(number)
-                        .found(false)
-                        .httpStatus(0)
-                        .errorMessage(e.getMessage())
-                        .build();
-                    repository.save(result);
                     throw new FetchHttpException(url, e);
                 }
                 
@@ -144,22 +93,22 @@ public class HttpCheckService {
                     Thread.sleep(retryDelay * attempt);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
-                    throw new FetchTimeoutException(String.format("%s-%d-%d", type, year, number));
+                    throw new FetchTimeoutException(String.format("%s-%d-%s", type, year, number));
                 }
                 
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                throw new FetchTimeoutException(String.format("%s-%d-%d", type, year, number));
+                throw new FetchTimeoutException(String.format("%s-%d-%s", type, year, number));
             }
         }
         
-        throw new FetchTimeoutException(String.format("%s-%d-%d", type, year, number));
+        throw new FetchTimeoutException(String.format("%s-%d-%s", type, year, number));
     }
     
     /**
      * Construit l'URL d'un document.
      */
-    public String buildUrl(String type, int year, int number) {
-        return String.format("%s/%s/%s-%d-%d.pdf", baseUrl, type, type, year, number);
+    public String buildUrl(String type, int year, String number) {
+        return String.format("%s/%s-%d-%s/", baseUrl, type, year, number);
     }
 }

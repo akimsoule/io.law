@@ -3,6 +3,7 @@ package bj.gouv.sgg.repository.impl;
 import bj.gouv.sgg.entity.FetchCursorEntity;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.NoResultException;
+import jakarta.persistence.PersistenceException;
 import jakarta.persistence.TypedQuery;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -78,8 +79,13 @@ public class JpaFetchCursorRepository {
      * Sauvegarde ou met à jour un cursor.
      */
     public FetchCursorEntity save(FetchCursorEntity cursor) {
-        entityManager.getTransaction().begin();
+        boolean shouldManageTransaction = !entityManager.getTransaction().isActive();
+        
         try {
+            if (shouldManageTransaction) {
+                entityManager.getTransaction().begin();
+            }
+            
             // Chercher cursor existant
             Optional<FetchCursorEntity> existing = findByCursorTypeAndDocumentType(
                 cursor.getCursorType(), 
@@ -101,15 +107,17 @@ public class JpaFetchCursorRepository {
                 log.debug("✅ Cursor créé: {}-{}", cursor.getCursorType(), cursor.getDocumentType());
             }
             
-            entityManager.getTransaction().commit();
+            if (shouldManageTransaction) {
+                entityManager.getTransaction().commit();
+            }
             return result;
             
         } catch (Exception e) {
-            if (entityManager.getTransaction().isActive()) {
+            if (shouldManageTransaction && entityManager.getTransaction().isActive()) {
                 entityManager.getTransaction().rollback();
             }
             log.error("❌ Erreur sauvegarde cursor: {}", e.getMessage());
-            throw new RuntimeException("Failed to save cursor", e);
+            throw new PersistenceException("Failed to save cursor: " + cursor.getCursorType() + "-" + cursor.getDocumentType(), e);
         }
     }
     
@@ -128,16 +136,25 @@ public class JpaFetchCursorRepository {
      * Supprime tous les cursors (pour tests).
      */
     public void deleteAll() {
-        entityManager.getTransaction().begin();
+        boolean shouldManageTransaction = !entityManager.getTransaction().isActive();
+        
         try {
+            if (shouldManageTransaction) {
+                entityManager.getTransaction().begin();
+            }
+            
             int deleted = entityManager.createQuery("DELETE FROM FetchCursorEntity").executeUpdate();
-            entityManager.getTransaction().commit();
             log.debug("🗑️ {} Cursors supprimés", deleted);
+            
+            if (shouldManageTransaction) {
+                entityManager.getTransaction().commit();
+            }
+            
         } catch (Exception e) {
-            if (entityManager.getTransaction().isActive()) {
+            if (shouldManageTransaction && entityManager.getTransaction().isActive()) {
                 entityManager.getTransaction().rollback();
             }
-            throw new RuntimeException("Failed to delete all cursors", e);
+            throw new PersistenceException("Failed to delete all cursors", e);
         }
     }
 }

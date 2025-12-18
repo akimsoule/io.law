@@ -8,11 +8,8 @@
     <persistence-unit name="law-persistence-unit" transaction-type="RESOURCE_LOCAL">
         <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
         
-        <!-- Entités JPA law-fetch -->
-        <class>bj.gouv.sgg.entity.FetchResultEntity</class>
-        <class>bj.gouv.sgg.entity.FetchCursorEntity</class>
+        <!-- Entités JPA - Architecture centralisée -->
         <class>bj.gouv.sgg.entity.LawDocumentEntity</class>
-        <class>bj.gouv.sgg.entity.NotFoundRecordEntity</class>
         
         <properties>
             <!-- Configuration surchargée par DatabaseConfig -->
