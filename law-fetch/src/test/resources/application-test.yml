@@ -1,0 +1,30 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb
+    driver-class-name: org.h2.Driver
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: always
+
+batch:
+  fetch:
+    thread-pool-size: 4  # Tests avec multi-threading (réduit pour stabilité)
+
+law:
+  base-url: https://sgg.gouv.bj/doc
+  user-agent: Mozilla/5.0 Test
+  http-timeout: 5000
+  max-retries: 2
+  retry-delay: 1000
+  max-items-to-fetch-previous: 10
+  data-dir: target/test-data

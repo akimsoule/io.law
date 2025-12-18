@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: law-fetch
+  datasource:
+    url: jdbc:mysql://localhost:3306/law_db
+    username: root
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  batch:
+    job:
+      enabled: false
+    jdbc:
+      initialize-schema: always
+
+batch:
+  fetch:
+    thread-pool-size: 0  # 0=auto (min(CPU,8)), >0=fixe mais plafonné aux CPU disponibles (ex: 10 sur Raspi 4CPU → utilise 4)
+
+law:
+  base-url: https://sgg.gouv.bj/doc
+  user-agent: Mozilla/5.0 (compatible; LawBot/1.0)
+  http-timeout: 10000
+  max-retries: 3
+  retry-delay: 2000
+  max-items-to-fetch-previous: 100
+  data-dir: data

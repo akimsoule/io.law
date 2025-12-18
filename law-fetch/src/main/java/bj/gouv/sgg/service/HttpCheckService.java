@@ -4,6 +4,7 @@ import bj.gouv.sgg.config.AppConfig;
 import bj.gouv.sgg.exception.FetchHttpException;
 import bj.gouv.sgg.exception.FetchTimeoutException;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.net.URI;
@@ -18,6 +19,7 @@ import java.util.Optional;
  * Service stateless qui ne gère pas la persistance.
  */
 @Slf4j
+@Service
 public class HttpCheckService {
     
     private final HttpClient httpClient;
@@ -27,8 +29,7 @@ public class HttpCheckService {
     private final int maxRetries;
     private final long retryDelay;
     
-    public HttpCheckService() {
-        AppConfig config = AppConfig.get();
+    public HttpCheckService(AppConfig config) {
         this.baseUrl = config.getBaseUrl();
         this.userAgent = config.getUserAgent();
         this.timeout = config.getHttpTimeout();
