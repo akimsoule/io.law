@@ -11,6 +11,11 @@ public enum ProcessingStatus {
     PENDING,
     
     /**
+     * Document introuvable sur le serveur (HTTP 404)
+     */
+    NOT_FOUND,
+    
+    /**
      * Métadonnées récupérées (HTTP HEAD 200 OK)
      */
     FETCHED,
@@ -59,7 +64,7 @@ public enum ProcessingStatus {
      * Vérifie si le statut indique un traitement terminé (succès ou échec).
      */
     public boolean isTerminal() {
-        return this == CONSOLIDATED || this == FAILED || this == CORRUPTED;
+        return this == CONSOLIDATED || this == FAILED || this == CORRUPTED || this == NOT_FOUND;
     }
     
     /**
@@ -75,6 +80,6 @@ public enum ProcessingStatus {
      * Vérifie si le statut indique un échec.
      */
     public boolean isFailure() {
-        return this == FAILED || this == CORRUPTED;
+        return this == FAILED || this == CORRUPTED || this == NOT_FOUND;
     }
 }

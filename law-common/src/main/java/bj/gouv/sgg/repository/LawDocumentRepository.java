@@ -25,7 +25,7 @@ public interface LawDocumentRepository {
     /**
      * Trouve un document par type, année et numéro.
      */
-    Optional<LawDocumentEntity> findByTypeAndYearAndNumber(String type, int year, int number);
+    Optional<LawDocumentEntity> findByTypeAndYearAndNumber(String type, int year, String number);
     
     /**
      * Vérifie l'existence d'un document par son identifiant métier.
@@ -46,6 +46,17 @@ public interface LawDocumentRepository {
      * Trouve tous les documents d'un type et année donnés.
      */
     List<LawDocumentEntity> findByTypeAndYear(String type, int year);
+    
+    /**
+     * Trouve tous les documents fetchés d'un type sur une plage d'années.
+     * Optimisé pour éviter les multiples requêtes en boucle.
+     * 
+     * @param type Type de document ("loi" ou "decret")
+     * @param minYear Année minimale (inclusive)
+     * @param maxYear Année maximale (inclusive)
+     * @return Liste des documents avec status success sur la plage d'années
+     */
+    List<LawDocumentEntity> findFetchedByTypeAndYearRange(String type, int minYear, int maxYear);
     
     /**
      * Compte les documents avec un statut donné.

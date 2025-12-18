@@ -19,7 +19,7 @@ import java.util.Map;
 import java.util.Properties;
 
 /**
- * Configuration de la connexion MySQL avec Hibernate (sans Spring).
+ * Configuration de la connexion MySQL avec Hibernate.
  * 
  * Charge la configuration depuis :
  * 1. application.properties (si présent)
@@ -27,7 +27,15 @@ import java.util.Properties;
  * 3. Valeurs par défaut (Docker local)
  */
 @Slf4j
+@SuppressWarnings("java:S6548") // Singleton pattern justifié pour EntityManagerFactory unique
 public class DatabaseConfig {
+    
+    // Property keys
+    private static final String PROP_DB_URL = "db.url";
+    private static final String PROP_DB_USERNAME = "db.username";
+    private static final String PROP_DB_PASSWORD = "db.password";
+    private static final String PROP_HIBERNATE_DDL_AUTO = "hibernate.hbm2ddl.auto";
+    private static final String PROP_HIBERNATE_SHOW_SQL = "hibernate.show_sql";
     
     private static DatabaseConfig instance;
     private EntityManagerFactory entityManagerFactory;
@@ -37,13 +45,9 @@ public class DatabaseConfig {
         initialize();
     }
     
-    public static DatabaseConfig getInstance() {
+    public static synchronized DatabaseConfig getInstance() {
         if (instance == null) {
-            synchronized (DatabaseConfig.class) {
-                if (instance == null) {
-                    instance = new DatabaseConfig();
-                }
-            }
+            instance = new DatabaseConfig();
         }
         return instance;
     }
@@ -56,14 +60,14 @@ public class DatabaseConfig {
         // Configuration Hibernate (sans DataSource HikariCP externe)
         Map<String, Object> hibernateProps = new HashMap<>();
         hibernateProps.put("jakarta.persistence.jdbc.driver", "com.mysql.cj.jdbc.Driver");
-        hibernateProps.put("jakarta.persistence.jdbc.url", dbProps.getProperty("db.url"));
-        hibernateProps.put("jakarta.persistence.jdbc.user", dbProps.getProperty("db.username"));
-        hibernateProps.put("jakarta.persistence.jdbc.password", dbProps.getProperty("db.password"));
+        hibernateProps.put("jakarta.persistence.jdbc.url", dbProps.getProperty(PROP_DB_URL));
+        hibernateProps.put("jakarta.persistence.jdbc.user", dbProps.getProperty(PROP_DB_USERNAME));
+        hibernateProps.put("jakarta.persistence.jdbc.password", dbProps.getProperty(PROP_DB_PASSWORD));
         
         // Hibernate behavior
         hibernateProps.put("hibernate.dialect", "org.hibernate.dialect.MySQLDialect");
-        hibernateProps.put("hibernate.hbm2ddl.auto", dbProps.getProperty("hibernate.hbm2ddl.auto", "update"));
-        hibernateProps.put("hibernate.show_sql", dbProps.getProperty("hibernate.show_sql", "false"));
+        hibernateProps.put(PROP_HIBERNATE_DDL_AUTO, dbProps.getProperty(PROP_HIBERNATE_DDL_AUTO, "update"));
+        hibernateProps.put(PROP_HIBERNATE_SHOW_SQL, dbProps.getProperty(PROP_HIBERNATE_SHOW_SQL, "false"));
         hibernateProps.put("hibernate.format_sql", "true");
         hibernateProps.put("hibernate.use_sql_comments", "true");
         
@@ -84,7 +88,7 @@ public class DatabaseConfig {
             log.info("✅ Database connection initialized successfully");
         } catch (Exception e) {
             log.error("❌ Failed to initialize database connection", e);
-            throw new RuntimeException("Database initialization failed", e);
+            throw new IllegalStateException("Database initialization failed", e);
         }
     }
     
@@ -103,9 +107,9 @@ public class DatabaseConfig {
         }
         
         // Valeurs par défaut (Docker local)
-        props.putIfAbsent("db.url", getEnv("DB_URL", "jdbc:mysql://localhost:3306/law_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"));
-        props.putIfAbsent("db.username", getEnv("DB_USERNAME", "root"));
-        props.putIfAbsent("db.password", getEnv("DB_PASSWORD", "root"));
+        props.putIfAbsent(PROP_DB_URL, getEnv("DB_URL", "jdbc:mysql://localhost:3306/law_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true"));
+        props.putIfAbsent(PROP_DB_USERNAME, getEnv("DB_USERNAME", "root"));
+        props.putIfAbsent(PROP_DB_PASSWORD, getEnv("DB_PASSWORD", "root"));
         
         // HikariCP pool
         props.putIfAbsent("db.pool.max-size", getEnv("DB_POOL_MAX_SIZE", "10"));
@@ -113,39 +117,13 @@ public class DatabaseConfig {
         props.putIfAbsent("db.pool.connection-timeout", getEnv("DB_POOL_CONNECTION_TIMEOUT", "30000"));
         
         // Hibernate
-        props.putIfAbsent("hibernate.hbm2ddl.auto", getEnv("HIBERNATE_DDL_AUTO", "update"));
-        props.putIfAbsent("hibernate.show_sql", getEnv("HIBERNATE_SHOW_SQL", "false"));
+        props.putIfAbsent(PROP_HIBERNATE_DDL_AUTO, getEnv("HIBERNATE_DDL_AUTO", "update"));
+        props.putIfAbsent(PROP_HIBERNATE_SHOW_SQL, getEnv("HIBERNATE_SHOW_SQL", "false"));
         
-        log.info("🔧 Database URL: {}", props.getProperty("db.url"));
-        log.info("🔧 Database User: {}", props.getProperty("db.username"));
+        log.info("🔧 Database URL: {}", props.getProperty(PROP_DB_URL));
+        log.info("🔧 Database User: {}", props.getProperty(PROP_DB_USERNAME));
         
         return props;
-    }
-    
-    private DataSource createDataSource(Properties props) {
-        HikariConfig config = new HikariConfig();
-        
-        config.setJdbcUrl(props.getProperty("db.url"));
-        config.setUsername(props.getProperty("db.username"));
-        config.setPassword(props.getProperty("db.password"));
-        config.setDriverClassName("com.mysql.cj.jdbc.Driver");
-        
-        // Pool settings
-        config.setMaximumPoolSize(Integer.parseInt(props.getProperty("db.pool.max-size")));
-        config.setMinimumIdle(Integer.parseInt(props.getProperty("db.pool.min-idle")));
-        config.setConnectionTimeout(Long.parseLong(props.getProperty("db.pool.connection-timeout")));
-        
-        // Validation
-        config.setConnectionTestQuery("SELECT 1");
-        config.setValidationTimeout(3000);
-        
-        // Pool name
-        config.setPoolName("LawHikariPool");
-        
-        log.info("🏊 HikariCP pool configured: max={}, min={}", 
-                 config.getMaximumPoolSize(), config.getMinimumIdle());
-        
-        return new HikariDataSource(config);
     }
     
     private String getEnv(String key, String defaultValue) {

@@ -1,9 +1,9 @@
 package bj.gouv.sgg;
 
 import bj.gouv.sgg.config.DatabaseConfig;
-import bj.gouv.sgg.model.DocumentRecord;
+import bj.gouv.sgg.entity.LawDocumentEntity;
 import bj.gouv.sgg.model.ProcessingStatus;
-import bj.gouv.sgg.service.DocumentService;
+import bj.gouv.sgg.service.LawDocumentService;
 
 /**
  * Test simple d'insertion de documents dans MySQL.
@@ -14,15 +14,15 @@ public class TestDocumentServiceMySQL {
         System.out.println("🚀 Test DocumentService avec MySQL");
         System.out.println("===================================\n");
         
-        DocumentService service = new DocumentService();
+        LawDocumentService service = new LawDocumentService();
         
         try {
             // Créer et sauvegarder 3 documents
             for (int i = 100; i <= 102; i++) {
-                DocumentRecord doc = DocumentRecord.create("loi", 2024, i);
+                LawDocumentEntity doc = LawDocumentEntity.create("loi", 2024, i);
                 doc.setStatus(ProcessingStatus.FETCHED);
-                doc.setUrl("https://sgg.gouv.bj/doc/loi-2024-" + i + ".pdf");
-                doc.setTitle("Loi N°" + i + " de 2024");
+                // doc.setUrl("https://sgg.gouv.bj/doc/loi-2024-" + i + ".pdf");
+                // doc.setTitle("Loi N°" + i + " de 2024");
                 
                 service.save(doc);
                 System.out.println("✅ Sauvegardé: loi-2024-" + i);
@@ -38,8 +38,8 @@ public class TestDocumentServiceMySQL {
                 System.out.println("\n🔍 Document trouvé:");
                 System.out.println("   ID: " + doc.get().getDocumentId());
                 System.out.println("   Status: " + doc.get().getStatus());
-                System.out.println("   Title: " + doc.get().getTitle());
-                System.out.println("   URL: " + doc.get().getUrl());
+                // System.out.println("   Title: " + doc.get().getTitle());
+                // System.out.println("   URL: " + doc.get().getUrl());
             }
             
             // Vérifier qu'aucun n'a type null
