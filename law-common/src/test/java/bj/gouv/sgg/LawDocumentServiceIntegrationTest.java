@@ -39,13 +39,13 @@ class LawDocumentServiceIntegrationTest {
     
     @Test
     @Order(1)
-    void givenSpringContext_whenInitialized_thenServiceInjected() {
+    void givenSpringContextWhenInitializedThenServiceInjected() {
         assertNotNull(lawDocumentService, "LawDocumentService should be injected");
     }
     
     @Test
     @Order(2)
-    void givenNewDocument_whenSaved_thenDocumentPersistedWithCorrectAttributes() {
+    void givenNewDocumentWhenSavedThenDocumentPersistedWithCorrectAttributes() {
         LawDocumentEntity record = LawDocumentEntity.create("loi", 2025, "999");
         record.setStatus(ProcessingStatus.FETCHED);
         
@@ -61,7 +61,7 @@ class LawDocumentServiceIntegrationTest {
     
     @Test
     @Order(3)
-    void givenPersistedDocument_whenSearchedById_thenDocumentFound() {
+    void givenPersistedDocumentWhenSearchedByIdThenDocumentFound() {
         Optional<LawDocumentEntity> found = lawDocumentService.findByDocumentId(TEST_DOC_ID);
         
         assertTrue(found.isPresent(), "Document should be found");
@@ -70,7 +70,7 @@ class LawDocumentServiceIntegrationTest {
     
     @Test
     @Order(4)
-    void givenExistingDocument_whenStatusAndPathUpdated_thenChangesPersistedCorrectly() {
+    void givenExistingDocumentWhenStatusAndPathUpdatedThenChangesPersistedCorrectly() {
         Optional<LawDocumentEntity> found = lawDocumentService.findByDocumentId(TEST_DOC_ID);
         assertTrue(found.isPresent(), "Document should exist");
         
@@ -86,7 +86,7 @@ class LawDocumentServiceIntegrationTest {
     
     @Test
     @Order(5)
-    void givenDocumentsWithStatus_whenSearchedByStatus_thenMatchingDocumentsReturned() {
+    void givenDocumentsWithStatusWhenSearchedByStatusThenMatchingDocumentsReturned() {
         var documents = lawDocumentService.findByStatus(ProcessingStatus.DOWNLOADED);
         
         assertFalse(documents.isEmpty(), "Should find at least 1 document");
@@ -97,7 +97,7 @@ class LawDocumentServiceIntegrationTest {
     
     @Test
     @Order(6)
-    void givenDocumentsWithStatus_whenCounted_thenCorrectCountReturned() {
+    void givenDocumentsWithStatusWhenCountedThenCorrectCountReturned() {
         long count = lawDocumentService.countByStatus(ProcessingStatus.DOWNLOADED);
         
         assertTrue(count >= 1, "Should have at least 1 document with status DOWNLOADED");
@@ -105,7 +105,7 @@ class LawDocumentServiceIntegrationTest {
     
     @Test
     @Order(7)
-    void givenDocumentWithNullType_whenSaved_thenExceptionThrown() {
+    void givenDocumentWithNullTypeWhenSavedThenExceptionThrown() {
         LawDocumentEntity badRecord = LawDocumentEntity.builder()
             .type(null)
             .year(2025)
@@ -118,7 +118,7 @@ class LawDocumentServiceIntegrationTest {
     
     @Test
     @Order(8)
-    void givenDuplicateDocument_whenSaved_thenExistingDocumentUpdated() {
+    void givenDuplicateDocumentWhenSavedThenExistingDocumentUpdated() {
         LawDocumentEntity duplicate = LawDocumentEntity.create("loi", 2025, "999");
         
         LawDocumentEntity result = lawDocumentService.save(duplicate);
