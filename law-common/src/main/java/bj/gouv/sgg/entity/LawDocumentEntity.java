@@ -103,13 +103,6 @@ public class LawDocumentEntity {
     }
 
     /**
-     * Factory method pour créer un nouveau document (surcharge avec number en int).
-     */
-    public static LawDocumentEntity create(String type, int year, int number) {
-        return create(type, year, String.valueOf(number));
-    }
-
-    /**
      * Factory method pour créer une entité à partir d'un documentId.
      * Format attendu: type-year-number (ex: loi-2024-15)
      */

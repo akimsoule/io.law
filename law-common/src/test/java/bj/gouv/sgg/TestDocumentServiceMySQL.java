@@ -19,7 +19,7 @@ public class TestDocumentServiceMySQL {
         try {
             // Créer et sauvegarder 3 documents
             for (int i = 100; i <= 102; i++) {
-                LawDocumentEntity doc = LawDocumentEntity.create("loi", 2024, i);
+                LawDocumentEntity doc = LawDocumentEntity.create("loi", 2024, String.valueOf(i));
                 doc.setStatus(ProcessingStatus.FETCHED);
                 // doc.setUrl("https://sgg.gouv.bj/doc/loi-2024-" + i + ".pdf");
                 // doc.setTitle("Loi N°" + i + " de 2024");
