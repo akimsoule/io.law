@@ -1,64 +1,82 @@
 package bj.gouv.sgg;
 
-import bj.gouv.sgg.config.DatabaseConfig;
+import bj.gouv.sgg.config.CommonConfiguration;
 import bj.gouv.sgg.entity.LawDocumentEntity;
 import bj.gouv.sgg.entity.ProcessingStatus;
 import bj.gouv.sgg.service.LawDocumentService;
+import org.junit.jupiter.api.*;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.TestPropertySource;
+
+import java.util.Optional;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
- * Test simple d'insertion de documents dans MySQL.
+ * Test simple du LawDocumentService avec MySQL réel (ou H2).
  */
-public class TestDocumentServiceMySQL {
+@SpringBootTest(classes = CommonConfiguration.class)
+@TestPropertySource(locations = "classpath:application-test.yml")
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
+class TestDocumentServiceMySQL {
     
-    public static void main(String[] args) {
-        System.out.println("🚀 Test DocumentService avec MySQL");
-        System.out.println("===================================\n");
-        
-        LawDocumentService service = new LawDocumentService();
-        
-        try {
-            // Créer et sauvegarder 3 documents
-            for (int i = 100; i <= 102; i++) {
-                LawDocumentEntity doc = LawDocumentEntity.create("loi", 2024, String.valueOf(i));
-                doc.setStatus(ProcessingStatus.FETCHED);
-                // doc.setUrl("https://sgg.gouv.bj/doc/loi-2024-" + i + ".pdf");
-                // doc.setTitle("Loi N°" + i + " de 2024");
-                
-                service.save(doc);
-                System.out.println("✅ Sauvegardé: loi-2024-" + i);
+    @Autowired
+    private LawDocumentService service;
+    
+    private static final String TEST_DOC_PREFIX = "loi-2024-";
+    
+    @AfterAll
+    static void cleanup(@Autowired LawDocumentService service) {
+        for (int i = 100; i <= 102; i++) {
+            try {
+                service.delete(TEST_DOC_PREFIX + i);
+            } catch (Exception e) {
+                // Ignore if document doesn't exist
             }
-            
-            // Compter
-            long total = service.countByStatus(ProcessingStatus.FETCHED);
-            System.out.println("\n📊 Total documents FETCHED: " + total);
-            
-            // Lire un document
-            var doc = service.findByDocumentId("loi-2024-100");
-            if (doc.isPresent()) {
-                System.out.println("\n🔍 Document trouvé:");
-                System.out.println("   ID: " + doc.get().getDocumentId());
-                System.out.println("   Status: " + doc.get().getStatus());
-                // System.out.println("   Title: " + doc.get().getTitle());
-                // System.out.println("   URL: " + doc.get().getUrl());
-            }
-            
-            // Vérifier qu'aucun n'a type null
-            var allDocs = service.findByStatus(ProcessingStatus.FETCHED);
-            long nullCount = allDocs.stream()
-                .filter(d -> d.getType() == null || d.getType().isEmpty())
-                .count();
-            
-            System.out.println("\n✅ Tous les documents ont un type valide: " + (nullCount == 0));
-            System.out.println("✅ Test réussi - MySQL fonctionne !");
-            
-        } catch (Exception e) {
-            System.err.println("\n❌ Erreur: " + e.getMessage());
-            e.printStackTrace();
-            System.exit(1);
-        } finally {
-            service.close();
-            DatabaseConfig.getInstance().shutdown();
-            System.out.println("\n🛑 Connexion fermée");
         }
+    }
+    
+    @Test
+    @Order(1)
+    void testInsertMultipleDocuments() {
+        for (int i = 100; i <= 102; i++) {
+            LawDocumentEntity doc = LawDocumentEntity.create("loi", 2024, String.valueOf(i));
+            doc.setStatus(ProcessingStatus.FETCHED);
+            
+            LawDocumentEntity saved = service.save(doc);
+            
+            assertNotNull(saved);
+            assertEquals(TEST_DOC_PREFIX + i, saved.getDocumentId());
+        }
+    }
+    
+    @Test
+    @Order(2)
+    void testCountByStatus() {
+        long total = service.countByStatus(ProcessingStatus.FETCHED);
+        
+        assertTrue(total >= 3, "Should have at least 3 FETCHED documents");
+    }
+    
+    @Test
+    @Order(3)
+    void testFindByDocumentId() {
+        Optional<LawDocumentEntity> doc = service.findByDocumentId(TEST_DOC_PREFIX + "100");
+        
+        assertTrue(doc.isPresent(), "Document should be found");
+        assertEquals(TEST_DOC_PREFIX + "100", doc.get().getDocumentId());
+        assertEquals(ProcessingStatus.FETCHED, doc.get().getStatus());
+    }
+    
+    @Test
+    @Order(4)
+    void testAllDocumentsHaveValidType() {
+        var allDocs = service.findByStatus(ProcessingStatus.FETCHED);
+        long nullCount = allDocs.stream()
+            .filter(d -> d.getType() == null || d.getType().isEmpty())
+            .count();
+        
+        assertEquals(0, nullCount, "All documents should have a valid type");
     }
 }
