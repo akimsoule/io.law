@@ -57,8 +57,7 @@ public class DownloadServiceImpl implements DownloadService {
         runType(type, Integer.MAX_VALUE);
     }
     
-    @Override
-    public void runType(String type, int maxDocuments) {
+    private void runType(String type, int maxDocuments) {
         log.info("⬇️  DownloadService: type={}, maxDocuments={}", type, maxDocuments);
         
         // Réinitialiser compteurs

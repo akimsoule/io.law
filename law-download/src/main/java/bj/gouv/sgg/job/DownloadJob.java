@@ -33,9 +33,8 @@ public class DownloadJob {
      * Télécharge tous les documents FETCHED d'un type.
      * 
      * @param type Type de document (loi/decret)
-     * @param maxDocuments Nombre maximum de documents à télécharger
      */
-    public void run(String type, int maxDocuments) {
+    public void run(String type) {
         downloadService.runType(type);
     }
     
