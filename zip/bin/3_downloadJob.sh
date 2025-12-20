@@ -14,4 +14,4 @@ TYPE="${1:-loi}"
 
 mkdir -p "$PROJECT_ROOT/logs"
 cd "$PROJECT_ROOT"
-java $JVM_OPTS -jar "$JAR" --spring.config.location="file:$CONFIG" --job=downloadJob --type="$TYPE" 2>&1 | tee "$LOG_FILE"
+java -jar "$JAR" --spring.config.location="file:$CONFIG" --job=downloadJob --type="$TYPE" 2>&1 | tee "$LOG_FILE"

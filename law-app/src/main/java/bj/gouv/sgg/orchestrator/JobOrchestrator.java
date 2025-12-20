@@ -25,7 +25,7 @@ import java.util.Map;
  * 
  * <p>Jobs supportés :
  * <ul>
- *   <li>fetchCurrentJob : --type=loi|decret [--maxDocuments=N] [--documentId=ID]</li>
+ *   <li>fetchCurrentJob : --type=loi|decret [--{@link #MAX_DOCUMENTS maxDocuments}=N] [--documentId=ID]</li>
  *   <li>fetchPreviousJob : --type=loi|decret [--documentId=ID]</li>
  *   <li>downloadJob : --type=loi|decret [--documentId=ID]</li>
  *   <li>ocrJob : --type=loi|decret [--documentId=ID]</li>
@@ -44,6 +44,10 @@ public class JobOrchestrator {
 
     private final JobLauncher jobLauncher;
     private final ApplicationContext context;
+
+    private static final String DOCUMENT_ID = "documentId";
+    private static final String MAX_DOCUMENTS = "maxDocuments";
+    private static final String PIPELINE_BORDER = "========================================";
 
     /**
      * Lance un job Spring Batch avec les paramètres fournis.
@@ -67,12 +71,12 @@ public class JobOrchestrator {
         builder.addString("type", type);
         
         // Paramètres optionnels
-        if (parameters.containsKey("documentId")) {
-            builder.addString("documentId", parameters.get("documentId"));
+        if (parameters.containsKey(DOCUMENT_ID)) {
+            builder.addString(DOCUMENT_ID, parameters.get(DOCUMENT_ID));
         }
         
-        if (parameters.containsKey("maxDocuments")) {
-            builder.addString("maxDocuments", parameters.get("maxDocuments"));
+        if (parameters.containsKey(MAX_DOCUMENTS)) {
+            builder.addString(MAX_DOCUMENTS, parameters.get(MAX_DOCUMENTS));
         }
         
         // Timestamp pour unicité (évite les rejets Spring Batch)
@@ -101,13 +105,13 @@ public class JobOrchestrator {
      * @throws Exception si un des jobs échoue
      */
     public void runFullPipeline(String type, String documentId) throws Exception {
-        log.info("========================================");
-        log.info("  PIPELINE COMPLET - type={} documentId={}", type, documentId);
-        log.info("========================================");
+        log.info(PIPELINE_BORDER);
+        log.info("  PIPELINE COMPLET - type={} " + DOCUMENT_ID + "={}", type, documentId);
+        log.info(PIPELINE_BORDER);
         
         Map<String, String> params = Map.of(
             "type", type,
-            "documentId", documentId != null ? documentId : "ALL"
+            DOCUMENT_ID, documentId != null ? documentId : "ALL"
         );
         
         // 1. Fetch Current Year
@@ -130,8 +134,8 @@ public class JobOrchestrator {
         log.info("\n[5/6] CONSOLIDATE - Consolidation finale");
         runJob("consolidateJob", params);
         
-        log.info("\n========================================");
+        log.info("\n" + PIPELINE_BORDER);
         log.info("  PIPELINE COMPLET TERMINÉ AVEC SUCCÈS");
-        log.info("========================================");
+        log.info(PIPELINE_BORDER);
     }
 }
