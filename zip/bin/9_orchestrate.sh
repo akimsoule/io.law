@@ -11,8 +11,8 @@ LOG_FILE="$PROJECT_ROOT/logs/orchestrate.log"
 source "$PROJECT_ROOT/properties/jvm.conf"
 
 TYPE="${1:-loi}"
-SKIP_FETCH_DAILY="${2:-true>"}]}
+SKIP_FETCH_DAILY="${2:-true}"
 
 mkdir -p "$PROJECT_ROOT/logs"
 cd "$PROJECT_ROOT"
-java $JVM_OPTS -jar "$JAR" --spring.config.location="file:$CONFIG" --job=orchestrate --type="$TYPE" --skip-fetch-daily="$SKIP_FETCH_DAILY" 2>&1 | tee "$LOG_FILE"
+java -jar "$JAR" --spring.config.location="file:$CONFIG" --job=orchestrate --type="$TYPE" --skip-fetch-daily="$SKIP_FETCH_DAILY" 2>&1 | tee "$LOG_FILE"

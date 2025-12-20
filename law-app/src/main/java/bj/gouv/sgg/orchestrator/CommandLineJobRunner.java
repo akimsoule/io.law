@@ -4,7 +4,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
+import org.springframework.boot.SpringApplication;
 import org.springframework.stereotype.Component;
+import org.springframework.context.ApplicationContext;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,14 +36,18 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class CommandLineJobRunner implements ApplicationRunner {
 
+    private static final String SEPARATOR_LINE = "=================================================";
+    private static final String DOCUMENT_ID = "documentId";
+    private static final String MAX_DOCUMENTS = "maxDocuments";
+
     private final JobOrchestrator orchestrator;
     private final OrchestrationService orchestrationService;
 
     @Override
     public void run(ApplicationArguments args) throws Exception {
-        log.info("=================================================");
+        log.info(SEPARATOR_LINE);
         log.info("  LAW ORCHESTRATOR - COMMAND LINE RUNNER");
-        log.info("=================================================");
+        log.info(SEPARATOR_LINE);
         
         // Vérification des arguments
         if (args.getOptionNames().isEmpty()) {
@@ -54,9 +60,10 @@ public class CommandLineJobRunner implements ApplicationRunner {
             String type = args.getOptionValues("type") != null 
                 ? args.getOptionValues("type").get(0) 
                 : "loi";
-            boolean skipFetchDaily = args.getOptionValues("skip-fetch-daily") != null 
-                ? Boolean.parseBoolean(args.getOptionValues("skip-fetch-daily").get(0))
-                : true;
+            boolean skipFetchDaily = Boolean.parseBoolean(
+                args.getOptionValues("skip-fetch-daily") != null
+                    ? args.getOptionValues("skip-fetch-daily").get(0)
+                    : "true");
             
             log.info("Mode ORCHESTRATION CONTINUE");
             log.info("Type : {}", type);
@@ -72,8 +79,8 @@ public class CommandLineJobRunner implements ApplicationRunner {
             String type = args.getOptionValues("type") != null 
                 ? args.getOptionValues("type").get(0) 
                 : "loi";
-            String documentId = args.getOptionValues("documentId") != null 
-                ? args.getOptionValues("documentId").get(0) 
+            String documentId = args.getOptionValues(DOCUMENT_ID) != null 
+                ? args.getOptionValues(DOCUMENT_ID).get(0) 
                 : null;
             
             log.info("Mode PIPELINE : {}", pipeline);
@@ -104,13 +111,13 @@ public class CommandLineJobRunner implements ApplicationRunner {
             }
             
             // DocumentId (optionnel)
-            if (args.containsOption("documentId")) {
-                parameters.put("documentId", args.getOptionValues("documentId").get(0));
+            if (args.containsOption(DOCUMENT_ID)) {
+                parameters.put(DOCUMENT_ID, args.getOptionValues(DOCUMENT_ID).get(0));
             }
             
             // MaxDocuments (optionnel)
-            if (args.containsOption("maxDocuments")) {
-                parameters.put("maxDocuments", args.getOptionValues("maxDocuments").get(0));
+            if (args.containsOption(MAX_DOCUMENTS)) {
+                parameters.put(MAX_DOCUMENTS, args.getOptionValues(MAX_DOCUMENTS).get(0));
             }
             
             log.info("Mode JOB INDIVIDUEL : {}", jobName);
@@ -131,9 +138,9 @@ public class CommandLineJobRunner implements ApplicationRunner {
      * Affiche l'aide d'utilisation.
      */
     private void printUsage() {
-        log.info("\n=================================================");
+        log.info("\n{}", SEPARATOR_LINE);
         log.info("  USAGE");
-        log.info("=================================================");
+        log.info(SEPARATOR_LINE);
         log.info("\nMODE ORCHESTRATION CONTINUE :");
         log.info("  java -jar law-app.jar --job=orchestrate --type=<type> [--skip-fetch-daily=true|false]");
         log.info("\nOptions :");
@@ -153,7 +160,7 @@ public class CommandLineJobRunner implements ApplicationRunner {
         log.info("\nOptions :");
         log.info("  --type=<loi|decret>        : Type de document (défaut: loi)");
         log.info("  --documentId=<id>          : ID spécifique (optionnel)");
-        log.info("  --maxDocuments=<n>         : Limite de documents (optionnel)");
+        log.info("  --" + MAX_DOCUMENTS + "=<n>         : Limite de documents (optionnel)");
         log.info("\nMODE PIPELINE COMPLET :");
         log.info("  java -jar law-app.jar --pipeline=fullPipeline --type=<type> [--documentId=<id>]");
         log.info("\nPipeline fullPipeline exécute dans l'ordre :");
@@ -163,12 +170,12 @@ public class CommandLineJobRunner implements ApplicationRunner {
         log.info("  4. jsonConversionJob - Extraction OCR + JSON");
         log.info("  5. consolidateJob - Consolidation finale");
         log.info("\nExemples :");
-        log.info("  java -jar law-app.jar --job=fetchCurrentJob --type=loi --maxDocuments=5");
+        log.info("  java -jar law-app.jar --job=fetchCurrentJob --type=loi --" + MAX_DOCUMENTS + "=5");
         log.info("  java -jar law-app.jar --job=fetchPreviousJob --type=decret --documentId=decret-2023-100");
         log.info("  java -jar law-app.jar --job=downloadJob --type=decret --documentId=decret-2023-100");
         log.info("  java -jar law-app.jar --job=ocrJob --type=loi");
         log.info("  java -jar law-app.jar --job=ocrJsonJob --type=loi");
         log.info("  java -jar law-app.jar --pipeline=fullPipeline --type=loi");
-        log.info("=================================================\n");
+        log.info("{}\n", SEPARATOR_LINE);
     }
 }
