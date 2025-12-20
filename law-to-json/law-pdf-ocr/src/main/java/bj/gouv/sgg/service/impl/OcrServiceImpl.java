@@ -55,9 +55,9 @@ public class OcrServiceImpl implements OcrService {
         this.config = config;
     }
     
-    public static synchronized OcrServiceImpl getInstance() {
+    public static synchronized OcrServiceImpl getInstance(AppConfig config) {
         if (instance == null) {
-            instance = new OcrServiceImpl(AppConfig.get());
+            instance = new OcrServiceImpl(config);
         }
         return instance;
     }

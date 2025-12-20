@@ -143,20 +143,16 @@ public class FetchBatchConfiguration {
     
     /**
      * Step pour fetch previous.
+     * Configuration simple sans multithreading.
      * Chunk size = 10 : traite 10 documents à la fois.
-     * Utilise FetchPreviousProcessor qui persiste FETCHED + NOT_FOUND et met à jour le cursor.
-     * TaskExecutor : parallélise le traitement avec N threads.
-     * throttleLimit : limite le nombre de chunks concurrents (résout les race conditions du reader et cursor).
      */
     @Bean
-    public Step fetchPreviousStep(FetchPreviousReader fetchPreviousReader, TaskExecutor fetchTaskExecutor) {
+    public Step fetchPreviousStep(FetchPreviousReader fetchPreviousReader) {
         return new StepBuilder("fetchPreviousStep", jobRepository)
                 .<String, LawDocumentEntity>chunk(10, transactionManager)
                 .reader(fetchPreviousReader)
                 .processor(fetchPreviousProcessor)
                 .writer(fetchDocumentWriter)
-                .taskExecutor(fetchTaskExecutor)
-                .throttleLimit(getEffectiveThreadPoolSize())
                 .build();
     }
 }

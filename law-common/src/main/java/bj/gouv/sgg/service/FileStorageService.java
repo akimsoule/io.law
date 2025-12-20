@@ -166,6 +166,46 @@ public class FileStorageService {
     }
     
     /**
+     * Supprime un fichier s'il existe.
+     * 
+     * @param filePath Le chemin absolu du fichier à supprimer
+     * @return true si le fichier a été supprimé, false s'il n'existait pas
+     * @throws IOException Si une erreur de suppression survient
+     */
+    public boolean deleteFileIfExists(String filePath) throws IOException {
+        if (filePath == null || filePath.isEmpty()) {
+            return false;
+        }
+        
+        Path path = Path.of(filePath);
+        if (Files.exists(path)) {
+            Files.delete(path);
+            log.info("🗑️  Fichier supprimé: {}", path);
+            return true;
+        }
+        return false;
+    }
+    
+    /**
+     * Supprime le PDF d'un document s'il existe.
+     * Utilisé pour retry de téléchargements corrompus.
+     * 
+     * @param type Le type du document
+     * @param documentId L'identifiant du document
+     * @return true si le fichier a été supprimé, false s'il n'existait pas
+     * @throws IOException Si une erreur de suppression survient
+     */
+    public boolean deletePdfIfExists(String type, String documentId) throws IOException {
+        Path path = pdfPath(type, documentId);
+        if (Files.exists(path)) {
+            Files.delete(path);
+            log.info("🗑️  PDF supprimé: {}", path);
+            return true;
+        }
+        return false;
+    }
+    
+    /**
      * Valide le type de document.
      */
     private void validateType(String type) {

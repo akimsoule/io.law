@@ -1,6 +1,7 @@
 package bj.gouv.sgg.ai.chunking;
 
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +18,7 @@ import java.util.List;
  * </ul>
  */
 @Slf4j
+@Component
 public class TextChunker implements ChunkingService<String> {
     
     private static final String PARAGRAPH_SEPARATOR = "\n\n";
@@ -93,8 +95,8 @@ public class TextChunker implements ChunkingService<String> {
     
     // ==================== Méthodes privées ====================
     
-    private StringBuilder flushAndChunkLongParagraph(List<String> chunks, StringBuilder currentChunk, 
-                                                      String paragraph, int maxChunkSize, int overlap) {
+    private StringBuilder flushAndChunkLongParagraph(List<String> chunks, StringBuilder currentChunk,
+                                                     String paragraph, int maxChunkSize, int overlap) {
         // Flush chunk actuel si non vide
         if (!currentChunk.isEmpty()) {
             chunks.add(currentChunk.toString());
@@ -105,7 +107,7 @@ public class TextChunker implements ChunkingService<String> {
         return new StringBuilder();
     }
     
-    private StringBuilder addParagraphToChunk(List<String> chunks, StringBuilder currentChunk, 
+    private StringBuilder addParagraphToChunk(List<String> chunks, StringBuilder currentChunk,
                                               String paragraph, int maxChunkSize, int overlap) {
         int projectedSize = currentChunk.length() + paragraph.length() + PARAGRAPH_SEPARATOR.length();
         
@@ -128,7 +130,7 @@ public class TextChunker implements ChunkingService<String> {
         return currentChunk;
     }
     
-    private StringBuilder flushAndChunkLongLine(List<String> chunks, StringBuilder currentChunk, 
+    private StringBuilder flushAndChunkLongLine(List<String> chunks, StringBuilder currentChunk,
                                                 String line, int maxChunkSize, int overlap) {
         // Ligne trop longue → découpage forcé
         if (!currentChunk.isEmpty()) {
@@ -138,7 +140,7 @@ public class TextChunker implements ChunkingService<String> {
         return new StringBuilder();
     }
     
-    private StringBuilder addLineToChunk(List<String> chunks, StringBuilder currentChunk, 
+    private StringBuilder addLineToChunk(List<String> chunks, StringBuilder currentChunk,
                                          String line, int maxChunkSize, int overlap) {
         if (currentChunk.length() + line.length() + 1 > maxChunkSize) {
             String chunkText = currentChunk.toString();

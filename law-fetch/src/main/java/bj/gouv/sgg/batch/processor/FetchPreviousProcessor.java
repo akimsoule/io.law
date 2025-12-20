@@ -63,6 +63,7 @@ public class FetchPreviousProcessor implements ItemProcessor<String, LawDocument
             if (found) {
                 log.info("✅ Found: {}", documentId);
                 document = LawDocumentEntity.builder()
+                        .documentId(documentId)
                         .type(type)
                         .year(year)
                         .number(number)
@@ -72,6 +73,7 @@ public class FetchPreviousProcessor implements ItemProcessor<String, LawDocument
                 log.info("❌ Not found: {}", documentId);
                 // Pour previous, on persiste aussi les NOT_FOUND
                 document = LawDocumentEntity.builder()
+                        .documentId(documentId)
                         .type(type)
                         .year(year)
                         .number(number)

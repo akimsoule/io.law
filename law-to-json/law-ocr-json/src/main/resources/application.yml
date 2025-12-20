@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: law-ocr-json
+  batch:
+    job:
+      enabled: false
+
+batch:
+  ocr-json:
+    thread-pool-size: 0  # 0 = auto mode (CPU-1, max 8)

@@ -43,11 +43,14 @@ public class OllamaProvider implements IAProvider {
     private final AppConfig properties;
     private final OkHttpClient httpClient;
     private final Gson gson;
+    private final bj.gouv.sgg.ai.service.JsonSchemaLoader jsonSchemaLoader;
     
-    public OllamaProvider(AppConfig config, OkHttpClient httpClient, Gson gson) {
+    public OllamaProvider(AppConfig config, OkHttpClient httpClient, Gson gson, 
+                         bj.gouv.sgg.ai.service.JsonSchemaLoader jsonSchemaLoader) {
         this.properties = config;
         this.httpClient = httpClient;
         this.gson = gson;
+        this.jsonSchemaLoader = jsonSchemaLoader;
     }
 
     private OkHttpClient getClient() {
@@ -97,8 +100,14 @@ public class OllamaProvider implements IAProvider {
             // Construire requête JSON
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("model", request.getModel());
-            requestBody.addProperty("prompt", request.getPrompt());
+            
+            // Utiliser le prompt OCR → JSON depuis resources
+            // Le prompt contient déjà le template avec %s pour le texte OCR
+            String enhancedPrompt = jsonSchemaLoader.enhancePromptForOllama(request.getPrompt());
+            
+            requestBody.addProperty("prompt", enhancedPrompt);
             requestBody.addProperty("stream", request.isStream());
+            requestBody.addProperty("format", "json"); // Force réponse JSON
             
             // Options
             JsonObject options = new JsonObject();
@@ -122,11 +131,19 @@ public class OllamaProvider implements IAProvider {
             
             try (Response response = getClient().newCall(httpRequest).execute()) {
                 if (!response.isSuccessful()) {
-                    throw new IAException("Ollama request failed: HTTP " + response.code());
+                    String errorBody = response.body() != null ? response.body().string() : "Unknown error";
+                    throw new IAException("Ollama request failed: HTTP " + response.code() + " - " + errorBody);
                 }
                 
                 String responseBody = response.body() != null ? response.body().string() : "{}";
-                JsonObject jsonResponse = gson.fromJson(responseBody, JsonObject.class);
+                
+                // Valider que la réponse est du JSON valide
+                JsonObject jsonResponse;
+                try {
+                    jsonResponse = gson.fromJson(responseBody, JsonObject.class);
+                } catch (com.google.gson.JsonSyntaxException e) {
+                    throw new IAException("Ollama returned invalid JSON: " + e.getMessage());
+                }
                 
                 if (!jsonResponse.has("response")) {
                     throw new IAException("Ollama response missing 'response' field");

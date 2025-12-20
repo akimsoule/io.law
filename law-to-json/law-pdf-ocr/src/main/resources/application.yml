@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: law-pdf-ocr
+  datasource:
+    url: jdbc:mysql://localhost:3306/law_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: update
+  batch:
+    job:
+      enabled: false  # Disable auto-run
+    jdbc:
+      initialize-schema: always
+
+batch:
+  ocr:
+    thread-pool-size: 0  # Auto mode (CPU-1, max 8)
+
+law:
+  base-url: https://sgg.gouv.bj/doc
+  http-timeout: 30000
+  max-retries: 3
+  data-dir: data
+  
+  # OCR configuration
+  ocr:
+    language: fra  # Tesseract language (French)
+    dpi: 300       # Image DPI for OCR
+    page-seg-mode: 3  # Fully automatic page segmentation
+
+logging:
+  level:
+    bj.gouv.sgg: INFO
+    org.springframework.batch: INFO

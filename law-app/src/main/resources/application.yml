@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: law-orchestrator
+  
+  main:
+    allow-circular-references: true
+    web-application-type: none
+  
+  datasource:
+    url: jdbc:mysql://localhost:3306/law_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        format_sql: true
+      jakarta:
+        persistence:
+          lock:
+            timeout: 10000  # Lock timeout: 10 secondes
+  
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false  # Désactiver auto-start, on lance manuellement
+
+# Configuration modules
+law:
+  base-url: https://sgg.gouv.bj/doc
+  storage-base-path: ./data
+
+# Logging
+logging:
+  level:
+    root: INFO
+    bj.gouv.sgg: INFO
+    org.springframework.batch: INFO
+    org.springframework.batch.core.step.item: WARN
+    org.springframework.batch.repeat: WARN
+    org.springframework.retry: WARN
+    org.springframework.boot: INFO
+    org.hibernate: WARN
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"

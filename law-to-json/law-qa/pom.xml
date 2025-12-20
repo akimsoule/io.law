@@ -13,55 +13,34 @@
 
     <artifactId>law-qa</artifactId>
     <packaging>jar</packaging>
-    <name>Law QA - Quality Assurance</name>
-    <description>Services de contrôle qualité pour l'extraction OCR et JSON</description>
+    <name>Law QA - Quality Assurance Services</name>
+    <description>Services de validation qualité pour JSON et OCR (POJO simple sans Spring Batch)</description>
 
     <dependencies>
-        <!-- Law Common -->
-        <dependency>
-            <groupId>bj.gouv.sgg</groupId>
-            <artifactId>law-common</artifactId>
-        </dependency>
-
-        <!-- Law JSON Config (modèles partagés) -->
-        <dependency>
-            <groupId>bj.gouv.sgg</groupId>
-            <artifactId>law-ocr-json</artifactId>
-        </dependency>
-
-        <!-- Lombok -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>provided</scope>
-        </dependency>
-
-        <!-- Logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-
         <!-- Gson -->
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
         </dependency>
 
-        <!-- Tests -->
+        <!-- Logging (slf4j-api + implementation) -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+        
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- Tests (test scope only) -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
+            <version>5.11.4</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-            </plugin>
-        </plugins>
-    </build>
 </project>

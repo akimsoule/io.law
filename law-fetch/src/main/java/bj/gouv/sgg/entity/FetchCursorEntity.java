@@ -14,6 +14,9 @@ import java.time.LocalDateTime;
  */
 @Entity
 @Table(name = "fetch_cursor",
+    uniqueConstraints = {
+        @UniqueConstraint(name = "uk_cursor_type_doc", columnNames = {"cursor_type", "document_type"})
+    },
     indexes = {
         @Index(name = "idx_cursor_type", columnList = "cursor_type")
     }

@@ -1,67 +1,40 @@
 package bj.gouv.sgg.service.impl;
 
-import bj.gouv.sgg.config.AppConfig;
 import bj.gouv.sgg.model.Article;
 import bj.gouv.sgg.service.JsonQualityService;
 import bj.gouv.sgg.service.OcrQualityService;
-import bj.gouv.sgg.service.UnrecognizedWordsService;
 import bj.gouv.sgg.service.ValidationService;
-import bj.gouv.sgg.util.ErrorHandlingUtils;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Properties;
-import java.util.stream.Stream;
 
 /**
- * Implémentation du service de validation qualité.
+ * Implémentation du service de validation qualité (POJO simple).
  * 
  * @author io.law
- * @since 1.0.0
+ * @since 2.0.0
  */
 @Slf4j
 public class ValidationServiceImpl implements ValidationService {
     
-    private static ValidationServiceImpl instance;
-    
     private final JsonQualityService jsonQualityService;
     private final OcrQualityService ocrQualityService;
-    private final AppConfig config;
     private final Gson gson;
     
-    private ValidationServiceImpl() {
-        this.config = AppConfig.get();
-        this.jsonQualityService = JsonQualityServiceImpl.getInstance();
-        
-        // Charger properties OCR pour OcrQualityService
-        Properties ocrProps = new Properties();
-        try (InputStream in = getClass().getClassLoader().getResourceAsStream("ocr_validation.properties")) {
-            if (in != null) {
-                ocrProps.load(in);
-            }
-        } catch (IOException e) {
-            log.warn("⚠️ Could not load ocr_validation.properties, using defaults");
-        }
-        
-        this.ocrQualityService = OcrQualityServiceImpl.getInstance(ocrProps);
-        
-        this.gson = new Gson();
-    }
-    
-    public static synchronized ValidationServiceImpl getInstance() {
-        if (instance == null) {
-            instance = new ValidationServiceImpl();
-        }
-        return instance;
+    public ValidationServiceImpl(JsonQualityService jsonQualityService, 
+                                  OcrQualityService ocrQualityService,
+                                  Gson gson) {
+        this.jsonQualityService = jsonQualityService;
+        this.ocrQualityService = ocrQualityService;
+        this.gson = gson;
     }
     
     @Override
@@ -159,36 +132,6 @@ public class ValidationServiceImpl implements ValidationService {
         }
         
         return result;
-    }
-    
-    @Override
-    public List<ValidationResult> validateType(String type) {
-        Path articlesDir = config.getStoragePath().resolve("articles").resolve(type);
-        
-        if (!Files.exists(articlesDir)) {
-            log.warn("⚠️ Répertoire non trouvé: {}", articlesDir);
-            return Collections.emptyList();
-        }
-        
-        List<ValidationResult> results = new ArrayList<>();
-        
-        ErrorHandlingUtils.executeVoid(() -> {
-            try (Stream<Path> paths = Files.walk(articlesDir, 1)) {
-                paths.filter(p -> p.toString().endsWith(".json"))
-                     .forEach(jsonPath -> {
-                         String documentId = jsonPath.getFileName().toString().replace(".json", "");
-                         Path ocrPath = config.getStoragePath().resolve("ocr")
-                             .resolve(type).resolve(documentId + ".txt");
-                         
-                         ErrorHandlingUtils.executeVoid(() -> {
-                             ValidationResult result = validateDocument(jsonPath, ocrPath);
-                             results.add(result);
-                         }, "validateDocument", "documentId=" + documentId);
-                     });
-            }
-        }, "scanArticles", "type=" + type);
-        
-        return results;
     }
     
     /**

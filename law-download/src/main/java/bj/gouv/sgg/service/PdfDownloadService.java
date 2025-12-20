@@ -5,7 +5,9 @@ import bj.gouv.sgg.exception.DownloadException;
 import bj.gouv.sgg.exception.DownloadHttpException;
 import bj.gouv.sgg.exception.DownloadEmptyPdfException;
 import bj.gouv.sgg.util.RateLimitHandler;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -24,28 +26,20 @@ import java.util.HexFormat;
  * Service stateless : pas de persistance, juste téléchargement et retour du hash.
  */
 @Slf4j
+@Service
+@RequiredArgsConstructor
 public class PdfDownloadService {
 
     private static final int TIMEOUT_MS = 30000;  // 30 secondes
     private static final int MAX_RETRIES = 3;     // 3 tentatives
     private static final long RETRY_DELAY_MS = 2000L;  // 2 secondes
 
-    private final HttpClient httpClient;
-    private final String baseUrl;
-    private final String userAgent;
-    private final RateLimitHandler rateLimitHandler;
-
-    public PdfDownloadService() {
-        AppConfig config = AppConfig.get();
-        this.baseUrl = config.getBaseUrl();
-        this.userAgent = config.getUserAgent();
-        this.rateLimitHandler = new RateLimitHandler();
-
-        this.httpClient = HttpClient.newBuilder()
-                .followRedirects(HttpClient.Redirect.NORMAL)
-                .connectTimeout(Duration.ofMillis(TIMEOUT_MS))
-                .build();
-    }
+    private final AppConfig config;
+    private final RateLimitHandler rateLimitHandler = new RateLimitHandler();
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .connectTimeout(Duration.ofMillis(TIMEOUT_MS))
+            .build();
 
     /**
      * Télécharge un PDF et calcule son SHA-256.
@@ -101,7 +95,7 @@ public class PdfDownloadService {
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(url))
                 .GET()
-                .header("User-Agent", userAgent)
+                .header("User-Agent", getUserAgent())
                 .timeout(Duration.ofMillis(TIMEOUT_MS))
                 .build();
 
@@ -272,6 +266,13 @@ public class PdfDownloadService {
      * Construit l'URL de téléchargement d'un document.
      */
     private String buildUrl(String type, int year, String number) {
-        return String.format("%s/%s-%d-%s/download", baseUrl, type, year, number);
+        return String.format("%s/%s-%d-%s/download", config.getBaseUrl(), type, year, number);
+    }
+    
+    /**
+     * Getter pour user agent (utilisé par HttpClient).
+     */
+    private String getUserAgent() {
+        return config.getUserAgent();
     }
 }

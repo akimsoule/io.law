@@ -18,14 +18,41 @@ buildNumber.properties
 .classpath
 .project
 .settings/
+*.swp
+*.swo
+*~
 
 # OS
 .DS_Store
 Thumbs.db
+*.tmp
+*.bak
 
 # Logs
 *.log
+logs/
+zip/logs/
 
-# Data
+# Data (PDFs, OCR, JSON)
 data/
 mysql_data/
+zip/data/
+
+# Distribution JARs
+lib/jar/*.jar
+zip/lib/jar/*.jar
+
+# Temp files
+*.pid
+*.seed
+*.pid.lock
+
+# Test output
+*.hprof
+hs_err_pid*
+replay_pid*
+
+# Assembly output
+*.zip
+*.tar.gz
+!src/main/assembly/

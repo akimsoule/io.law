@@ -5,7 +5,6 @@ import bj.gouv.sgg.exception.OcrExtractionException;
 import bj.gouv.sgg.model.Article;
 import bj.gouv.sgg.model.DocumentMetadata;
 import bj.gouv.sgg.model.Signatory;
-import bj.gouv.sgg.service.UnrecognizedWordsService;
 import bj.gouv.sgg.service.correction.CorrectOcrText;
 import bj.gouv.sgg.service.correction.impl.CsvCorrectOcr;
 import bj.gouv.sgg.service.extract.OcrExtractionService;
@@ -240,8 +239,8 @@ public class OcrExtractionServiceImpl implements OcrExtractionService {
         Set<String> unrecognizedWords = config.getUnrecognizedWords(text);
         double unrecRate = config.unrecognizedWordsRate(text);
         
-        // Score dictionnaire avec pénalité progressive
-        double unrecPenalty = UnrecognizedWordsService.calculateUnrecognizedPenalty(unrecRate, unrecognizedWords.size());
+        // Score dictionnaire avec pénalité progressive (inline formula)
+        double unrecPenalty = Math.min(unrecRate * 2.0, 1.0); // Pénalité simple basée sur le taux
         double dictScore = 1.0 - unrecPenalty;
         
         // Score basé sur les termes juridiques

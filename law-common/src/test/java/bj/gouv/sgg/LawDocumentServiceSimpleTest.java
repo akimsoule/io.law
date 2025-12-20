@@ -1,13 +1,12 @@
 package bj.gouv.sgg;
 
-import bj.gouv.sgg.config.CommonConfiguration;
 import bj.gouv.sgg.entity.LawDocumentEntity;
 import bj.gouv.sgg.entity.ProcessingStatus;
 import bj.gouv.sgg.service.LawDocumentService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Optional;
 
@@ -16,8 +15,8 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * Tests simples du LawDocumentService.
  */
-@SpringBootTest(classes = CommonConfiguration.class)
-@TestPropertySource(locations = "classpath:application-test.yml")
+@SpringBootTest(classes = TestConfiguration.class)
+@ActiveProfiles("test")
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 class LawDocumentServiceSimpleTest {
     

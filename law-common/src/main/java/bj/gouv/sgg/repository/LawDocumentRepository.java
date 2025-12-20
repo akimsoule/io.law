@@ -48,6 +48,25 @@ public interface LawDocumentRepository extends JpaRepository<LawDocumentEntity, 
     List<LawDocumentEntity> findByStatus(ProcessingStatus status);
     
     /**
+     * Trouve tous les documents d'un type avec un statut donné.
+     * Méthode générée automatiquement par Spring Data JPA.
+     */
+    List<LawDocumentEntity> findByTypeAndStatus(String type, ProcessingStatus status);
+    
+    /**
+     * Trouve tous les documents d'un type avec un des statuts donnés.
+     * Méthode générée automatiquement par Spring Data JPA.
+     */
+    List<LawDocumentEntity> findByTypeAndStatusIn(String type, List<ProcessingStatus> statuses);
+    
+    /**
+     * Trouve tous les documents d'un type donné (tous statuts).
+     * Méthode générée automatiquement par Spring Data JPA.
+     * Utilisé par DownloadReader avec validator.mustDownload() pour filtrer.
+     */
+    List<LawDocumentEntity> findByType(String type);
+    
+    /**
      * Trouve tous les documents d'un type et année donnés.
      * Méthode générée automatiquement par Spring Data JPA.
      */

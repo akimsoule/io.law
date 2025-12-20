@@ -1,147 +1,138 @@
 package bj.gouv.sgg.service.impl;
 
-import bj.gouv.sgg.ai.service.AIOrchestrator;
+import bj.gouv.sgg.ai.model.AIRequest;
+import bj.gouv.sgg.ai.model.AIResponse;
 import bj.gouv.sgg.exception.IAException;
 import bj.gouv.sgg.provider.IAProvider;
 import bj.gouv.sgg.provider.IAProviderFactory;
-import bj.gouv.sgg.provider.impl.GroqProvider;
-import bj.gouv.sgg.provider.impl.NoIAProvider;
-import bj.gouv.sgg.provider.impl.OllamaProvider;
 import bj.gouv.sgg.service.IAService;
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonSyntaxException;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 
-import java.util.Collections;
+import java.util.Optional;
 
 /**
- * Implémentation du service d'extraction IA.
+ * Implémentation de IAService utilisant IAProviderFactory.
  * 
- * <p>Délègue l'orchestration à {@link AIOrchestrator} qui gère :
+ * <p><b>Responsabilités</b> :
  * <ul>
- *   <li>Sélection du meilleur provider IA (Ollama/Groq)</li>
- *   <li>Gestion des transformations (OCR correction, JSON extraction)</li>
- *   <li>Gestion des fallbacks si transformation échoue</li>
+ *   <li>Sélectionner le meilleur provider disponible (Ollama → Groq → NoIA)</li>
+ *   <li>Adapter les appels IAService vers IAProvider</li>
+ *   <li>Gérer les erreurs et retries</li>
  * </ul>
- * 
- * @author io.law
- * @since 1.0.0
  */
 @Slf4j
+@Service
+@RequiredArgsConstructor
 public class IAServiceImpl implements IAService {
-    
-    private static IAServiceImpl instance;
-    
+
     private final IAProviderFactory providerFactory;
-    private final AIOrchestrator orchestrator;
-    
-    private IAServiceImpl() {
-        // Charger la configuration
-        bj.gouv.sgg.config.AppConfig config = bj.gouv.sgg.config.AppConfig.get();
-        
-        // Créer OkHttpClient et Gson
-        okhttp3.OkHttpClient httpClient = new okhttp3.OkHttpClient.Builder()
-                .connectTimeout(300, java.util.concurrent.TimeUnit.SECONDS)
-                .readTimeout(300, java.util.concurrent.TimeUnit.SECONDS)
-                .writeTimeout(300, java.util.concurrent.TimeUnit.SECONDS)
-                .build();
-        com.google.gson.Gson gson = new com.google.gson.Gson();
-        
-        // Initialiser les providers avec les dépendances requises
-        OllamaProvider ollamaProvider = new OllamaProvider(config, httpClient, gson);
-        GroqProvider groqProvider = new GroqProvider(config, gson);
-        NoIAProvider noIAProvider = new NoIAProvider();
-        
-        this.providerFactory = new IAProviderFactory(ollamaProvider, groqProvider, noIAProvider);
-        this.orchestrator = new AIOrchestrator(providerFactory, Collections.emptyList());
-    }
-    
-    public static synchronized IAServiceImpl getInstance() {
-        if (instance == null) {
-            instance = new IAServiceImpl();
-        }
-        return instance;
-    }
-    
-    public IAServiceImpl(IAProviderFactory providerFactory, AIOrchestrator orchestrator) {
-        this.providerFactory = providerFactory;
-        this.orchestrator = orchestrator;
-    }
-    
+    private final Gson gson;
+
     @Override
     public String correctOcrText(String rawOcrText, String prompt) throws IAException {
-        if (rawOcrText == null || rawOcrText.isEmpty()) {
-            throw new IAException("Raw OCR text cannot be null or empty");
-        }
+        IAProvider provider = providerFactory.selectProvider(false, estimateTokens(rawOcrText));
         
-        if (prompt == null || prompt.isEmpty()) {
-            throw new IAException("Prompt cannot be null or empty");
+        if (!provider.isAvailable()) {
+            throw new IAException("Aucun provider IA disponible pour correction OCR");
         }
-        
-        try {
-            log.debug("🔧 Correcting OCR text ({} chars) with IA", rawOcrText.length());
-            
-            // Créer un LawDocumentEntity minimal pour l'orchestrator
-            // Dans une utilisation réelle (via IAExtractionJob), un vrai document sera passé
-            bj.gouv.sgg.entity.LawDocumentEntity minimalDoc = bj.gouv.sgg.entity.LawDocumentEntity.create(
-                "loi", java.time.Year.now().getValue(), "0");
-            
-            // Utiliser l'orchestrator pour corriger le texte OCR
-            String correctedText = orchestrator.correctOcr(minimalDoc, rawOcrText);
-            
-            log.info("✅ OCR text corrected via {}", getSourceName());
-            return correctedText;
-            
-        } catch (Exception e) {
-            log.error("❌ IA correction failed: {}", e.getMessage());
-            throw new IAException("Failed to correct OCR text: " + e.getMessage(), e);
-        }
+
+        log.debug("🔧 Correction OCR avec provider: {}", provider.getProviderName());
+
+        AIRequest request = AIRequest.builder()
+                .prompt(prompt + "\n\nTexte à corriger:\n" + rawOcrText)
+                .temperature(0.3) // Faible température pour correction précise
+                .maxTokens(8000)
+                .build();
+
+        AIResponse response = provider.complete(request);
+        return response.getText();
     }
-    
+
     @Override
     public JsonObject extractJsonFromOcr(String ocrText) throws IAException {
-        if (ocrText == null || ocrText.isEmpty()) {
-            throw new IAException("OCR text cannot be null or empty");
-        }
+        IAProvider provider = providerFactory.selectProvider(false, estimateTokens(ocrText));
         
+        if (!provider.isAvailable()) {
+            throw new IAException("Aucun provider IA disponible pour extraction JSON");
+        }
+
+        log.debug("📄 Extraction JSON avec provider: {}", provider.getProviderName());
+
+        // Le prompt est géré dans les providers (OllamaProvider, GroqProvider)
+        // via JsonSchemaLoader qui charge prompts/ocr-to-json.txt
+        AIRequest request = AIRequest.builder()
+                .prompt(ocrText)
+                .temperature(0.2) // Très faible pour extraction structurée
+                .maxTokens(8000)
+                .build();
+
+        AIResponse response = provider.complete(request);
+        
+        // Parser la réponse JSON
         try {
-            log.debug("📄 Extracting JSON from OCR text ({} chars)", ocrText.length());
+            String jsonText = response.getText();
+            if (jsonText == null || jsonText.isBlank()) {
+                throw new IAException("Réponse IA vide");
+            }
             
-            // Créer un LawDocumentEntity minimal pour l'orchestrator
-            bj.gouv.sgg.entity.LawDocumentEntity minimalDoc = bj.gouv.sgg.entity.LawDocumentEntity.create(
-                "loi", java.time.Year.now().getValue(), "0");
+            // Nettoyer les éventuels markdown wrappers (```json ... ```)
+            jsonText = jsonText.trim();
+            if (jsonText.startsWith("```json")) {
+                jsonText = jsonText.substring(7);
+            }
+            if (jsonText.startsWith("```")) {
+                jsonText = jsonText.substring(3);
+            }
+            if (jsonText.endsWith("```")) {
+                jsonText = jsonText.substring(0, jsonText.length() - 3);
+            }
+            jsonText = jsonText.trim();
             
-            // Utiliser l'orchestrator pour extraire le JSON
-            JsonObject extractedJson = orchestrator.ocrToJson(minimalDoc, ocrText);
+            return gson.fromJson(jsonText, JsonObject.class);
             
-            log.info("✅ JSON extracted via {}", getSourceName());
-            return extractedJson;
-            
-        } catch (Exception e) {
-            log.error("❌ JSON extraction failed: {}", e.getMessage());
-            throw new IAException("Failed to extract JSON: " + e.getMessage(), e);
+        } catch (JsonSyntaxException e) {
+            throw new IAException("Réponse IA n'est pas un JSON valide: " + e.getMessage(), e);
         }
     }
-    
+
     @Override
     public String getSourceName() {
-        try {
-            // Récupérer le provider actif depuis la factory
-            IAProvider activeProvider = providerFactory.selectProvider(false, 1000);
-            return activeProvider.getProviderName();
-        } catch (Exception e) {
-            log.warn("⚠️ Could not determine active provider: {}", e.getMessage());
-            return "UNKNOWN";
-        }
+        IAProvider provider = providerFactory.selectProvider(false, 1000);
+        return provider.getProviderName();
     }
-    
+
     @Override
     public boolean isAvailable() {
-        try {
-            // Vérifier si au moins un provider IA est disponible (pas NoIA)
-            return providerFactory.hasAnyProvider();
-        } catch (Exception e) {
-            log.warn("⚠️ Could not check IA availability: {}", e.getMessage());
-            return false;
+        return providerFactory.hasAnyProvider();
+    }
+
+    @Override
+    public int getMaxContextTokens() {
+        if (!isAvailable()) {
+            return 0;
         }
+        
+        IAProvider provider = providerFactory.selectProvider(false, 1000);
+        
+        // Utiliser le contexte du modèle sélectionné
+        Optional<IAProvider.ModelInfo> modelInfo = provider.selectBestModel(false, 1000);
+        if (modelInfo.isPresent()) {
+            return modelInfo.get().contextWindow();
+        }
+        
+        // Fallback sur les capacités générales du provider
+        return provider.getCapabilities().maxContextTokens();
+    }
+
+    /**
+     * Estime le nombre de tokens nécessaires (approximation: 1 token ≈ 4 chars).
+     */
+    private int estimateTokens(String text) {
+        return text == null ? 0 : text.length() / 4;
     }
 }

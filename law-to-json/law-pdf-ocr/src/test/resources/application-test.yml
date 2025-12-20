@@ -1,0 +1,38 @@
+spring:
+  application:
+    name: law-pdf-ocr-test
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;MODE=MySQL
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
+
+batch:
+  ocr:
+    thread-pool-size: 2  # 2 threads pour les tests
+
+law:
+  storage:
+    base-path: /tmp/law-test
+  ocr:
+    language: fra
+    dpi: 300
+    page-seg-mode: 3
+
+logging:
+  level:
+    bj.gouv.sgg: DEBUG
+    org.springframework.batch: INFO

@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: law-consolidate
+  batch:
+    job:
+      enabled: false
+
+batch:
+  consolidate:
+    thread-pool-size: 0  # 0 = auto mode (CPU-1, max 8)

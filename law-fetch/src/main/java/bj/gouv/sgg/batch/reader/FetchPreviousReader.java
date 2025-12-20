@@ -58,8 +58,8 @@ public class FetchPreviousReader implements ItemReader<String> {
             return;
         }
         
-        // Si un documentId spécifique est fourni, traiter uniquement celui-ci
-        if (documentId != null && !documentId.isEmpty()) {
+        // Si un documentId spécifique est fourni (et pas "ALL"), traiter uniquement celui-ci
+        if (documentId != null && !documentId.isEmpty() && !"ALL".equals(documentId)) {
             this.documentIds = new ConcurrentLinkedQueue<>();
             documentIds.add(documentId);
             log.info("📖 FetchPreviousReader initialisé pour document spécifique: {}", documentId);

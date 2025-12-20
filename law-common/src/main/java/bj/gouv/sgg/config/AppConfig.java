@@ -63,56 +63,7 @@ public class AppConfig {
         this.unrecognizedWordsFile = storagePath.resolve("word_non_recognize.txt");
         log.info("📋 Configuration loaded: baseUrl={}, storagePath={}", baseUrl, storagePath);
     }
-    
-    /**
-     * Backward compatibility - A supprimer après migration complète.
-     */
-    
-    // Méthodes utilitaires pour chemins
-    public Path getDbPath() {
-        return storagePath.resolve("db");
-    }
-    
-    public Path getDocumentsPath() {
-        return getDbPath().resolve("documents.json");
-    }
-    
-    public Path getNotFoundPath() {
-        return getDbPath().resolve("not_found.json");
-    }
-    
-    public Path getFetchedPath() {
-        return getDbPath().resolve("fetched.json");
-    }
-    
-    public Path getDownloadedPath() {
-        return getDbPath().resolve("downloaded.json");
-    }
-    
-    public Path getExtractedPath() {
-        return getDbPath().resolve("extracted.json");
-    }
-    
-    public Path getConsolidatedPath() {
-        return getDbPath().resolve("consolidated.json");
-    }
-    
-    public Path getFetchResultsPath() {
-        return getDbPath().resolve("fetch_results.json");
-    }
-    
-    public Path getDownloadResultsPath() {
-        return getDbPath().resolve("download_results.json");
-    }
-    
-    public Path getConsolidationResultsPath() {
-        return getDbPath().resolve("consolidation_results.json");
-    }
-    
-    public Path getFetchCursorsPath() {
-        return getDbPath().resolve("fetch_cursors.json");
-    }
-    
+
     /**
      * Configuration des capacités IA/OCR
      */
