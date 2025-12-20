@@ -11,7 +11,7 @@
     <baseDirectory>law-orchestrator-${project.version}</baseDirectory>
 
     <fileSets>
-        <!-- Scripts bin/ -->
+        <!-- Scripts bin/ + jvm.conf -->
         <fileSet>
             <directory>${project.basedir}/../zip/bin</directory>
             <outputDirectory>bin</outputDirectory>
@@ -38,8 +38,10 @@
                 <include>*.yml</include>
                 <include>*.yaml</include>
                 <include>*.properties</include>
+                <include>*.conf</include>
             </includes>
         </fileSet>
+
 
         <!-- Data (structure vide) -->
         <fileSet>
