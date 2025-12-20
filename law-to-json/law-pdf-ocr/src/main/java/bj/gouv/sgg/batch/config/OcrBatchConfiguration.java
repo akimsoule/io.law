@@ -14,8 +14,6 @@ import org.springframework.batch.core.step.builder.StepBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.task.TaskExecutor;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.transaction.PlatformTransactionManager;
 
 /**
@@ -33,8 +31,7 @@ public class OcrBatchConfiguration {
     private final OcrProcessor ocrProcessor;
     private final OcrWriter ocrWriter;
     
-    @Value("${batch.ocr.thread-pool-size:0}")
-    private int configuredThreadPoolSize;
+
     
     /**
      * TaskExecutor pour paralléliser le traitement OCR.
@@ -49,59 +46,9 @@ public class OcrBatchConfiguration {
      * - config=0 → 3 threads (min(4-1, 8))
      * - config=10 → 3 threads (min(10, 4-1))
      */
-    @Bean(name = "ocrTaskExecutor")
-    public TaskExecutor ocrTaskExecutor() {
-        int availableProcessors = Runtime.getRuntime().availableProcessors();
-        int maxUsableProcessors = Math.max(availableProcessors - 1, 1); // Réserver 1 CPU
-        
-        int threadPoolSize;
-        if (configuredThreadPoolSize > 0) {
-            // Mode manuel: respecter config mais limiter aux CPUs disponibles
-            threadPoolSize = Math.min(configuredThreadPoolSize, maxUsableProcessors);
-            log.info("🎛️  Mode manuel: thread-pool-size configuré à {}, limité à {} (CPU disponibles)", 
-                     configuredThreadPoolSize, threadPoolSize);
-        } else {
-            // Mode auto: utiliser CPUs disponibles mais plafonner à 8
-            threadPoolSize = Math.min(maxUsableProcessors, 8);
-            log.info("🤖 Mode auto: détection {} CPUs, utilisation de {} threads", 
-                     availableProcessors, threadPoolSize);
-        }
-        
-        // Garantir minimum 1 thread
-        threadPoolSize = Math.max(threadPoolSize, 1);
-        
-        ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(threadPoolSize);
-        executor.setMaxPoolSize(threadPoolSize);
-        executor.setQueueCapacity(threadPoolSize * 2);
-        executor.setThreadNamePrefix("ocr-");
-        executor.setWaitForTasksToCompleteOnShutdown(true);
-        executor.setAwaitTerminationSeconds(180); // 3 minutes pour OCR long
-        executor.initialize();
-        
-        log.info("✅ OcrTaskExecutor initialisé avec {} threads (CPU: {}, demandé: {}, mode: {})", 
-                 threadPoolSize, 
-                 availableProcessors,
-                 configuredThreadPoolSize > 0 ? configuredThreadPoolSize : "auto",
-                 configuredThreadPoolSize > 0 ? "configuré" : "auto");
-        
-        return executor;
-    }
+
     
-    /**
-     * Calcule le nombre effectif de threads.
-     * Utilisé pour la configuration du job.
-     */
-    private int getEffectiveThreadPoolSize() {
-        int availableProcessors = Runtime.getRuntime().availableProcessors();
-        int maxUsableProcessors = Math.max(availableProcessors - 1, 1);
-        
-        if (configuredThreadPoolSize > 0) {
-            return Math.max(Math.min(configuredThreadPoolSize, maxUsableProcessors), 1);
-        } else {
-            return Math.max(Math.min(maxUsableProcessors, 8), 1);
-        }
-    }
+
     
     /**
      * Job d'extraction OCR.
