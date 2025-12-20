@@ -79,4 +79,21 @@ public interface IAService {
      */
     boolean isAvailable();
 
+    /**
+     * Retourne la taille maximale du contexte du provider actif (en tokens).
+     * 
+     * <p><b>Utilisation</b> : Ajuster dynamiquement la taille des chunks
+     * selon les capacités du modèle IA utilisé.
+     * 
+     * <p><b>Exemples</b> :
+     * <ul>
+     *   <li>Ollama gemma: 8192 tokens</li>
+     *   <li>Groq llama-3.3-70b: 32768 tokens</li>
+     *   <li>Groq mixtral: 32768 tokens</li>
+     * </ul>
+     * 
+     * @return Taille contexte en tokens, 0 si provider non disponible
+     */
+    int getMaxContextTokens();
+
 }

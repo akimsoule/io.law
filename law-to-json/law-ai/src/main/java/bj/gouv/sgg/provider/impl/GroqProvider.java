@@ -43,11 +43,14 @@ public class GroqProvider implements IAProvider {
     
     private final AppConfig properties;
     private final Gson gson;
+    private final bj.gouv.sgg.ai.service.JsonSchemaLoader jsonSchemaLoader;
     private OkHttpClient client;
     
-    public GroqProvider(AppConfig properties, Gson gson) {
+    public GroqProvider(AppConfig properties, Gson gson, 
+                       bj.gouv.sgg.ai.service.JsonSchemaLoader jsonSchemaLoader) {
         this.properties = properties;
         this.gson = gson;
+        this.jsonSchemaLoader = jsonSchemaLoader;
     }
 
     private OkHttpClient getClient() {
@@ -111,6 +114,10 @@ public class GroqProvider implements IAProvider {
             requestBody.addProperty("max_tokens", request.getMaxTokens());
             requestBody.addProperty("stream", request.isStream());
             
+            // Utiliser le schéma JSON depuis resources
+            JsonObject responseFormat = jsonSchemaLoader.buildGroqResponseFormat();
+            requestBody.add("response_format", responseFormat);
+            
             // Messages format
             com.google.gson.JsonArray messages = new com.google.gson.JsonArray();
             JsonObject message = new JsonObject();
@@ -158,15 +165,22 @@ public class GroqProvider implements IAProvider {
             
             try (Response response = getClient().newCall(httpRequest).execute()) {
                 if (!response.isSuccessful()) {
-                    String errorBody = response.body() != null ? response.body().string() : "";
+                    String errorBody = response.body() != null ? response.body().string() : "Unknown error";
                     throw new IAException("Groq API failed: HTTP " + response.code() + " - " + errorBody);
                 }
                 
                 String responseBody = response.body() != null ? response.body().string() : "{}";
-                JsonObject jsonResponse = gson.fromJson(responseBody, JsonObject.class);
+                
+                // Valider que la réponse est du JSON valide
+                JsonObject jsonResponse;
+                try {
+                    jsonResponse = gson.fromJson(responseBody, JsonObject.class);
+                } catch (com.google.gson.JsonSyntaxException e) {
+                    throw new IAException("Groq returned invalid JSON: " + e.getMessage());
+                }
                 
                 if (!jsonResponse.has("choices")) {
-                    throw new IAException("Groq response missing 'choices'");
+                    throw new IAException("Groq response missing 'choices' field");
                 }
                 
                 JsonObject choice = jsonResponse.getAsJsonArray("choices").get(0).getAsJsonObject();

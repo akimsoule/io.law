@@ -1,0 +1,86 @@
+{
+  "name": "law_document",
+  "strict": true,
+  "description": "Schéma structuré pour un document juridique (loi ou décret)",
+  "schema": {
+    "type": "object",
+    "properties": {
+      "titre": {
+        "type": "string",
+        "description": "Titre complet du document ou null"
+      },
+      "numero": {
+        "type": "number",
+        "description": "Numéro du document juridique ou null"
+      },
+      "annee": {
+        "type": "number",
+        "description": "Année du document ou null"
+      },
+      "type": {
+        "type": "string",
+        "description": "Type de document : loi, decret ou null"
+      },
+      "datePromulgation": {
+        "type": "string",
+        "description": "Date de promulgation au format ISO 8601 ou null"
+      },
+      "datePublication": {
+        "type": "string",
+        "description": "Date de publication au Journal Officiel (ISO 8601) ou null"
+      },
+      "referenceJO": {
+        "type": "string",
+        "description": "Référence du Journal Officiel ou null"
+      },
+      "preambule": {
+        "type": "string",
+        "description": "Préambule du document ou null"
+      },
+      "articles": {
+        "type": "array",
+        "description": "Liste des articles du document",
+        "items": {
+          "type": "object",
+          "properties": {
+            "index": {
+              "type": "number",
+              "description": "Numéro réel de l'article (1, 2, 3, 12, 19, etc.)"
+            },
+            "content": {
+              "type": "string",
+              "description": "Contenu textuel exact de l'article (sans 'Article X')"
+            }
+          },
+          "required": ["index", "content"],
+          "additionalProperties": false
+        }
+      },
+      "signataires": {
+        "type": "array",
+        "description": "Liste des signataires du document",
+        "items": {
+          "type": "object",
+          "properties": {
+            "nom": {
+              "type": "string",
+              "description": "Nom du signataire"
+            },
+            "titre": {
+              "type": "string",
+              "description": "Titre du signataire"
+            },
+            "fonction": {
+              "type": "string",
+              "description": "Fonction du signataire ou null"
+            }
+          },
+          "required": ["nom", "titre"],
+          "additionalProperties": false
+        }
+      }
+    },
+    "required": ["articles"],
+    "additionalProperties": false
+  }
+}

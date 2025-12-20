@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: law-ai
+  
+  datasource:
+    url: jdbc:mysql://localhost:3306/law_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  
+  jpa:
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+  
+  batch:
+    jdbc:
+      initialize-schema: never
+    job:
+      enabled: true
+
+# Configuration IA
+batch:
+  ai:
+    thread-pool-size: 0  # 0 = auto (CPU-1, max 8), >0 = manuel
+    chunk-size: 1  # IA intensive: traiter un document à la fois
+    max-chunk-size: 8000  # Fallback si contexte provider inconnu (~2000 tokens)
+    context-usage-ratio: 0.7  # Utiliser 70% du contexte disponible pour sécurité
+    chunk-overlap: 200  # Overlap entre chunks pour préserver contexte
+
+# Configuration storage
+law:
+  storage-base-path: ./data
+
+# Logging
+logging:
+  level:
+    bj.gouv.sgg: INFO
+    org.springframework.batch: INFO

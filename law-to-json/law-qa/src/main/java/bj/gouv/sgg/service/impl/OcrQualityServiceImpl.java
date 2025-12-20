@@ -2,21 +2,25 @@ package bj.gouv.sgg.service.impl;
 
 import bj.gouv.sgg.model.Article;
 import bj.gouv.sgg.service.OcrQualityService;
-import bj.gouv.sgg.service.UnrecognizedWordsService;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+/**
+ * Implémentation du service de validation qualité OCR (POJO simple).
+ * 
+ * @since 2.0.0
+ */
 @Slf4j
 public class OcrQualityServiceImpl implements OcrQualityService {
     
-    private static OcrQualityServiceImpl instance;
     private final Properties ocrValidationProperties;
 
     // Patterns compilés
@@ -39,24 +43,27 @@ public class OcrQualityServiceImpl implements OcrQualityService {
     // Termes juridiques chargés depuis propriétés
     private Set<String> legalTerms;
 
-    // Initialisation paresseuse
-    private volatile boolean initialized = false;
-
-    private OcrQualityServiceImpl(Properties ocrValidationProperties) {
-        this.ocrValidationProperties = ocrValidationProperties;
-    }
-    
-    public static synchronized OcrQualityServiceImpl getInstance(Properties ocrValidationProperties) {
-        if (instance == null) {
-            instance = new OcrQualityServiceImpl(ocrValidationProperties);
+    public OcrQualityServiceImpl() {
+        this.ocrValidationProperties = new Properties();
+        // Charger les properties depuis le classpath
+        try (InputStream in = getClass().getClassLoader().getResourceAsStream("ocr_validation.properties")) {
+            if (in != null) {
+                ocrValidationProperties.load(in);
+            } else {
+                log.warn("⚠️ ocr_validation.properties not found, using defaults");
+            }
+        } catch (IOException e) {
+            log.warn("⚠️ Could not load ocr_validation.properties: {}", e.getMessage());
         }
-        return instance;
+        
+        // Initialiser immédiatement (pas besoin de @PostConstruct)
+        initialize();
     }
     
     /**
-     * Initialise les patterns et le dictionnaire
+     * Initialise les patterns et le dictionnaire.
      */
-    public void initialize() {
+    private void initialize() {
         // Charger les patterns depuis properties
         String patternHeaderRepublique = ocrValidationProperties.getProperty("header.republique", "");
         String patternHeaderDevise = ocrValidationProperties.getProperty("header.devise", "");
@@ -168,31 +175,6 @@ public class OcrQualityServiceImpl implements OcrQualityService {
         
         // Chargement dictionnaire
         loadFrenchDictionary();
-
-        initialized = true;
-    }
-
-    private void ensureInitialized() {
-        if (!initialized) {
-            try {
-                initialize();
-            } catch (Exception e) {
-                // Sécuriser des patterns non nuls au minimum
-                int flags = Pattern.CASE_INSENSITIVE | Pattern.UNICODE_CASE;
-                if (headerRepubliquePattern == null) headerRepubliquePattern = Pattern.compile("(?i)REPUBLIQUE", flags);
-                if (headerDevisePattern == null) headerDevisePattern = Pattern.compile("(?i)FRATERNITE|FRATERNITÉ", flags);
-                if (headerPresidencePattern == null) headerPresidencePattern = Pattern.compile("(?i)PRÉSIDENCE|PRESIDENCE", flags);
-                if (titleLoiPattern == null) titleLoiPattern = Pattern.compile("(?i)LOI|DÉCRET|DECRET", flags);
-                if (visaAssembleePattern == null) visaAssembleePattern = Pattern.compile("(?i)ASSEMBLÉE NATIONALE|ASSEMBLEE NATIONALE", flags);
-                if (visaPromulgationPattern == null) visaPromulgationPattern = Pattern.compile("(?i)Promulgue|Promulgation", flags);
-                if (visaArticle1Pattern == null) visaArticle1Pattern = Pattern.compile("(?i)Article\\s+(?:1er|premier|\\d+)", flags);
-                if (corpsFinPattern == null) corpsFinPattern = Pattern.compile("(?i)sera exécutée comme loi|abroge|La présente loi", flags);
-                if (articlePattern == null) articlePattern = Pattern.compile("(?i)^(?:Article\\s+(?:1er|premier|\\d+))", flags);
-                if (piedDebutPattern == null) piedDebutPattern = Pattern.compile("(?i)Fait à", flags);
-                if (piedFinPattern == null) piedFinPattern = Pattern.compile("(?i)AMPLIATIONS", flags);
-                initialized = true;
-            }
-        }
     }
 
     private String safePattern(String value) {
@@ -218,7 +200,7 @@ public class OcrQualityServiceImpl implements OcrQualityService {
         frenchDictionary = new HashSet<>();
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(
-                    getClass().getResourceAsStream("/liste.de.mots.francais.frgut.txt"),
+                    getClass().getResourceAsStream("/dictionaries/liste.de.mots.francais.frgut.txt"),
                     StandardCharsets.UTF_8))) {
             
             String line;
@@ -242,8 +224,7 @@ public class OcrQualityServiceImpl implements OcrQualityService {
         }
         Set<String> words = getUnrecognizedWords(text);
         if (documentId != null && !words.isEmpty()) {
-            UnrecognizedWordsService.recordUnrecognizedWords(words, documentId);
-            log.info("INFO  [{}] Recorded {} new unrecognized words", documentId, words.size());
+            log.debug("Found {} unrecognized words for {}", words.size(), documentId);
         }
             return words.size();
     }
@@ -274,10 +255,10 @@ public class OcrQualityServiceImpl implements OcrQualityService {
         
         // Enregistrer les mots non reconnus si documentId fourni
         if (documentId != null && !unrecognizedWords.isEmpty()) {
-            UnrecognizedWordsService.recordUnrecognizedWords(unrecognizedWords, documentId);
+            log.debug("Found {} unrecognized words for {} (rate: {:.2f})", unrecognizedWords.size(), documentId, unrecRate);
         }
         
-        double unrecPenalty = UnrecognizedWordsService.calculateUnrecognizedPenalty(unrecRate, unrecognizedWords.size());
+        double unrecPenalty = Math.min(unrecRate * 2.0, 1.0);
         double dictScore = 1.0 - unrecPenalty;
         
         // 5. Score termes juridiques (20%)
@@ -408,7 +389,6 @@ public class OcrQualityServiceImpl implements OcrQualityService {
      */
     @Override
     public double validateDocumentStructure(String text) {
-        ensureInitialized();
         if (text == null) {
             log.debug("❌ Null OCR content provided");
             return 0.0;

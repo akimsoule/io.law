@@ -21,6 +21,12 @@
             <artifactId>law-common</artifactId>
         </dependency>
         
+        <!-- Spring Batch Core (sans starter superflu) -->
+        <dependency>
+            <groupId>org.springframework.batch</groupId>
+            <artifactId>spring-batch-core</artifactId>
+        </dependency>
+        
         <!-- PDFBox -->
         <dependency>
             <groupId>org.apache.pdfbox</groupId>
@@ -40,10 +46,23 @@
             <version>5.3.4-1.5.10</version>
         </dependency>
         
+        <!-- H2 pour tests -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Tests -->
         <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.batch</groupId>
+            <artifactId>spring-batch-test</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

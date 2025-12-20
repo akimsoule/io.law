@@ -17,29 +17,15 @@
     <description>PDF to JSON extraction pipeline (OCR + AI)</description>
 
     <modules>
-        <module>law-ai</module>
         <module>law-pdf-ocr</module>
         <module>law-ocr-json</module>
         <module>law-json-config</module>
-        <!-- <module>law-qa</module> Temporairement désactivé - nécessite refactoring ErrorHandlingUtils -->
+        <module>law-ai</module>
+        <module>law-qa</module>
     </modules>
-
-    <dependencies>
-        <!-- Lombok pour tous les sous-modules -->
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <scope>provided</scope>
-        </dependency>
-    </dependencies>
 
     <dependencyManagement>
         <dependencies>
-            <dependency>
-                <groupId>bj.gouv.sgg</groupId>
-                <artifactId>law-ai</artifactId>
-                <version>${revision}</version>
-            </dependency>
             <dependency>
                 <groupId>bj.gouv.sgg</groupId>
                 <artifactId>law-json-config</artifactId>
@@ -57,29 +43,14 @@
             </dependency>
             <dependency>
                 <groupId>bj.gouv.sgg</groupId>
+                <artifactId>law-ai</artifactId>
+                <version>${revision}</version>
+            </dependency>
+            <dependency>
+                <groupId>bj.gouv.sgg</groupId>
                 <artifactId>law-qa</artifactId>
                 <version>${revision}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>17</source>
-                    <target>17</target>
-                    <annotationProcessorPaths>
-                        <path>
-                            <groupId>org.projectlombok</groupId>
-                            <artifactId>lombok</artifactId>
-                            <version>${lombok.version}</version>
-                        </path>
-                    </annotationProcessorPaths>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

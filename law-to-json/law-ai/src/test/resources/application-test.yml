@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: law-ai-test
+  
+  datasource:
+    url: jdbc:h2:mem:testdb
+    username: sa
+    password: 
+    driver-class-name: org.h2.Driver
+  
+  h2:
+    console:
+      enabled: false
+  
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+  
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false  # Ne pas auto-lancer en tests
+
+# Configuration IA pour tests
+batch:
+  ai:
+    thread-pool-size: 2  # Limiter en tests
+    chunk-size: 1
+
+# Configuration storage pour tests
+law:
+  storage-base-path: /tmp/law-test
+
+# Logging minimal
+logging:
+  level:
+    bj.gouv.sgg: INFO
+    org.springframework.batch: WARN
+    org.hibernate: WARN

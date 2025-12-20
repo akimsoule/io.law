@@ -41,7 +41,7 @@ public class FetchCurrentReader implements ItemReader<String> {
     
     /**
      * Initialise le reader avec les document IDs de l'année courante.
-     * Si documentId est fourni, traite uniquement ce document.
+     * Si documentId est fourni (et différent de "ALL"), traite uniquement ce document.
      * Synchronized pour thread-safety en mode multi-thread.
      */
     private synchronized void initialize() {
@@ -50,8 +50,8 @@ public class FetchCurrentReader implements ItemReader<String> {
             return;
         }
         
-        // Si un documentId spécifique est fourni, traiter uniquement celui-ci
-        if (documentId != null && !documentId.isEmpty()) {
+        // Si un documentId spécifique est fourni (et pas "ALL"), traiter uniquement celui-ci
+        if (documentId != null && !documentId.isEmpty() && !"ALL".equals(documentId)) {
             this.documentIds = new ConcurrentLinkedQueue<>();
             documentIds.add(documentId);
             log.info("📖 FetchCurrentReader initialisé pour document spécifique: {}", documentId);

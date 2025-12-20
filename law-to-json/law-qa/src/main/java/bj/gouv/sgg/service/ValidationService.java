@@ -29,14 +29,6 @@ public interface ValidationService {
     ValidationResult validateDocument(Path jsonPath, Path ocrPath);
     
     /**
-     * Valide tous les documents d'un type (loi/decret).
-     * 
-     * @param type Type de document ("loi" ou "decret")
-     * @return Liste des résultats de validation
-     */
-    List<ValidationResult> validateType(String type);
-    
-    /**
      * DTO résultat de validation.
      */
     interface ValidationResult {

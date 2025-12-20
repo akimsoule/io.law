@@ -60,6 +60,7 @@ public class FetchCurrentProcessor implements ItemProcessor<String, LawDocumentE
             if (found) {
                 log.info("✅ Found: {}", documentId);
                 return LawDocumentEntity.builder()
+                        .documentId(documentId)
                         .type(type)
                         .year(year)
                         .number(number)

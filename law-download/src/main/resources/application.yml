@@ -1,0 +1,34 @@
+spring:
+  application:
+    name: law-download
+  datasource:
+    url: jdbc:mysql://localhost:3306/law_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
+    username: root
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+  batch:
+    job:
+      enabled: false  # Désactiver auto-run au démarrage
+    jdbc:
+      initialize-schema: always
+
+batch:
+  download:
+    thread-pool-size: 0  # 0=auto (min(CPU-1,8)), >0=fixe mais plafonné aux CPU disponibles
+
+law:
+  base-url: https://sgg.gouv.bj/doc
+  user-agent: Mozilla/5.0 (compatible; LawBot/1.0)
+  http-timeout: 30000
+  max-retries: 3
+  retry-delay: 2000
+  data-dir: data
+
+logging:
+  level:
+    root: INFO
+    bj.gouv.sgg: INFO
+    org.springframework.batch: INFO

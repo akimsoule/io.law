@@ -1,0 +1,31 @@
+spring:
+  application:
+    name: law-ocr-json-test
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;MODE=MySQL
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.H2Dialect
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
+
+batch:
+  ocr-json:
+    thread-pool-size: 2  # 2 threads pour les tests
+
+law:
+  storage:
+    base-path: /tmp/law-test
+  extractor:
+    max-documents: 1000

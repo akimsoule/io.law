@@ -11,12 +11,12 @@ import java.util.List;
 import java.util.stream.StreamSupport;
 
 /**
- * Implémentation du service de validation qualité JSON.
+ * Implémentation du service de validation qualité JSON (POJO simple).
+ * 
+ * @since 2.0.0
  */
 @Slf4j
 public class JsonQualityServiceImpl implements JsonQualityService {
-    
-    private static JsonQualityServiceImpl instance;
     
     private static final String METADATA_KEY = "_metadata";
     private static final String ARTICLES_KEY = "articles";
@@ -24,15 +24,8 @@ public class JsonQualityServiceImpl implements JsonQualityService {
     
     private final Gson gson;
     
-    private JsonQualityServiceImpl() {
-        this.gson = new Gson();
-    }
-    
-    public static synchronized JsonQualityServiceImpl getInstance() {
-        if (instance == null) {
-            instance = new JsonQualityServiceImpl();
-        }
-        return instance;
+    public JsonQualityServiceImpl(Gson gson) {
+        this.gson = gson;
     }
     
     @Override
