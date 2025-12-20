@@ -6,9 +6,12 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 JAR="$PROJECT_ROOT/lib/jar/law-app-2.0.0-SNAPSHOT.jar"
-CONFIG="$PROJECT_ROOT/properties/application.yml"
+CONFIG="$PROJECT_ROOT/properties/application-raspi.yml"
 LOG_DIR="$PROJECT_ROOT/logs"
 LOG_FILE="$LOG_DIR/fullpipeline-law.log"
+
+# Source configuration JVM optimisée
+source "$PROJECT_ROOT/properties/jvm.conf"
 
 mkdir -p "$LOG_DIR"
 
