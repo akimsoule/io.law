@@ -1,0 +1,119 @@
+spring:
+  application:
+    name: law-orchestrator-raspi
+  main:
+    web-application-type: none
+
+  # DataSource optimisée pour Raspberry Pi
+  datasource:
+    url: jdbc:mysql://localhost:3306/law_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&createDatabaseIfNotExist=true
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      # Pool réduit pour économiser RAM
+      maximum-pool-size: 3
+      minimum-idle: 1
+      connection-timeout: 20000
+      idle-timeout: 300000
+      max-lifetime: 1200000
+      # Cache PreparedStatements minimal
+      data-source-properties:
+        cachePrepStmts: true
+        prepStmtCacheSize: 50
+        prepStmtCacheSqlLimit: 256
+  
+  # JPA optimisée
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.MySQLDialect
+        # Désactiver statistiques et logs verbeux
+        generate_statistics: false
+        show_sql: false
+        format_sql: false
+        use_sql_comments: false
+        # Batch optimisé
+        jdbc:
+          batch_size: 5
+          fetch_size: 20
+        order_inserts: true
+        order_updates: true
+        # Cache de second niveau désactivé (économie RAM)
+        cache:
+          use_second_level_cache: false
+          use_query_cache: false
+  
+  # Batch configuration optimisée
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
+
+# Configuration métier
+law:
+  base-url: https://sgg.gouv.bj/doc
+  storage-base-path: data
+  
+  # Chunks réduits pour limiter usage RAM
+  batch:
+    chunk-size: 3
+    throttle-limit: 50
+  
+  # Téléchargement optimisé
+  download:
+    max-retries: 3
+    retry-delay-ms: 2000
+    connection-timeout-ms: 30000
+    read-timeout-ms: 60000
+    # Pas de parallélisme
+    max-concurrent-downloads: 1
+  
+  # OCR optimisé
+  ocr:
+    # Threads Tesseract limités (1 cœur ARM = ~4 threads)
+    max-threads: 2
+    # Qualité réduite pour économiser CPU/RAM
+    dpi: 200
+    # Timeout adapté pour CPU ARM plus lent
+    timeout-seconds: 180
+  
+  # IA désactivée par défaut (trop lourd pour Raspi)
+  ai:
+    enabled: false
+    provider: ollama
+    ollama:
+      base-url: http://localhost:11434
+      model: mistral:7b
+      temperature: 0.1
+      # Timeout long pour modèles locaux sur ARM
+      timeout-seconds: 300
+  
+  # Orchestration quotidienne
+  orchestration:
+    fetch-current-daily-limit: 50
+
+# Logging optimisé (fichiers uniquement)
+logging:
+  level:
+    root: WARN
+    bj.gouv.sgg: INFO
+    org.springframework.batch: INFO
+    org.hibernate: WARN
+    com.zaxxer.hikari: WARN
+  pattern:
+    console: "%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n"
+  file:
+    name: logs/application.log
+    max-size: 10MB
+    max-history: 3
+    total-size-cap: 30MB
+
+# Actuator désactivé (économie RAM)
+management:
+  endpoints:
+    enabled-by-default: false
