@@ -14,4 +14,4 @@ TYPE="${1:-loi}"
 
 mkdir -p "$PROJECT_ROOT/logs"
 cd "$PROJECT_ROOT"
-java -jar "$JAR" --spring.config.location="file:$CONFIG" --job=ocrJsonJob --type="$TYPE" 2>&1 | tee "$LOG_FILE"
+java -jar "$JAR" --spring.config.location="file:$CONFIG" --spring.profiles.active=batch --job=ocrJsonJob --type="$TYPE" 2>&1 | tee "$LOG_FILE"

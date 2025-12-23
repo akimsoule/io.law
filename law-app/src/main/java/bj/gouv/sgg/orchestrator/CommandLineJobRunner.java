@@ -7,6 +7,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.stereotype.Component;
 import org.springframework.context.ApplicationContext;
+import org.springframework.context.annotation.Profile;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,6 +32,7 @@ import java.util.Map;
  * @author Law Team
  * @version 2.0.0
  */
+@Profile("cli")
 @Slf4j
 @Component
 @RequiredArgsConstructor

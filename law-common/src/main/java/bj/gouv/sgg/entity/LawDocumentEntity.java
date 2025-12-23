@@ -59,6 +59,10 @@ public class LawDocumentEntity {
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
+    @Enumerated(EnumType.STRING)
+    @Column(length = 100)
+    private OCRProcessusStatus ocrProcessusStatus;
+
     // ========== Timestamps ==========
     @Column(name = "created_at", nullable = false, updatable = false)
     @Builder.Default

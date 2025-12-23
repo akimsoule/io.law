@@ -1,15 +1,18 @@
 package bj.gouv.sgg.service.correction;
 
+import bj.gouv.sgg.entity.ErrorCorrection;
+
+import java.util.List;
+
 /**
  * Interface pour la correction de texte OCR
  */
 public interface CorrectOcrText {
-    
-    /**
-     * Applique les corrections OCR au texte brut
-     * 
-     * @param text Texte OCR brut
-     * @return Texte corrigé
-     */
+
+    void loadCorrectionCsvInDb();
+    void loadDictionary();
+
+    List<ErrorCorrection> loadCorrections();
+
     String applyCorrections(String text);
 }

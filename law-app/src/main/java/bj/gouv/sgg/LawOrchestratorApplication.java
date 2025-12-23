@@ -3,6 +3,7 @@ package bj.gouv.sgg;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.context.annotation.ComponentScan;
 
 /**
@@ -49,9 +50,21 @@ public class LawOrchestratorApplication {
         log.info("==================================================");
         log.info("  LAW ORCHESTRATOR APPLICATION - STARTING");
         log.info("==================================================");
-        
-        SpringApplication.run(LawOrchestratorApplication.class, args);
-        
+
+        SpringApplication app = new SpringApplication(LawOrchestratorApplication.class);
+
+        // Configure application type based on profile
+        String activeProfile = System.getProperty("spring.profiles.active", "web");
+        if ("batch".equals(activeProfile)) {
+            app.setWebApplicationType(WebApplicationType.NONE);
+            log.info("Profil 'batch' activé : Exécution des jobs Spring Batch.");
+        } else {
+            app.setWebApplicationType(WebApplicationType.SERVLET);
+            log.info("Profil 'web' activé : Démarrage de l'application web sur Tomcat.");
+        }
+
+        app.run(args);
+
         log.info("==================================================");
         log.info("  LAW ORCHESTRATOR APPLICATION - STOPPED");
         log.info("==================================================");

@@ -15,4 +15,4 @@ SKIP_FETCH_DAILY="${2:-true}"
 
 mkdir -p "$PROJECT_ROOT/logs"
 cd "$PROJECT_ROOT"
-java -jar "$JAR" --spring.config.location="file:$CONFIG" --job=orchestrate --type="$TYPE" --skip-fetch-daily="$SKIP_FETCH_DAILY" 2>&1 | tee "$LOG_FILE"
+java -jar "$JAR" --spring.config.location="file:$CONFIG" --spring.profiles.active=batch --job=orchestrate --type="$TYPE" --skip-fetch-daily="$SKIP_FETCH_DAILY" 2>&1 | tee "$LOG_FILE"

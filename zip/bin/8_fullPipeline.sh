@@ -17,4 +17,4 @@ mkdir -p "$LOG_DIR"
 
 echo "📋 Logs: $LOG_FILE"
 cd "$PROJECT_ROOT"
-java -jar "$JAR" --spring.config.location="file:$CONFIG" --pipeline=fullPipeline --type=loi 2>&1 | tee "$LOG_FILE"
+java -jar "$JAR" --spring.config.location="file:$CONFIG" --spring.profiles.active=batch --pipeline=fullPipeline --type=loi 2>&1 | tee "$LOG_FILE"
