@@ -1,6 +1,5 @@
 package bj.gouv.sgg.batch.processor;
 
-import bj.gouv.sgg.config.ArticleExtractorConfig;
 import bj.gouv.sgg.entity.LawDocumentEntity;
 import bj.gouv.sgg.entity.ProcessingStatus;
 import bj.gouv.sgg.exception.OcrExtractionException;
@@ -8,7 +7,7 @@ import bj.gouv.sgg.model.Article;
 import bj.gouv.sgg.model.DocumentMetadata;
 import bj.gouv.sgg.model.OcrExtractionResult;
 import bj.gouv.sgg.service.FileStorageService;
-import bj.gouv.sgg.service.extract.impl.OcrExtractionServiceImpl;
+import bj.gouv.sgg.service.extract.OcrExtractionService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
@@ -46,7 +45,7 @@ import java.util.List;
 public class OcrJsonProcessor implements ItemProcessor<LawDocumentEntity, LawDocumentEntity> {
 
     private final FileStorageService fileStorageService;
-    private final ArticleExtractorConfig articleExtractorConfig;
+    private final OcrExtractionService extractionService;
 
     // Gson avec adapter pour LocalDate
     private final Gson gson = new GsonBuilder()
@@ -96,9 +95,7 @@ public class OcrJsonProcessor implements ItemProcessor<LawDocumentEntity, LawDoc
                 throw new OcrExtractionException("OCR text is empty for document: " + documentId);
             }
 
-            // 3. Extraire articles et métadonnées via OcrExtractionServiceImpl
-            OcrExtractionServiceImpl extractionService = new OcrExtractionServiceImpl(articleExtractorConfig);
-            
+            // 3. Extraire articles et métadonnées via OcrExtractionServiceImpl (injected)
             List<Article> articles = extractionService.extractArticles(ocrText);
             if (articles.isEmpty()) {
                 throw new OcrExtractionException("No articles extracted for document: " + documentId);

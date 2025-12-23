@@ -11,10 +11,20 @@
     <baseDirectory>law-orchestrator-${project.version}</baseDirectory>
 
     <fileSets>
-        <!-- Scripts bin/ + jvm.conf -->
+        <!-- Scripts bin/ -->
         <fileSet>
             <directory>${project.basedir}/../zip/bin</directory>
             <outputDirectory>bin</outputDirectory>
+            <includes>
+                <include>*.sh</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
+
+        <!-- Scripts bin/pi -->
+        <fileSet>
+            <directory>${project.basedir}/../zip/bin/pi</directory>
+            <outputDirectory>bin/pi</outputDirectory>
             <includes>
                 <include>*.sh</include>
             </includes>

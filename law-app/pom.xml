@@ -47,6 +47,19 @@
             <artifactId>spring-boot-starter</artifactId>
         </dependency>
         
+        <!-- Web starter (servlet support needed for controllers and Swagger UI) -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-web</artifactId>
+        </dependency>
+
+        <!-- Bean Validation provider (Hibernate Validator) to support @Valid/@Pattern -->
+        <dependency>
+            <groupId>org.hibernate.validator</groupId>
+            <artifactId>hibernate-validator</artifactId>
+            <version>8.0.0.Final</version>
+        </dependency>
+        
         <!-- Spring Batch Core (minimal) -->
         <dependency>
             <groupId>org.springframework.batch</groupId>
@@ -74,6 +87,13 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
+        </dependency>
+
+        <!-- OpenAPI / Swagger UI -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.1.0</version>
         </dependency>
     </dependencies>
 
@@ -127,7 +147,7 @@
                                 <mkdir dir="${project.basedir}/../zip/lib/jar"/>
                                 <copy file="${project.build.directory}/${project.build.finalName}.jar" 
                                       todir="${project.basedir}/../zip/lib/jar"/>
-                                <echo message="JAR copié dans zip/lib/jar/"/>
+                                <echo message="JAR copied in zip/lib/jar/"/>
                             </target>
                         </configuration>
                     </execution>

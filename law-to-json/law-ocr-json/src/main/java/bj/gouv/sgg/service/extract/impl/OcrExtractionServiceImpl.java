@@ -47,9 +47,9 @@ public class OcrExtractionServiceImpl implements OcrExtractionService {
     private final ArticleExtractorConfig config;
     private final CorrectOcrText ocrCorrector;
     
-    public OcrExtractionServiceImpl(ArticleExtractorConfig config) {
+    public OcrExtractionServiceImpl(ArticleExtractorConfig config, CorrectOcrText correctOcrText) {
         this.config = config;
-        this.ocrCorrector = CsvCorrectOcr.getInstance();
+        this.ocrCorrector = correctOcrText;
     }
 
     @Override
@@ -155,6 +155,9 @@ public class OcrExtractionServiceImpl implements OcrExtractionService {
     @Override
     public DocumentMetadata extractMetadata(String text) {
         DocumentMetadata metadata = DocumentMetadata.builder().build();
+
+        // Appliquer les corrections OCR AVANT parsing
+        text = ocrCorrector.applyCorrections(text);
         
         // Extract law title using config patterns
         Matcher titleStartMatcher = config.getLawTitleStart().matcher(text);
@@ -201,6 +204,10 @@ public class OcrExtractionServiceImpl implements OcrExtractionService {
     
     @Override
     public double calculateConfidence(String text, List<Article> articles) {
+
+        // Appliquer les corrections OCR AVANT parsing
+        text = ocrCorrector.applyCorrections(text);
+
         return calculateConfidence(text, articles, null);
     }
     
