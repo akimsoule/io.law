@@ -13,4 +13,4 @@ if [ ! -f "$JAR" ]; then
 fi
 
 # Démarrer l'application
-java -jar "$JAR" --spring.profiles.active=web
+java -jar "$JAR" --spring.main.web-application-type=servlet
