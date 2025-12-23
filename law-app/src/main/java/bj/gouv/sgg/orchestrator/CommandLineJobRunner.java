@@ -32,7 +32,6 @@ import java.util.Map;
  * @author Law Team
  * @version 2.0.0
  */
-@Profile("cli")
 @Slf4j
 @Component
 @RequiredArgsConstructor

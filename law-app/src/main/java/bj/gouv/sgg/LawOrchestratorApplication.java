@@ -3,12 +3,11 @@ package bj.gouv.sgg;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.WebApplicationType;
 import org.springframework.context.annotation.ComponentScan;
 
 /**
  * Application principale orchestrant tous les jobs Spring Batch.
- * 
+ *
  * <p>Architecture :
  * <ul>
  *   <li>law-fetch : Extraction métadonnées depuis sgg.gouv.bj</li>
@@ -16,7 +15,7 @@ import org.springframework.context.annotation.ComponentScan;
  *   <li>law-json-config : Orchestration conversion PDF → JSON</li>
  *   <li>law-consolidate : Consolidation et déduplication</li>
  * </ul>
- * 
+ *
  * <p>Jobs disponibles :
  * <ul>
  *   <li>fetchCurrentJob : Récupération documents courants</li>
@@ -27,7 +26,7 @@ import org.springframework.context.annotation.ComponentScan;
  *   <li>jsonConversionJob : Pipeline complet PDF → OCR → JSON</li>
  *   <li>consolidateJob : Consolidation finale</li>
  * </ul>
- * 
+ *
  * @author Law Team
  * @version 2.0.0
  * @since 2024-12-19
@@ -35,14 +34,15 @@ import org.springframework.context.annotation.ComponentScan;
 @Slf4j
 @SpringBootApplication
 @ComponentScan(basePackages = {
-    "bj.gouv.sgg",           // law-app
-    "bj.gouv.sgg.common",    // law-common
-    "bj.gouv.sgg.fetch",     // law-fetch
-    "bj.gouv.sgg.download",  // law-download
-    "bj.gouv.sgg.config",    // law-json-config
-    "bj.gouv.sgg.batch",     // law-consolidate
-    "bj.gouv.sgg.ocr",       // law-pdf-ocr
-    "bj.gouv.sgg.ocrjson"    // law-ocr-json
+        "bj.gouv.sgg",           // law-app
+        "bj.gouv.sgg.common",    // law-common
+        "bj.gouv.sgg.fetch",     // law-fetch
+        "bj.gouv.sgg.download",  // law-download
+        "bj.gouv.sgg.config",    // law-json-config
+        "bj.gouv.sgg.batch",     // law-consolidate
+        "bj.gouv.sgg.ocr",       // law-pdf-ocr
+        "bj.gouv.sgg.ocrjson",   // law-ocr-json
+        "bj.gouv.sgg.web"        // Controllers
 })
 public class LawOrchestratorApplication {
 
@@ -51,22 +51,11 @@ public class LawOrchestratorApplication {
         log.info("  LAW ORCHESTRATOR APPLICATION - STARTING");
         log.info("==================================================");
 
-        SpringApplication app = new SpringApplication(LawOrchestratorApplication.class);
-
-        // Configure application type based on profile
-        String activeProfile = System.getProperty("spring.profiles.active", "web");
-        if ("batch".equals(activeProfile)) {
-            app.setWebApplicationType(WebApplicationType.NONE);
-            log.info("Profil 'batch' activé : Exécution des jobs Spring Batch.");
-        } else {
-            app.setWebApplicationType(WebApplicationType.SERVLET);
-            log.info("Profil 'web' activé : Démarrage de l'application web sur Tomcat.");
-        }
-
-        app.run(args);
+        SpringApplication.run(LawOrchestratorApplication.class, args);
 
         log.info("==================================================");
         log.info("  LAW ORCHESTRATOR APPLICATION - STOPPED");
         log.info("==================================================");
     }
+
 }

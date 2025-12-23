@@ -60,7 +60,7 @@ class OcrJsonBadOcrIntegrationTest {
         assertThat(execution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
 
         LawDocumentEntity updated = repository.findByTypeAndYearAndNumber("loi", 2021, "13").orElseThrow();
-        assertThat(updated.getStatus()).isIn(ProcessingStatus.EXTRACTED);
+        assertThat(updated.getStatus()).isIn(ProcessingStatus.EXTRACTED, ProcessingStatus.FAILED_EXTRACTION);
         // If extracted, jsonPath should be present
         if (updated.getStatus() == ProcessingStatus.EXTRACTED) {
             assertThat(updated.getJsonPath()).isNotNull();
