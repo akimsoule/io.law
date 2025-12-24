@@ -10,7 +10,9 @@ import java.util.Optional;
 @Repository
 public interface ErrorCorrectionRepository extends JpaRepository<ErrorCorrection, Long> {
 
-    List<ErrorCorrection> findByCorrectionText(String errorCorrection);
+    List<ErrorCorrection> findByCorrectionTextIsNotNull();
+
+    List<ErrorCorrection> findByCorrectionTextIsNull();
 
     Optional<ErrorCorrection> findByErrorFound(String word);
 

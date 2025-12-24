@@ -10,6 +10,14 @@ public class TesseractInitializationException extends OcrProcessingException {
     
     private final String tessdataPath;
     private final int attempts;
+
+    public TesseractInitializationException(String message) {
+        // Utilise le constructeur OcrProcessingException qui accepte un message et une cause (null ici)
+        super(message, (Throwable) null);
+        // Initialise les champs finals avec des valeurs par défaut
+        this.tessdataPath = null;
+        this.attempts = 0;
+    }
     
     public TesseractInitializationException(String tessdataPath, int attempts) {
         super("tessdata", String.format("Failed to initialize Tesseract after %d attempts (datapath=%s)", attempts, tessdataPath));

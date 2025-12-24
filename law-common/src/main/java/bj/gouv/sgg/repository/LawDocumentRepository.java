@@ -89,7 +89,7 @@ public interface LawDocumentRepository extends JpaRepository<LawDocumentEntity, 
         AND d.status IN (
             bj.gouv.sgg.entity.ProcessingStatus.FETCHED,
             bj.gouv.sgg.entity.ProcessingStatus.DOWNLOADED,
-            bj.gouv.sgg.entity.ProcessingStatus.OCRED,
+            bj.gouv.sgg.entity.ProcessingStatus.OCRED_V2,
             bj.gouv.sgg.entity.ProcessingStatus.EXTRACTED,
             bj.gouv.sgg.entity.ProcessingStatus.CONSOLIDATED
         )

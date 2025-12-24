@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 /**
  * Reader Spring Batch pour extraction JSON.
  * 
- * <p>Lit les documents avec status OCRED ou FAILED_JSON_EXTRACTION
+ * <p>Lit les documents avec status OCRED_V2 ou FAILED_JSON_EXTRACTION
  * et skip ceux qui ont déjà un jsonPath (idempotence).
  * 
  * <p>Thread-safety : synchronized + ConcurrentLinkedQueue + double-check locking
@@ -75,7 +75,7 @@ public class OcrJsonReader implements ItemReader<LawDocumentEntity> {
             } else {
                 // Mode type complet
                 List<ProcessingStatus> targetStatuses = List.of(
-                        ProcessingStatus.OCRED,
+                        ProcessingStatus.OCRED_V2,
                         ProcessingStatus.FAILED_EXTRACTION
                 );
                 documents = repository.findByTypeAndStatusIn(type, targetStatuses);

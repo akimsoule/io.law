@@ -46,7 +46,7 @@ class OcrJsonBadOcrIntegrationTest {
                 .year(2021)
                 .number("13")
                 .documentId("loi-2021-13")
-                .status(ProcessingStatus.OCRED)
+                .status(ProcessingStatus.OCRED_V2)
                 .ocrPath(bad.getAbsolutePath())
                 .build();
         repository.saveAndFlush(doc);

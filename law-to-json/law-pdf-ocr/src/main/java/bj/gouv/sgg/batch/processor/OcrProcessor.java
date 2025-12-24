@@ -21,7 +21,7 @@ import java.nio.file.Path;
  * 1. Vérifie que le PDF existe (pdfPath)
  * 2. Génère le chemin de destination OCR (data/ocr/{type}/{documentId}.txt)
  * 3. Effectue l'OCR via OcrService
- * 4. Met à jour l'entité : ocrPath, status=OCRED
+ * 4. Met à jour l'entité : ocrPath, status=OCRED_V2
  * 5. En cas d'erreur : status=FAILED_OCR, errorMessage
  * 
  * Thread-safe : chaque thread traite son document indépendamment.
@@ -80,7 +80,7 @@ public class OcrProcessor implements ItemProcessor<LawDocumentEntity, LawDocumen
             
             // Mettre à jour l'entité
             document.setOcrPath(ocrPath.toString());
-            document.setStatus(ProcessingStatus.OCRED);
+            document.setStatus(ProcessingStatus.OCRED_V2);
             document.setErrorMessage(null);
             
             log.info("✅ OCR completed {} ({} bytes)", documentId, ocrPath.toFile().length());

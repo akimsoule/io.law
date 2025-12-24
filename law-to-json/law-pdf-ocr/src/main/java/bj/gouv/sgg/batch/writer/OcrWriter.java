@@ -11,7 +11,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * ItemWriter Spring Batch pour sauvegarder les résultats OCR.
- * Met à jour la base de données avec ocrPath et status=OCRED.
+ * Met à jour la base de données avec ocrPath et status=OCRED_V2.
  * Thread-safe avec synchronized pour éviter les conflits.
  */
 @Slf4j
@@ -30,7 +30,7 @@ public class OcrWriter implements ItemWriter<LawDocumentEntity> {
             try {
                 lawDocumentService.save(document);
                 
-                if (document.getStatus() == ProcessingStatus.OCRED) {
+                if (document.getStatus() == ProcessingStatus.OCRED_V2) {
                     ocredCount++;
                     log.debug("💾 Saved OCR: {}", document.getDocumentId());
                 } else {

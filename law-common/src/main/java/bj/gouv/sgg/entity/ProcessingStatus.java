@@ -28,7 +28,7 @@ public enum ProcessingStatus {
     /**
      * Extraction OCR effectuée (fichier .txt créé)
      */
-    OCRED,
+    OCRED_V2,
     
     /**
      * Articles extraits depuis OCR (fichier .json créé avec méthode OCR)

@@ -7,6 +7,7 @@ import bj.gouv.sgg.model.Article;
 import bj.gouv.sgg.model.DocumentMetadata;
 import bj.gouv.sgg.model.OcrExtractionResult;
 import bj.gouv.sgg.service.FileStorageService;
+import bj.gouv.sgg.service.correction.CorrectOcrText;
 import bj.gouv.sgg.service.extract.OcrExtractionService;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -45,7 +46,8 @@ import java.util.List;
 public class OcrJsonProcessor implements ItemProcessor<LawDocumentEntity, LawDocumentEntity> {
 
     private final FileStorageService fileStorageService;
-    private final OcrExtractionService extractionService;
+    private final OcrExtractionService ocrExtractionService;
+    private final CorrectOcrText correctOcrText;
 
     // Gson avec adapter pour LocalDate
     private final Gson gson = new GsonBuilder()
@@ -89,20 +91,20 @@ public class OcrJsonProcessor implements ItemProcessor<LawDocumentEntity, LawDoc
                 throw new OcrExtractionException("OCR file not found: " + document.getOcrPath());
             }
 
-            // 2. Lire le texte OCR
-            String ocrText = Files.readString(ocrFile.toPath());
-            if (ocrText.trim().isEmpty()) {
-                throw new OcrExtractionException("OCR text is empty for document: " + documentId);
+            // 2. Parse and correct the OCR text (single read handled by corrector)
+            String correctOcr = correctOcrText.parseOCRFile(document, ocrFile);
+            if (correctOcr == null || correctOcr.trim().isEmpty()) {
+                throw new OcrExtractionException("OCR text is empty after corrections for document: " + documentId);
             }
 
             // 3. Extraire articles et métadonnées via OcrExtractionServiceImpl (injected)
-            List<Article> articles = extractionService.extractArticles(ocrText);
+            List<Article> articles = ocrExtractionService.extractArticles(correctOcr);
             if (articles.isEmpty()) {
                 throw new OcrExtractionException("No articles extracted for document: " + documentId);
             }
 
-            DocumentMetadata metadata = extractionService.extractMetadata(ocrText);
-            double confidence = extractionService.calculateConfidence(ocrText, articles);
+            DocumentMetadata metadata = ocrExtractionService.extractMetadata(correctOcr);
+            double confidence = ocrExtractionService.calculateConfidence(correctOcr, articles);
 
             // 4. Créer le résultat structuré
             OcrExtractionResult result = OcrExtractionResult.builder()
@@ -115,19 +117,23 @@ public class OcrJsonProcessor implements ItemProcessor<LawDocumentEntity, LawDoc
 
             // 5. Générer le chemin JSON et créer le répertoire parent
             Path jsonPath = fileStorageService.jsonPath(document.getType(), documentId);
-            jsonPath.getParent().toFile().mkdirs();
+            java.io.File parent = jsonPath.getParent().toFile();
+            if (!parent.exists() && !parent.mkdirs()) {
+                throw new OcrExtractionException("Failed to create parent directories for: " + jsonPath);
+            }
 
-            // 6. Sauvegarder le JSON
+            // 6. Sauvegarder le JSON (UTF-8)
             String jsonContent = gson.toJson(result);
-            Files.writeString(jsonPath, jsonContent);
+            Files.writeString(jsonPath, jsonContent, java.nio.charset.StandardCharsets.UTF_8);
 
             // 7. Vérifier que le fichier a été créé
             if (!jsonPath.toFile().exists() || jsonPath.toFile().length() == 0) {
                 throw new OcrExtractionException("JSON file empty or not created for document: " + documentId);
             }
 
-            log.info("✅ JSON extracted: {} ({} articles, confidence: {:.2f}, path: {})",
-                    documentId, articles.size(), confidence, jsonPath);
+            String conf = String.format(java.util.Locale.ROOT, "%.2f", confidence);
+            log.info("✅ JSON extracted: {} ({} articles, confidence: {}, path: {})",
+                    documentId, articles.size(), conf, jsonPath);
 
             // 8. Mettre à jour l'entité
             document.setJsonPath(jsonPath.toString());

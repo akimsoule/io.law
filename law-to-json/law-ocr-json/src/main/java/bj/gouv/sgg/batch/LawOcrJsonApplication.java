@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  * 
  * <p>Workflow :
  * <ul>
- *   <li>INPUT: Documents avec status OCRED</li>
+ *   <li>INPUT: Documents avec status OCRED_V2</li>
  *   <li>PROCESSING: Extraction articles via regex patterns</li>
  *   <li>OUTPUT: Fichier JSON + status JSON_EXTRACTED</li>
  * </ul>

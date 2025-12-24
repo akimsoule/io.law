@@ -30,7 +30,7 @@ class JobControllerTest {
     }
 
     @Test
-    void fetchCurrent_endpoint_should_return_ok() throws Exception {
+    void fetchCurrentEndpointShouldReturnOk() throws Exception {
         doNothing().when(orchestrator).runJob(anyString(), org.mockito.ArgumentMatchers.anyMap());
 
         mvc.perform(post("/api/jobs/fetchCurrent")

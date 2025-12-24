@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests d'intégration du job OcrJson avec fichiers OCR réels.
- * Vérifie les transitions d'état OCRED → EXTRACTED avec extraction d'articles réelle.
+ * Vérifie les transitions d'état OCRED_V2 → EXTRACTED avec extraction d'articles réelle.
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -98,7 +98,7 @@ class OcrJsonJobIntegrationTest {
 
     @Test
     void shouldProcessOcredDocumentToExtracted() throws Exception {
-        // Given: Document OCRED avec fichier OCR réel
+        // Given: Document OCRED_V2 avec fichier OCR réel
         File goodOcr = new ClassPathResource("good_ocr/loi-2012-001.txt").getFile();
         
         LawDocumentEntity doc = LawDocumentEntity.builder()
@@ -106,7 +106,7 @@ class OcrJsonJobIntegrationTest {
                 .year(2012)
                 .number("001")
                 .documentId("loi-2012-001")
-                .status(ProcessingStatus.OCRED)
+                .status(ProcessingStatus.OCRED_V2)
                 .ocrPath(goodOcr.getAbsolutePath())
                 .build();
         repository.saveAndFlush(doc);
@@ -148,7 +148,7 @@ class OcrJsonJobIntegrationTest {
 
     @Test
     void shouldSkipDocumentWithExistingJsonPath() throws Exception {
-        // Given: Document OCRED avec jsonPath déjà défini
+        // Given: Document OCRED_V2 avec jsonPath déjà défini
         File goodOcr = new ClassPathResource("good_ocr/loi-2012-001.txt").getFile();
         Path existingJson = tempDir.resolve("existing-json.json");
         Files.write(existingJson, "{\"articles\":[],\"documentId\":\"loi-2012-002\"}".getBytes());
@@ -158,7 +158,7 @@ class OcrJsonJobIntegrationTest {
                 .year(2012)
                 .number("002")
                 .documentId("loi-2012-002")
-                .status(ProcessingStatus.OCRED)
+                .status(ProcessingStatus.OCRED_V2)
                 .ocrPath(goodOcr.getAbsolutePath())
                 .jsonPath(existingJson.toString())
                 .build();
@@ -183,7 +183,7 @@ class OcrJsonJobIntegrationTest {
 
     @Test
     void shouldHandleEmptyOcrText() throws Exception {
-        // Given: Document OCRED avec fichier OCR vide
+        // Given: Document OCRED_V2 avec fichier OCR vide
         Path emptyOcr = tempDir.resolve("empty.txt");
         Files.write(emptyOcr, "".getBytes());
         
@@ -192,7 +192,7 @@ class OcrJsonJobIntegrationTest {
                 .year(2012)
                 .number("003")
                 .documentId("loi-2012-003")
-                .status(ProcessingStatus.OCRED)
+                .status(ProcessingStatus.OCRED_V2)
                 .ocrPath(emptyOcr.toString())
                 .build();
         repository.saveAndFlush(doc);
@@ -216,13 +216,13 @@ class OcrJsonJobIntegrationTest {
 
     @Test
     void shouldHandleMissingOcrFile() throws Exception {
-        // Given: Document OCRED avec ocrPath inexistant
+        // Given: Document OCRED_V2 avec ocrPath inexistant
         LawDocumentEntity doc = LawDocumentEntity.builder()
                 .type("loi")
                 .year(2012)
                 .number("004")
                 .documentId("loi-2012-004")
-                .status(ProcessingStatus.OCRED)
+                .status(ProcessingStatus.OCRED_V2)
                 .ocrPath("/nonexistent/path/loi-2012-004.txt")
                 .build();
         repository.saveAndFlush(doc);
