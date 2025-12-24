@@ -1,12 +1,15 @@
 package bj.gouv.sgg.config;
 
+import bj.gouv.sgg.entity.ErrorCorrection;
 import bj.gouv.sgg.exception.ConfigurationException;
 import bj.gouv.sgg.model.Signatory;
+import bj.gouv.sgg.repository.ErrorCorrectionRepository;
 import bj.gouv.sgg.util.DateParsingUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
@@ -42,6 +45,14 @@ public class ArticleExtractorConfig {
             "conformément", "application", "notamment", "toutefois"
     };
 
+    private final ErrorCorrectionRepository errorCorrectionRepository;
+
+
+    public ArticleExtractorConfig(ErrorCorrectionRepository errorCorrectionRepository) {
+        this.errorCorrectionRepository = errorCorrectionRepository;
+        initialize();
+    }
+
     /**
      * Initialise la configuration (à appeler manuellement après construction)
      */
@@ -50,6 +61,7 @@ public class ArticleExtractorConfig {
         loadSignatories();
         loadDictionary();
         compilePatterns();
+        loadCorrectionCsvInDb();
     }
 
     private void loadProperties() {
@@ -155,6 +167,59 @@ public class ArticleExtractorConfig {
         } catch (java.util.regex.PatternSyntaxException | NullPointerException e) {
             log.error("Failed to compile patterns: {}", e.getMessage());
             throw new ConfigurationException("Required patterns missing or invalid in patterns.properties", e);
+        }
+    }
+
+    public void loadCorrectionCsvInDb() {
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("corrections.csv")) {
+            if (is == null) {
+                log.warn("⚠️ corrections.csv not found in resources");
+                return;
+            }
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                String line;
+                int lineNumber = 0;
+
+                while ((line = reader.readLine()) != null) {
+                    lineNumber++;
+                    line = line.trim();
+
+                    // Skip empty lines and comments
+                    if (line.isEmpty() || line.startsWith("#")) {
+                        continue;
+                    }
+
+                    // Parse correction line (format: wrong,correct)
+                    if (!line.contains(",")) {
+                        log.warn("⚠️ Invalid correction format at line {}: {}", lineNumber, line);
+                        continue;
+                    }
+
+                    String[] parts = line.split(",", 2);
+                    if (parts.length != 2) {
+                        log.warn("⚠️ Invalid correction format at line {}: {}", lineNumber, line);
+                        continue;
+                    }
+
+                    String errorFound = parts[0].trim();
+                    String errorCorrection = parts[1].trim();
+
+                    if (!errorFound.isEmpty() && !errorCorrection.isEmpty()) {
+                        if (errorCorrectionRepository.findByErrorFound(errorFound).isEmpty()) {
+                            bj.gouv.sgg.entity.ErrorCorrection ec = new bj.gouv.sgg.entity.ErrorCorrection();
+                            ec.setErrorFound(errorFound);
+                            ec.setErrorCount(0);
+                            ec.setCorrectionText(errorCorrection);
+                            ec.setCorrectionIsAutomatic(false);
+                            errorCorrectionRepository.save(ec);
+                            log.info("✅ Saved correction: '{}' → '{}'", errorFound, errorCorrection);
+                        }
+                    }
+                }
+            }
+        } catch (IOException e) {
+            log.error("❌ Failed to load corrections.csv: {}", e.getMessage(), e);
         }
     }
 

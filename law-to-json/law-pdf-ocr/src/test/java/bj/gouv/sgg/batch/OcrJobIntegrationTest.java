@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Tests d'intégration du job OCR avec PDFs réels et Tesseract.
- * Vérifie les transitions d'état DOWNLOADED → OCRED avec extraction OCR réelle.
+ * Vérifie les transitions d'état DOWNLOADED → OCRED_V2 avec extraction OCR réelle.
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -73,8 +73,8 @@ class OcrJobIntegrationTest {
         LawDocumentEntity doc = LawDocumentEntity.builder()
                 .type("loi")
                 .year(2025)
-                .number("017")
-                .documentId("loi-2025-017")
+                .number("17")
+                .documentId("loi-2025-17")
                 .status(ProcessingStatus.DOWNLOADED)
                 .pdfPath(goodPdf.getAbsolutePath())
                 .build();
@@ -91,9 +91,9 @@ class OcrJobIntegrationTest {
         // Then: Job SUCCESS
         assertThat(execution.getStatus()).isEqualTo(BatchStatus.COMPLETED);
 
-        // And: Document maintenant OCRED
-        LawDocumentEntity updated = repository.findByTypeAndYearAndNumber("loi", 2025, "017").orElseThrow();
-        assertThat(updated.getStatus()).isEqualTo(ProcessingStatus.OCRED);
+        // And: Document maintenant OCRED_V2
+        LawDocumentEntity updated = repository.findByTypeAndYearAndNumber("loi", 2025, "17").orElseThrow();
+        assertThat(updated.getStatus()).isEqualTo(ProcessingStatus.OCRED_V2);
         assertThat(updated.getOcrPath()).isNotNull();
         
         // And: Fichier OCR créé et contient du texte

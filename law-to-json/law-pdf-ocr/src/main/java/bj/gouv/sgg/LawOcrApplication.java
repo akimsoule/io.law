@@ -9,7 +9,7 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
  * 
  * Workflow:
  * 1. DownloadJob télécharge les PDFs (status: DOWNLOADED)
- * 2. OcrJob extrait le texte via Tesseract (status: OCRED)
+ * 2. OcrJob extrait le texte via Tesseract (status: OCRED_V2)
  * 3. OcrJsonJob parse le texte en articles JSON
  * 
  * Architecture Spring Batch:

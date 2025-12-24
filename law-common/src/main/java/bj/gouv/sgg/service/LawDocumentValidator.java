@@ -53,7 +53,7 @@ public class LawDocumentValidator {
         // (garantit l'idempotence)
         if (status == ProcessingStatus.FETCHED || 
             status == ProcessingStatus.DOWNLOADED ||
-            status == ProcessingStatus.OCRED ||
+            status == ProcessingStatus.OCRED_V2 ||
             status == ProcessingStatus.EXTRACTED ||
             status == ProcessingStatus.CONSOLIDATED) {
             return false;
@@ -83,7 +83,7 @@ public class LawDocumentValidator {
         // Si le status indique que le document a été fetch
         if (status == ProcessingStatus.FETCHED || 
             status == ProcessingStatus.DOWNLOADED ||
-            status == ProcessingStatus.OCRED ||
+            status == ProcessingStatus.OCRED_V2 ||
             status == ProcessingStatus.EXTRACTED ||
             status == ProcessingStatus.CONSOLIDATED) {
             return true;
@@ -130,7 +130,7 @@ public class LawDocumentValidator {
     public boolean isDownloaded(LawDocumentEntity entity) {
         ProcessingStatus status = entity.getStatus();
 
-        boolean statusOk = status == ProcessingStatus.DOWNLOADED || status == ProcessingStatus.OCRED || status == ProcessingStatus.EXTRACTED || status == ProcessingStatus.CONSOLIDATED;
+        boolean statusOk = status == ProcessingStatus.DOWNLOADED || status == ProcessingStatus.OCRED_V2 || status == ProcessingStatus.EXTRACTED || status == ProcessingStatus.CONSOLIDATED;
 
         // Si le status indique téléchargé, vérifier que le fichier existe vraiment
         if (statusOk) {
@@ -158,8 +158,8 @@ public class LawDocumentValidator {
         }
 
         // Cas 3: Status indique "ocred" mais fichier OCR absent
-        if (entity.getStatus() == ProcessingStatus.OCRED && !ocrExists(entity)) {
-            log.warn("⚠️ Document {} marqué OCRED mais fichier OCR absent", entity.getDocumentId());
+        if (entity.getStatus() == ProcessingStatus.OCRED_V2 && !ocrExists(entity)) {
+            log.warn("⚠️ Document {} marqué OCRED_V2 mais fichier OCR absent", entity.getDocumentId());
             return true;
         }
 
@@ -173,7 +173,7 @@ public class LawDocumentValidator {
     public boolean isOcred(LawDocumentEntity entity) {
         ProcessingStatus status = entity.getStatus();
 
-        boolean statusOk = status == ProcessingStatus.OCRED || status == ProcessingStatus.EXTRACTED || status == ProcessingStatus.CONSOLIDATED;
+        boolean statusOk = status == ProcessingStatus.OCRED_V2 || status == ProcessingStatus.EXTRACTED || status == ProcessingStatus.CONSOLIDATED;
 
         // Si le status indique OCR fait, vérifier que le fichier existe vraiment
         if (statusOk) {
@@ -191,7 +191,7 @@ public class LawDocumentValidator {
      */
     public boolean mustExtractArticles(LawDocumentEntity entity) {
         // Cas 1: Status indique qu'il faut extraire (après OCR)
-        if (entity.getStatus() == ProcessingStatus.OCRED) {
+        if (entity.getStatus() == ProcessingStatus.OCRED_V2) {
             return true;
         }
 

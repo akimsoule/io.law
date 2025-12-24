@@ -54,5 +54,12 @@
             <artifactId>spring-batch-test</artifactId>
             <scope>test</scope>
         </dependency>
+
+        <!-- LanguageTool French for OCR auto-corrections -->
+        <dependency>
+            <groupId>org.languagetool</groupId>
+            <artifactId>language-fr</artifactId>
+            <version>6.4</version>
+        </dependency>
     </dependencies>
 </project>

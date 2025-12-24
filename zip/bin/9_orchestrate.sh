@@ -10,7 +10,7 @@ LOG_FILE="$PROJECT_ROOT/logs/orchestrate.log"
 # Source configuration JVM optimisée
 source "$PROJECT_ROOT/properties/jvm.conf"
 
-TYPE="${1:-loi}"
+TYPE="${1:-decret}"
 SKIP_FETCH_DAILY="${2:-true}"
 
 mkdir -p "$PROJECT_ROOT/logs"
