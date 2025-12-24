@@ -23,7 +23,7 @@ class ErrorCorrectionTest {
         m.invoke(ec);
 
         assertThat(ec.getErrorFound()).isEqualTo("test-word");
-        assertThat(ec.getErrorCount()).isEqualTo(0);
+        assertThat(ec.getErrorCount()).isZero();
     }
 
     @Test
@@ -34,8 +34,7 @@ class ErrorCorrectionTest {
         a.setId(10L);
         b.setId(10L);
 
-        assertThat(a).isEqualTo(b);
-        assertThat(a.hashCode()).isEqualTo(b.hashCode());
+        assertThat(a).isEqualTo(b).hasSameHashCodeAs(b);
 
         // if id missing, equality should be false
         ErrorCorrection c = new ErrorCorrection();
