@@ -1,4 +1,9 @@
 package bj.gouv.sgg.entity;
 
-public enum AnotherProcess {
+public enum OtherProcessingStatus {
+
+    COUNT_UNKNOWN_WORD,
+
+    IMAGED
+
 }

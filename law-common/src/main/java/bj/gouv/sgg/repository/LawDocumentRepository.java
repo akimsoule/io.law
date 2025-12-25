@@ -65,6 +65,27 @@ public interface LawDocumentRepository extends JpaRepository<LawDocumentEntity, 
      * Utilisé par DownloadReader avec validator.mustDownload() pour filtrer.
      */
     List<LawDocumentEntity> findByType(String type);
+
+    /**
+     * Trouve tous les documents d'un type en excluant un statut (utile pour éviter NOT_FOUND).
+     */
+    List<LawDocumentEntity> findByTypeAndStatusNot(String type, ProcessingStatus status);
+
+    /**
+     * Trouve tous les documents d'un type, en excluant ceux avec status NOT_FOUND
+     * et en excluant ceux qui ont le statut OtherProcessingStatus donné (ex: IMAGED).
+     */
+    @Query("""
+        SELECT d FROM LawDocumentEntity d
+        WHERE d.type = :type
+        AND d.status <> bj.gouv.sgg.entity.ProcessingStatus.NOT_FOUND
+        AND :status NOT MEMBER OF d.otherProcessingStatuses
+        ORDER BY d.year DESC, d.number ASC
+        """)
+    List<LawDocumentEntity> findByTypeAndWithoutOtherProcessingStatus(
+        @Param("type") String type,
+        @Param("status") bj.gouv.sgg.entity.OtherProcessingStatus status
+    );
     
     /**
      * Trouve tous les documents d'un type et année donnés.

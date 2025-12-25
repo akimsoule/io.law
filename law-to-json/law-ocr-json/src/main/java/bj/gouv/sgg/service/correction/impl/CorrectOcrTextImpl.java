@@ -3,7 +3,7 @@ package bj.gouv.sgg.service.correction.impl;
 import bj.gouv.sgg.config.ArticleExtractorConfig;
 import bj.gouv.sgg.entity.ErrorCorrection;
 import bj.gouv.sgg.entity.LawDocumentEntity;
-import bj.gouv.sgg.entity.OCRProcessusStatus;
+import bj.gouv.sgg.entity.OtherProcessingStatus;
 import bj.gouv.sgg.repository.ErrorCorrectionRepository;
 import bj.gouv.sgg.service.LawDocumentService;
 import bj.gouv.sgg.service.correction.CorrectOcrText;
@@ -96,7 +96,7 @@ public class CorrectOcrTextImpl implements CorrectOcrText {
             updateErrorCorrectionRepository(lawDocumentEntity, unrecognizedCount);
 
             // Utiliser langtool pour mettre à jour les corrections les plus évidentes
-            autoCorrectWithLanguageTool();
+            // autoCorrectWithLanguageTool();
         } catch (IOException e) {
             log.error("❌ Failed to parse OCR file: {}", e.getMessage(), e);
             return null;
@@ -143,7 +143,7 @@ public class CorrectOcrTextImpl implements CorrectOcrText {
 
 
     private void updateErrorCorrectionRepository(LawDocumentEntity lawDocumentEntity, Map<String, Integer> unrecognizedCount) {
-        if (!OCRProcessusStatus.COUNT_UNKNOWN_WORD.equals(lawDocumentEntity.getOcrProcessusStatus())) {
+        if (!lawDocumentEntity.hasOtherProcessingStatus(OtherProcessingStatus.COUNT_UNKNOWN_WORD)) {
             // Update ErrorCorrectionRepository with unrecognized words
             for (Map.Entry<String, Integer> entry : unrecognizedCount.entrySet()) {
                 String word = entry.getKey();
@@ -156,9 +156,9 @@ public class CorrectOcrTextImpl implements CorrectOcrText {
                     errorCorrection.setErrorCount(errorCorrection.getErrorCount() + 1);
                     errorCorrectionRepository.save(errorCorrection);
                     log.info("✅ Added unrecognized word to database: '{}' (count: {})", word, count);
-                    lawDocumentEntity.setOcrProcessusStatus(OCRProcessusStatus.COUNT_UNKNOWN_WORD);
+                    lawDocumentEntity.addOtherProcessingStatus(OtherProcessingStatus.COUNT_UNKNOWN_WORD);
                     lawDocumentService.save(lawDocumentEntity);
-                    log.info("Updated lawDocumentEntity status for OCRProcessusStatus to COUNT_UNKNOWN_WORD");
+                    log.info("Updated lawDocumentEntity otherProcessingStatuses with COUNT_UNKNOWN_WORD");
                 } else {
                     bj.gouv.sgg.entity.ErrorCorrection ec = new bj.gouv.sgg.entity.ErrorCorrection();
                     ec.setErrorFound(word);

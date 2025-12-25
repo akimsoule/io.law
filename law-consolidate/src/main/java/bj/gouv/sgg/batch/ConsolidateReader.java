@@ -3,7 +3,6 @@ package bj.gouv.sgg.batch;
 import bj.gouv.sgg.entity.LawDocumentEntity;
 import bj.gouv.sgg.entity.ProcessingStatus;
 import bj.gouv.sgg.repository.LawDocumentRepository;
-import bj.gouv.sgg.service.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -94,7 +93,7 @@ public class ConsolidateReader implements ItemReader<LawDocumentEntity> {
                 .limit(maxItems)
                 .toList();
 
-        log.info("✅ {} documents à consolider après filtrage", filteredDocuments.size());
+        log.info("✅ {} documents à consolider après filtrage (maxItems={})", filteredDocuments.size(), maxItems);
 
         documentQueue = new ConcurrentLinkedQueue<>(filteredDocuments);
         initialized = true;

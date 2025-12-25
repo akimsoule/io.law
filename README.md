@@ -116,6 +116,12 @@ Extraction du contenu structuré des PDFs.
 
 **Architecture** : 4 sous-modules avec stratégie de fallback
 
+#### law-pdf-img
+Conversion des PDFs en images (une image par page). Chaque `documentId` reçoit son répertoire d'images sous `data/images/<documentId>/`.
+- **Job** : `pdfToImagesJob`
+- **Technologie** : PDFBox
+- **Output** : Images PNG (`page-0001.png` ...)
+
 #### law-pdfToOcr
 Extraction OCR des PDFs scannés.
 - **Job** : `ocrJob`

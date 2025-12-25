@@ -1,6 +1,6 @@
-package bj.gouv.sgg.orchestrator;
+package bj.gouv.sgg.service;
 
-import bj.gouv.sgg.orchestrator.main.JobOrchestrator;
+import bj.gouv.sgg.job.JobOrchestrator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -40,9 +40,11 @@ public class OrchestrationService {
             cycle++;
             LocalDate today = LocalDate.now();
             
-            log.info("\n╔═══════════════════════════════════════════════════════╗");
-            log.info("║  CYCLE #{} - {}                            ║", cycle, today);
+            log.info("\n");
+            log.info("╔═══════════════════════════════════════════════════════╗");
+            log.info("║  CYCLE #{} - {}                                       ║", cycle, today);
             log.info("╚═══════════════════════════════════════════════════════╝");
+            log.info("\n");
             
             Map<String, String> params = new HashMap<>();
             params.put("type", type);
