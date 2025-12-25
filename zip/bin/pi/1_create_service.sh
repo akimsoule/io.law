@@ -20,22 +20,25 @@ while [[ $# -gt 0 ]]; do
 done
 
 UNIT_PATH="/etc/systemd/system/${SERVICE_NAME}"
+SYSLOG_ID="${SERVICE_NAME%%.*}"
 
-sudo bash -lc "cat > ${UNIT_PATH} <<'UNIT'
+# Write the unit file with variables expanded (no single-quoted heredoc)
+sudo bash -lc "cat > ${UNIT_PATH} <<UNIT
 [Unit]
-Description=LAW Orchestrator - waits for 9_orchestrate.sh
-After=network.target
+Description=LAW Orchestrator - orchestration runner
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 User=${USER}
 WorkingDirectory=${DEPLOY_DIR}
-ExecStart=/bin/bash ${DEPLOY_DIR}/bin/9_orchestrate.sh
+ExecStart=/bin/bash -lc '${DEPLOY_DIR}/bin/orchestrate.sh'
 Restart=on-failure
 RestartSec=10
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=law-orchestrator
+SyslogIdentifier=${SYSLOG_ID}
 
 [Install]
 WantedBy=multi-user.target

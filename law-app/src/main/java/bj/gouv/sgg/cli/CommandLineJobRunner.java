@@ -1,14 +1,11 @@
 package bj.gouv.sgg.orchestrator;
 
+import bj.gouv.sgg.orchestrator.main.JobOrchestrator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
-import org.springframework.boot.SpringApplication;
 import org.springframework.stereotype.Component;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.annotation.Profile;
-
 import java.util.HashMap;
 import java.util.Map;
 
@@ -18,7 +15,7 @@ import java.util.Map;
  * <p>Exemples d'utilisation :
  * <pre>
  * # Job individuel
- * java -jar law-app.jar --job=fetchCurrentJob --type=loi --maxDocuments=5
+ * java -jar law-app.jar --job=fetchCurrentJob --type=loi --maxItems=5
  * java -jar law-app.jar --job=downloadJob --type=decret --documentId=decret-2023-100
  * java -jar law-app.jar --job=ocrJob --type=loi
  * java -jar law-app.jar --job=extractJob --type=loi
@@ -39,7 +36,7 @@ public class CommandLineJobRunner implements ApplicationRunner {
 
     private static final String SEPARATOR_LINE = "=================================================";
     private static final String DOCUMENT_ID = "documentId";
-    private static final String MAX_DOCUMENTS = "maxDocuments";
+    private static final String MAX_ITEMS = "maxItems";
 
     private final JobOrchestrator orchestrator;
     private final OrchestrationService orchestrationService;
@@ -116,9 +113,9 @@ public class CommandLineJobRunner implements ApplicationRunner {
                 parameters.put(DOCUMENT_ID, args.getOptionValues(DOCUMENT_ID).get(0));
             }
             
-            // MaxDocuments (optionnel)
-            if (args.containsOption(MAX_DOCUMENTS)) {
-                parameters.put(MAX_DOCUMENTS, args.getOptionValues(MAX_DOCUMENTS).get(0));
+            // MaxItems (optionnel)
+            if (args.containsOption(MAX_ITEMS)) {
+                parameters.put(MAX_ITEMS, args.getOptionValues(MAX_ITEMS).get(0));
             }
             
             log.info("Mode JOB INDIVIDUEL : {}", jobName);
@@ -156,22 +153,24 @@ public class CommandLineJobRunner implements ApplicationRunner {
         log.info("  - downloadJob        : Téléchargement PDFs");
         log.info("  - ocrJob             : Extraction OCR des PDFs (law-pdf-ocr)");
         log.info("  - ocrJsonJob         : Extraction JSON depuis OCR (law-ocr-json)");
+        log.info("  - pdfToImagesJob     : Conversion PDF → Images (law-pdf-img)");
         log.info("  - jsonConversionJob  : Pipeline complet PDF → OCR → JSON");
         log.info("  - consolidateJob     : Consolidation finale");
         log.info("\nOptions :");
         log.info("  --type=<loi|decret>        : Type de document (défaut: loi)");
         log.info("  --documentId=<id>          : ID spécifique (optionnel)");
-        log.info("  --" + MAX_DOCUMENTS + "=<n>         : Limite de documents (optionnel)");
+        log.info("  --" + MAX_ITEMS + "=<n>         : Limite de documents (optionnel)");
         log.info("\nMODE PIPELINE COMPLET :");
         log.info("  java -jar law-app.jar --pipeline=fullPipeline --type=<type> [--documentId=<id>]");
         log.info("\nPipeline fullPipeline exécute dans l'ordre :");
         log.info("  1. fetchCurrentJob - Année courante");
         log.info("  2. fetchPreviousJob - Années précédentes");
         log.info("  3. downloadJob - Téléchargement PDFs");
-        log.info("  4. jsonConversionJob - Extraction OCR + JSON");
-        log.info("  5. consolidateJob - Consolidation finale");
+        log.info("  4. pdfToImagesJob - Conversion PDF → Images");
+        log.info("  5. jsonConversionJob - Extraction OCR + JSON");
+        log.info("  6. consolidateJob - Consolidation finale");
         log.info("\nExemples :");
-        log.info("  java -jar law-app.jar --job=fetchCurrentJob --type=loi --" + MAX_DOCUMENTS + "=5");
+        log.info("  java -jar law-app.jar --job=fetchCurrentJob --type=loi --" + MAX_ITEMS + "=5");
         log.info("  java -jar law-app.jar --job=fetchPreviousJob --type=decret --documentId=decret-2023-100");
         log.info("  java -jar law-app.jar --job=downloadJob --type=decret --documentId=decret-2023-100");
         log.info("  java -jar law-app.jar --job=ocrJob --type=loi");

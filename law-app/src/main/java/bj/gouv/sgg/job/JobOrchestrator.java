@@ -1,4 +1,4 @@
-package bj.gouv.sgg.orchestrator;
+package bj.gouv.sgg.orchestrator.main;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,7 +25,7 @@ import java.util.Map;
  * 
  * <p>Jobs supportés :
  * <ul>
- *   <li>fetchCurrentJob : --type=loi|decret [--{@link #MAX_DOCUMENTS maxDocuments}=N] [--documentId=ID]</li>
+ *   <li>fetchCurrentJob : --type=loi|decret [--{@link #MAX_ITEMS maxItems}=N] [--documentId=ID]</li>
  *   <li>fetchPreviousJob : --type=loi|decret [--documentId=ID]</li>
  *   <li>downloadJob : --type=loi|decret [--documentId=ID]</li>
  *   <li>ocrJob : --type=loi|decret [--documentId=ID]</li>
@@ -46,14 +46,14 @@ public class JobOrchestrator {
     private final ApplicationContext context;
 
     private static final String DOCUMENT_ID = "documentId";
-    private static final String MAX_DOCUMENTS = "maxDocuments";
+    private static final String MAX_ITEMS = "maxItems";
     private static final String PIPELINE_BORDER = "========================================";
 
     /**
      * Lance un job Spring Batch avec les paramètres fournis.
      * 
      * @param jobName Nom du job à exécuter
-     * @param parameters Map des paramètres (type, documentId, maxDocuments, etc.)
+     * @param parameters Map des paramètres (type, documentId, maxItems, etc.)
      * @throws Exception si le job n'existe pas ou échoue
      */
     public void runJob(String jobName, Map<String, String> parameters) throws Exception {
@@ -75,8 +75,8 @@ public class JobOrchestrator {
             builder.addString(DOCUMENT_ID, parameters.get(DOCUMENT_ID));
         }
         
-        if (parameters.containsKey(MAX_DOCUMENTS)) {
-            builder.addString(MAX_DOCUMENTS, parameters.get(MAX_DOCUMENTS));
+        if (parameters.containsKey(MAX_ITEMS)) {
+            builder.addString(MAX_ITEMS, parameters.get(MAX_ITEMS));
         }
         
         // Timestamp pour unicité (évite les rejets Spring Batch)
@@ -91,7 +91,7 @@ public class JobOrchestrator {
         // Vérification du statut
         if (execution.getStatus().isUnsuccessful()) {
             log.error("Job '{}' terminé avec statut : {}", jobName, execution.getStatus());
-            throw new RuntimeException("Job failed with status: " + execution.getStatus());
+            throw new IllegalStateException("Job failed with status: " + execution.getStatus());
         }
         
         log.info("Job '{}' terminé avec succès : {}", jobName, execution.getStatus());
@@ -115,19 +115,31 @@ public class JobOrchestrator {
         );
         
         // 1. Fetch Current Year
-        log.info("\n[1/6] FETCH CURRENT - Récupération métadonnées année courante");
+        log.info("\n[1/8] FETCH CURRENT - Récupération métadonnées année courante");
         runJob("fetchCurrentJob", params);
         
         // 2. Fetch Previous Years
-        log.info("\n[2/6] FETCH PREVIOUS - Récupération métadonnées années précédentes");
+        log.info("\n[2/8] FETCH PREVIOUS - Récupération métadonnées années précédentes");
         runJob("fetchPreviousJob", params);
         
         // 3. Download
-        log.info("\n[3/6] DOWNLOAD - Téléchargement PDFs");
+        log.info("\n[3/8] DOWNLOAD - Téléchargement PDFs");
         runJob("downloadJob", params);
         
-        // 4. JSON Conversion (PDF → OCR → JSON)
-        log.info("\n[4/6] JSON CONVERSION - Extraction complète");
+        // 4. OCR (PDF -> texte)
+        log.info("\n[4/8] OCR - Extraction texte (PDF -> OCR)");
+        runJob("ocrJob", params);
+        
+        // 5. OCR JSON (structuration)
+        log.info("\n[5/8] OCR JSON - Structuration JSON");
+        runJob("ocrJsonJob", params);
+        
+        // 6. PDF → Images (conversion)
+        log.info("\n[6/8] PDF→IMAGES - Conversion PDF → Images");
+        runJob("pdfToImagesJob", params);
+        
+        // 7. JSON Conversion (PDF → OCR → JSON)
+        log.info("\n[7/8] JSON CONVERSION - Extraction complète");
         runJob("jsonConversionJob", params);
         
         // 5. Consolidate
