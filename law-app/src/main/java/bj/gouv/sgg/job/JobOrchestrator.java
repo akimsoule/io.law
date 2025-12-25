@@ -1,4 +1,4 @@
-package bj.gouv.sgg.orchestrator.main;
+package bj.gouv.sgg.job;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

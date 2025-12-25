@@ -32,7 +32,7 @@ public class AppConfig {
     // Batch
     private int chunkSize = 10;
     private int maxThreads = 10;
-    private int maxDocumentsToExtract = 50;
+    private int maxItemsToExtract = 50;
     private int maxItemsToFetchPrevious = 100;
     private int jobTimeoutMinutes = 55;
     
@@ -48,6 +48,7 @@ public class AppConfig {
     // Chemins calculés
     private transient Path storagePath;
     private transient Path pdfDir;
+    private transient Path imagesDir;
     private transient Path ocrDir;
     private transient Path jsonDir;
     private transient Path unrecognizedWordsFile;
@@ -58,10 +59,11 @@ public class AppConfig {
         // Initialiser les chemins
         this.storagePath = Paths.get(storageBasePath);
         this.pdfDir = storagePath.resolve("pdfs");
+        this.imagesDir = storagePath.resolve("images");
         this.ocrDir = storagePath.resolve("ocr");
         this.jsonDir = storagePath.resolve("articles");
         this.unrecognizedWordsFile = storagePath.resolve("word_non_recognize.txt");
-        log.info("📋 Configuration loaded: baseUrl={}, storagePath={}", baseUrl, storagePath);
+        log.info("📋 Configuration loaded: baseUrl={}, storagePath={}, imagesDir={}", baseUrl, storagePath, imagesDir);
     }
 
     /**

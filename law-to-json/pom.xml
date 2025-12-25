@@ -18,6 +18,7 @@
 
     <modules>
         <module>law-pdf-ocr</module>
+        <module>law-pdf-img</module>
         <module>law-ocr-json</module>
         <module>law-json-config</module>
         <module>law-ai</module>

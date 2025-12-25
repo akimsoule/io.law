@@ -7,6 +7,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Set;
+import java.util.HashSet;
+
+import jakarta.persistence.CollectionTable;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Column;
+import jakarta.persistence.FetchType;
 
 /**
  * Entité JPA unique pour tous les documents de loi.
@@ -59,9 +69,26 @@ public class LawDocumentEntity {
     @Column(name = "error_message", columnDefinition = "TEXT")
     private String errorMessage;
 
+    /**
+     * Liste de statuts supplémentaires (ex: COUNT_UNKNOWN_WORD, IMAGED...).
+     * Persistée en table `law_document_other_statuses` (Enum as String).
+     */
+    @ElementCollection(targetClass = OtherProcessingStatus.class, fetch = FetchType.EAGER)
+    @CollectionTable(name = "law_document_other_statuses", joinColumns = @JoinColumn(name = "law_document_id"))
+    @Column(name = "other_status", length = 100)
     @Enumerated(EnumType.STRING)
-    @Column(length = 100)
-    private OCRProcessusStatus ocrProcessusStatus;
+    @Builder.Default
+    private Set<OtherProcessingStatus> otherProcessingStatuses = new HashSet<>();
+
+    public boolean hasOtherProcessingStatus(OtherProcessingStatus status) {
+        return otherProcessingStatuses != null && otherProcessingStatuses.contains(status);
+    }
+
+    public void addOtherProcessingStatus(OtherProcessingStatus status) {
+        if (status == null) return;
+        if (otherProcessingStatuses == null) otherProcessingStatuses = new HashSet<>();
+        otherProcessingStatuses.add(status);
+    }
 
     // ========== Timestamps ==========
     @Column(name = "created_at", nullable = false, updatable = false)

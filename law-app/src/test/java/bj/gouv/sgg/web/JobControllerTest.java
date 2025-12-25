@@ -1,6 +1,6 @@
 package bj.gouv.sgg.web;
 
-import bj.gouv.sgg.orchestrator.JobOrchestrator;
+import bj.gouv.sgg.job.JobOrchestrator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mock;

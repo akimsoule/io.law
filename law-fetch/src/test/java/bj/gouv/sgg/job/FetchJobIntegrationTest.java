@@ -164,6 +164,7 @@ class FetchJobIntegrationTest {
                 .addLong("maxItems", (long) maxItems)
                 .addLong("timestamp", System.currentTimeMillis())
                 .toJobParameters();
+
         
         // When
         JobExecution execution = jobLauncher.run(fetchPreviousJob, jobParameters);

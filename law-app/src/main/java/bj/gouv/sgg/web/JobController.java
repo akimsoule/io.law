@@ -1,6 +1,6 @@
 package bj.gouv.sgg.web;
 
-import bj.gouv.sgg.orchestrator.JobOrchestrator;
+import bj.gouv.sgg.job.JobOrchestrator;
 import jakarta.validation.constraints.Pattern;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,7 +19,7 @@ import java.util.Map;
  * REST controller pour déclencher les jobs Spring Batch via HTTP.
  *
  * Endpoints:
- * - POST /api/jobs/{jobName} avec body { type, documentId, maxDocuments }
+ * - POST /api/jobs/{jobName} avec body { type, documentId, maxItems }
  * - POST /api/pipeline/full avec body { type, documentId }
  */
 @Slf4j
@@ -38,7 +38,7 @@ public class JobController {
     public record JobRequest(
             @Pattern(regexp = "^(loi|decret)$", message = "type doit être 'loi' ou 'decret'") String type,
             String documentId,
-            String maxDocuments
+            String maxItems
     ) {}
 
     @PostMapping("/jobs/fetchCurrent")
@@ -71,6 +71,11 @@ public class JobController {
         return runJob("jsonConversionJob", request);
     }
 
+    @PostMapping("/jobs/pdfToImages")
+    public ResponseEntity<Map<String, String>> pdfToImages(@RequestBody JobRequest request) {
+        return runJob("pdfToImagesJob", request);
+    }
+
     @PostMapping("/jobs/consolidate")
     public ResponseEntity<Map<String, String>> consolidate(@RequestBody JobRequest request) {
         return runJob("consolidateJob", request);
@@ -94,7 +99,7 @@ public class JobController {
             Map<String, String> params = new HashMap<>();
             params.put("type", request.type() == null ? "loi" : request.type());
             if (request.documentId() != null) params.put("documentId", request.documentId());
-            if (request.maxDocuments() != null) params.put("maxDocuments", request.maxDocuments());
+            if (request.maxItems() != null) params.put("maxItems", request.maxItems());
 
             orchestrator.runJob(jobName, params);
             return ResponseEntity.ok(Map.of(STATUS, "OK", "job", jobName));

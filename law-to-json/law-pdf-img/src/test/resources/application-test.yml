@@ -1,12 +1,11 @@
 spring:
+  application:
+    name: law-pdf-img-test
   datasource:
-    # Use a unique in-memory DB per test context to avoid cross-test DB state
-    generate-unique-name: true
-    url: jdbc:h2:mem:testdb;MODE=MySQL
     driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:testdb;MODE=MySQL
     username: sa
     password:
-  
   jpa:
     hibernate:
       ddl-auto: create-drop
@@ -15,12 +14,13 @@ spring:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.H2Dialect
-
-law:
-  storage:
-    base-path: ${java.io.tmpdir}/law-test
+  batch:
+    jdbc:
+      initialize-schema: always
+    job:
+      enabled: false
 
 logging:
   level:
-    root: INFO
     bj.gouv.sgg: DEBUG
+    org.springframework.batch: INFO

@@ -41,6 +41,13 @@
             <version>${project.version}</version>
         </dependency>
 
+        <!-- PDF → Images job (convertit des PDFs en images) -->
+        <dependency>
+            <groupId>bj.gouv.sgg</groupId>
+            <artifactId>law-pdf-img</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Spring Boot Starter -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

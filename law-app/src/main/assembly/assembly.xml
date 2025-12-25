@@ -52,6 +52,25 @@
             </includes>
         </fileSet>
 
+        <!-- Orchestrator scripts (new) -->
+        <fileSet>
+            <directory>${project.basedir}/../zip/bin/orchestrator</directory>
+            <outputDirectory>bin/orchestrator</outputDirectory>
+            <includes>
+                <include>*.sh</include>
+            </includes>
+            <fileMode>0755</fileMode>
+        </fileSet>
+
+        <!-- Top-level README (include repository README) -->
+        <fileSet>
+            <directory>${project.basedir}/..</directory>
+            <outputDirectory>.</outputDirectory>
+            <includes>
+                <include>README.md</include>
+            </includes>
+            <fileMode>0644</fileMode>
+        </fileSet>
 
         <!-- Data (structure vide) -->
         <fileSet>
