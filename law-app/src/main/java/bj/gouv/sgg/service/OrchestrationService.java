@@ -1,5 +1,6 @@
 package bj.gouv.sgg.orchestrator;
 
+import bj.gouv.sgg.orchestrator.main.JobOrchestrator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -66,19 +67,27 @@ public class OrchestrationService {
                 orchestrator.runJob("fetchPreviousJob", params);
                 
                 // 3. downloadJob
-                log.info("\n[3/6] ⬇️  DOWNLOAD - Téléchargement PDFs");
+                log.info("\n[3/8] ⬇️  DOWNLOAD - Téléchargement PDFs");
                 orchestrator.runJob("downloadJob", params);
                 
                 // 4. ocrJob
-                log.info("\n[4/6] 🔍 OCR - Extraction texte");
+                log.info("\n[4/8] 🔍 OCR - Extraction texte");
                 orchestrator.runJob("ocrJob", params);
                 
                 // 5. ocrJsonJob
-                log.info("\n[5/6] 📄 OCR JSON - Structuration JSON");
+                log.info("\n[5/8] 📄 OCR JSON - Structuration JSON");
                 orchestrator.runJob("ocrJsonJob", params);
                 
-                // 6. consolidateJob
-                log.info("\n[6/6] ✅ CONSOLIDATE - Consolidation finale");
+                // 6. pdfToImagesJob
+                log.info("\n[6/8] 🖼️  PDF→IMAGES - Conversion PDF → Images");
+                orchestrator.runJob("pdfToImagesJob", params);
+                
+                // 7. jsonConversionJob
+                log.info("\n[7/8] 🔧 JSON CONVERSION - Extraction complète");
+                orchestrator.runJob("jsonConversionJob", params);
+                
+                // 8. consolidateJob
+                log.info("\n[8/8] ✅ CONSOLIDATE - Consolidation finale");
                 orchestrator.runJob("consolidateJob", params);
                 
                 log.info("\n✅ Cycle #{} terminé avec succès", cycle);
@@ -87,10 +96,21 @@ public class OrchestrationService {
                 log.info("⏸️  Pause 60s avant prochain cycle...");
                 Thread.sleep(60_000);
                 
+            } catch (InterruptedException ie) {
+                // Respect the interrupt: re-interrupt and exit the loop/service
+                Thread.currentThread().interrupt();
+                log.info("⏹️  Orchestration interrompue, sortie du service.");
+                return;
             } catch (Exception e) {
                 log.error("❌ Erreur dans cycle #{}: {}", cycle, e.getMessage(), e);
                 log.info("⏸️  Pause 120s avant retry...");
-                Thread.sleep(120_000);
+                try {
+                    Thread.sleep(120_000);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    log.info("⏹️  Orchestration interrompue pendant le retry sleep, sortie du service.");
+                    return;
+                }
             }
         }
     }
