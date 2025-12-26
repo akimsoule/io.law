@@ -13,7 +13,7 @@ Application Spring Batch modulaire pour extraire, traiter et consolider les lois
 - **Maven Multi-Modules** (7 modules)
 - **PDFBox** pour extraction PDF
 - **Tesseract OCR** (via JavaCPP) pour OCR des PDFs scannés
-- **MySQL 8.4** (Docker) pour persistance
+- **MySQL 8.4** pour persistance
 - **Ollama** (optionnel) pour parsing IA en local
 - **Groq API** (optionnel) pour parsing IA cloud (fallback)
 

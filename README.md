@@ -510,7 +510,6 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de 
 - [ ] Recherche sémantique avec embeddings
 - [ ] Support des décrets présidentiels
 - [ ] Intégration CI/CD
-- [ ] Déploiement Docker/Kubernetes
 
 ---
 
