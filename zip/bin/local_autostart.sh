@@ -1,60 +1,33 @@
 #!/usr/bin/env bash
 set -euo pipefail
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-cd "$PROJECT_ROOT"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+cd "$ROOT"
 
-# Start mysql service locally
-echo "Starting mysql (local)..."
-# try to use brew service if available, otherwise assume mysql is running
-if command -v brew >/dev/null 2>&1; then
-  echo "Starting mysql via brew..."
-  brew services start mysql || true
-fi
+# Utilise flock pour lancer des tâches en 'fire and forget' avec verrouillage
+# Usage simple: ./zip/bin/local_autostart.sh (démarre fetch-current puis les autres)
 
-# Wait for mysql to be reachable
-echo "Waiting for mysql to be reachable (timeout 120s)..."
-for i in {1..60}; do
-  if mysqladmin ping -uroot >/dev/null 2>&1; then
-    echo "mysql is reachable"
-    break
-  fi
-  echo "mysql not reachable yet (attempt $i)..."
-  sleep 2
-done
+BASE_DIR="$ROOT/zip/bin/orchestrator"
+mkdir -p "$ROOT/zip/logs"
 
-if ! mysqladmin ping -uroot >/dev/null 2>&1; then
-  echo "ERROR: mysql did not become reachable in time" >&2
-  exit 1
-fi
+lancer_tache() {
+  local script_path="$1"
+  local lock_name="$2"
+  # Exécute la commande via flock en arrière-plan; si verrou pris -n, flock sort discrètement
+  flock -n "/tmp/${lock_name}.lock" -c "bash '$script_path' loi" &
+}
 
-# Start only fetch-current (single instance) to let Hibernate perform any DDL safely
-echo "Starting fetch-current (local)..."
-# start in background using the orchestrator script
-nohup ./zip/bin/orchestrator/1_fetchCurrentOrchestrator.sh loi >/dev/null 2>&1 &
+# Démarrage ordonné : fetch-current d'abord
+lancer_tache "$BASE_DIR/1_fetchCurrentOrchestrator.sh" "lock_fetch_current"
+# petit délai pour laisser le fetch-current démarrer
+sleep 2
 
-# Wait until fetch-current logs include a DB init success marker
-echo "Waiting for fetch-current to complete DB initialization (timeout 10min)..."
-for i in {1..300}; do
-  if grep -q "LawDocumentService initialized" zip/logs/fetchcurrent.log 2>/dev/null; then
-    echo "fetch-current initialization marker found"
-    break
-  fi
-  echo "waiting for fetch-current init (attempt $i)..."
-  sleep 2
-done
+# Lancer les autres en 'fire and forget'
+lancer_tache "$BASE_DIR/2_fetchPreviousOrchestrator.sh" "lock_fetch_previous"
+lancer_tache "$BASE_DIR/3_downloadOrchestrator.sh" "lock_download"
+lancer_tache "$BASE_DIR/4_ocrOrchestrator.sh" "lock_ocr"
+lancer_tache "$BASE_DIR/5_ocrJsonOrchestrator.sh" "lock_ocr_json"
+lancer_tache "$BASE_DIR/6_jsonConversionOrchestrator.sh" "lock_json_conversion"
+lancer_tache "$BASE_DIR/7_consolidateOrchestrator.sh" "lock_consolidate"
 
-if ! grep -q "LawDocumentService initialized" zip/logs/fetchcurrent.log 2>/dev/null; then
-  echo "WARNING: fetch-current did not show expected init marker; review logs" >&2
-fi
-
-# Start remaining orchestrators
-echo "Starting remaining orchestrators..."
-nohup ./zip/bin/orchestrator/2_fetchPreviousOrchestrator.sh loi >/dev/null 2>&1 &
-nohup ./zip/bin/orchestrator/3_downloadOrchestrator.sh loi >/dev/null 2>&1 &
-nohup ./zip/bin/orchestrator/4_ocrOrchestrator.sh loi >/dev/null 2>&1 &
-nohup ./zip/bin/orchestrator/5_ocrJsonOrchestrator.sh loi >/dev/null 2>&1 &
-nohup ./zip/bin/orchestrator/6_jsonConversionOrchestrator.sh loi >/dev/null 2>&1 &
-nohup ./zip/bin/orchestrator/7_consolidateOrchestrator.sh loi >/dev/null 2>&1 &
-
-echo "All orchestrators started (or already running). Use 'ps' or check 'zip/logs/' to inspect."
+# Le script se termine immédiatement; les tâches continuent en arrière-plan
+exit 0
