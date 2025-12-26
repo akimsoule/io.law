@@ -15,10 +15,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 
-public class PdfToImagesConverterTest {
+class PdfToImagesConverterTest {
 
     @Test
-    public void givenFixturePdfWhenConvertThenCreatesOneImage() throws Exception {
+    void givenFixturePdfWhenConvertThenCreatesOneImage() throws Exception {
         // Given: a fixture PDF from test resources
         ClassPathResource resource = new ClassPathResource("pdf/loi-1961-20.pdf");
         Path tmpPdf = Files.createTempFile("test", ".pdf");
@@ -38,7 +38,7 @@ public class PdfToImagesConverterTest {
     }
 
     @Test
-    public void givenPdfWithAmpliationsWhenConvertThenStopsAfterDetection() throws Exception {
+    void givenPdfWithAmpliationsWhenConvertThenStopsAfterDetection() throws Exception {
         // Given: a PDF with AMPLIATIONS on page 2
         Path tmpPdf = Files.createTempFile("test-ampli", ".pdf");
         try (PDDocument doc = new PDDocument()) {
@@ -51,7 +51,8 @@ public class PdfToImagesConverterTest {
 
             try (PDPageContentStream cs = new PDPageContentStream(doc, p2)) {
                 cs.beginText();
-                var font = org.apache.pdfbox.pdmodel.font.PDType0Font.load(doc, PDType1Font.class.getResourceAsStream("/org/apache/pdfbox/resources/ttf/LiberationSans-Regular.ttf"));
+                var font = org.apache.pdfbox.pdmodel.font.PDType0Font.load(doc, PDType1Font.class
+                        .getResourceAsStream("/org/apache/pdfbox/resources/ttf/LiberationSans-Regular.ttf"));
                 cs.setFont(font, 12);
                 cs.newLineAtOffset(50, 700);
                 cs.showText("Page contenant AMPLIATIONS - stop");
