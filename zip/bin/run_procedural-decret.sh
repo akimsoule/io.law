@@ -3,8 +3,7 @@
 # Placed in zip/bin/pi to run the default pipeline once for decrees.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-PROJECT_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
-DATA="${}"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 JAR="$(ls -1 "$PROJECT_ROOT"/lib/jar/law-app-*.jar 2>/dev/null | tail -n1 || true)"
 CONFIG="$PROJECT_ROOT/properties/application-raspi.yml"
 LOG_FILE="$PROJECT_ROOT/logs/procedural-decret.log"
