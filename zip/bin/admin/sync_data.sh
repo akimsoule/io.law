@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration par défaut
-REMOTE="pi@192.168.0.52"
+REMOTE="pi@192.168.0.58"
 LOCAL="./data/"
 REMOTE_PATH="/home/pi/law-app/law-orchestrator-2.0.0-SNAPSHOT/data/"
 MODE="push"

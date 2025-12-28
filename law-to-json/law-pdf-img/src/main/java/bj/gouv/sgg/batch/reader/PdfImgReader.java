@@ -53,13 +53,15 @@ public class PdfImgReader implements ItemReader<LawDocumentEntity> {
     }
 
     private synchronized void initialize() {
-        if (documents != null) return;
+        if (documents != null)
+            return;
         log.info("🔍 PdfImgReader - Initialisation... type={}, documentId={}", type, documentId);
         this.documents = new ConcurrentLinkedQueue<>();
 
         if (documentId != null && !documentId.isEmpty() && !"ALL".equals(documentId)) {
             repository.findByDocumentId(documentId).ifPresent(doc -> {
-                if (shouldProcess(doc)) documents.add(doc);
+                if (shouldProcess(doc))
+                    documents.add(doc);
             });
             log.info("📖 PdfImgReader initialisé: {} document(s)", documents.size());
             return;
@@ -79,7 +81,8 @@ public class PdfImgReader implements ItemReader<LawDocumentEntity> {
         log.info("🔎 PdfImgReader found {} documents for type={} (total={}, excluded NOT_FOUND={}, IMAGED={})",
                 candidates.size(), type, totalFound, notFoundCount, imagedCount);
 
-        // Diagnostic: afficher les 10 premiers candidats et pourquoi ils seraient skip/accept
+        // Diagnostic: afficher les 10 premiers candidats et pourquoi ils seraient
+        // skip/accept
         int idx = 0;
         for (LawDocumentEntity d : candidates) {
             boolean pdfExists = d.getPdfPath() != null && Files.exists(Path.of(d.getPdfPath()));
@@ -107,7 +110,7 @@ public class PdfImgReader implements ItemReader<LawDocumentEntity> {
 
     private boolean shouldProcess(LawDocumentEntity doc) {
         // Doit être téléchargé (PDF présent) et images absentes
-        if (!validator.isDownloaded(doc) && (doc.getPdfPath() == null || !Files.exists(Path.of(doc.getPdfPath())))) {
+        if (validator.isNotDownloaded(doc) && (doc.getPdfPath() == null || !Files.exists(Path.of(doc.getPdfPath())))) {
             log.debug("⏭️ Skip {} - not downloaded (no pdf on storage or pdfPath)", doc.getDocumentId());
             return false;
         }

@@ -1,7 +1,10 @@
 package bj.gouv.sgg.batch.reader;
 
 import bj.gouv.sgg.entity.FetchCursorEntity;
+import bj.gouv.sgg.entity.LawDocumentEntity;
 import bj.gouv.sgg.service.FetchCursorService;
+import bj.gouv.sgg.service.LawDocumentValidator;
+import bj.gouv.sgg.service.Utils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -25,20 +28,22 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 @StepScope
 @RequiredArgsConstructor
 public class FetchPreviousReader implements ItemReader<String> {
-    
-    private final FetchCursorService cursorService;
-    
+
+
     @Value("#{jobParameters['type']}")
     private String type;
-    
-    @Value("#{jobParameters['maxItems'] ?: 100}")
+
+    @Value("#{jobParameters['maxItems'] ?: 1000}")
     private int maxItems;
-    
+
     @Value("#{jobParameters['documentId']}")
     private String documentId;
-    
+
     private Queue<String> documentIds;
-    
+    private final FetchCursorService cursorService;
+    private final LawDocumentValidator lawDocumentValidator;
+    private final Utils utils;
+
     @Override
     public synchronized String read() {
         if (documentIds == null) {
@@ -46,7 +51,7 @@ public class FetchPreviousReader implements ItemReader<String> {
         }
         return documentIds.poll();
     }
-    
+
     /**
      * Initialise le reader avec le cursor et génère les document IDs.
      * Si documentId est fourni, traite uniquement ce document.
@@ -57,21 +62,22 @@ public class FetchPreviousReader implements ItemReader<String> {
         if (documentIds != null) {
             return;
         }
-        
-        // Si un documentId spécifique est fourni (et pas "ALL"), traiter uniquement celui-ci
+
+        // Si un documentId spécifique est fourni (et pas "ALL"), traiter uniquement
+        // celui-ci
         if (documentId != null && !documentId.isEmpty() && !"ALL".equals(documentId)) {
             this.documentIds = new ConcurrentLinkedQueue<>();
             documentIds.add(documentId);
             log.info("📖 FetchPreviousReader initialisé pour document spécifique: {}", documentId);
             return;
         }
-        
+
         // Récupérer le cursor
         Optional<FetchCursorEntity> optionalCursor = cursorService.getCursor(type, "fetch-previous");
-        
+
         int startYear;
         int startNumber;
-        
+
         if (optionalCursor.isPresent()) {
             FetchCursorEntity cursor = optionalCursor.get();
             startYear = cursor.getCurrentYear();
@@ -83,16 +89,16 @@ public class FetchPreviousReader implements ItemReader<String> {
             startNumber = 1;
             log.info("📖 Nouveau scan: type={}, year={}, number={}", type, startYear, startNumber);
         }
-        
+
         // Générer les document IDs à partir du cursor
         Set<String> ids = generateDocumentIds(type, startYear, startNumber, maxItems);
-        
+
         this.documentIds = new ConcurrentLinkedQueue<>(ids);
-        
-        log.info("📖 FetchPreviousReader initialisé: {} documents à vérifier (maxItems={})", 
-                 documentIds.size(), maxItems);
+
+        log.info("📖 FetchPreviousReader initialisé: {} documents à vérifier (maxItems={})",
+                documentIds.size(), maxItems);
     }
-    
+
     /**
      * Génère les document IDs à partir d'une position de départ.
      */
@@ -101,27 +107,29 @@ public class FetchPreviousReader implements ItemReader<String> {
         int currentYear = startYear;
         int currentNumber = startNumber;
         int count = 0;
-        
+
         while (count < maxItems && currentYear >= 1960) {
-            String documentId = String.format("%s-%d-%d", type, currentYear, currentNumber);
-            ids.add(documentId);
-            
-            // Ajouter les variantes avec padding pour num < 10
-            if (currentNumber < 10) {
-                ids.add(String.format("%s-%d-0%d", type, currentYear, currentNumber));
-                ids.add(String.format("%s-%d-00%d", type, currentYear, currentNumber));
+            Set<String> newIds = utils.getIds(type, currentYear, currentNumber);
+            boolean isNotFetched = newIds.stream().map(id -> LawDocumentEntity.createFromDocumentId(id, type))
+                    .anyMatch(lawDocumentEntity -> !lawDocumentValidator.isFetched(lawDocumentEntity));
+
+            if (isNotFetched) {
+                ids.addAll(newIds);
+            } else {
+                log.info("Déjà fetched {}", newIds);
             }
-            
-            count++;
-            currentNumber++;
-            
+
             // Si on atteint 2000, passer à l'année précédente
             if (currentNumber > 2000) {
                 currentYear--;
                 currentNumber = 1;
+                log.info("Le cursor passe à l'année {}", currentYear);
             }
+
+            count++;
+            currentNumber++;
         }
-        
+
         return ids;
     }
 }

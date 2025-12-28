@@ -1,7 +1,7 @@
 #!/bin/bash
 # deploy_server.sh
 
-REMOTE=${1:-pi@192.168.0.52}
+REMOTE=${1:-pi@192.168.0.58}
 ZIP=${2:-/Volumes/FOLDER/dev/projects/io.law/law-app/target/law-app-2.0.0-SNAPSHOT-distribution.zip}
 DEST=${3:-/home/pi/law-app}
 

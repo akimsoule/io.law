@@ -34,7 +34,7 @@ batch:
 
 # Configuration storage pour tests
 law:
-  storage-base-path: /tmp/law-test
+  storage-base-path: data
 
 # Logging minimal
 logging:

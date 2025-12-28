@@ -67,10 +67,11 @@ class PdfToImagesConverterTest {
         PdfToImagesConverter conv = new PdfToImagesConverter();
         int pages = conv.convertPdfToImages(tmpPdf, tmpOut, docId);
 
-        // Should stop at detection on page 2 -> only page 1 converted
-        assertEquals(1, pages);
+        // Should stop at detection on page 2 -> pages 1 and 2 converted, page 3 absent
+        assertEquals(2, pages);
         Path docDir = tmpOut.resolve(docId);
         assertTrue(Files.exists(docDir.resolve("page-0001.png")));
-        assertFalse(Files.exists(docDir.resolve("page-0002.png")));
+        assertTrue(Files.exists(docDir.resolve("page-0002.png")));
+        assertFalse(Files.exists(docDir.resolve("page-0003.png")));
     }
 }

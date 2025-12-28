@@ -26,7 +26,7 @@ batch:
 
 law:
   storage:
-    base-path: /tmp/law-test
+    base-path: data
   ocr:
     language: fra
     dpi: 300

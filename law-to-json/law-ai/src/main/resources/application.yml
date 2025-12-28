@@ -34,7 +34,7 @@ batch:
 
 # Configuration storage
 law:
-  storage-base-path: ./data
+  storage-base-path: data
 
 # Logging
 logging:

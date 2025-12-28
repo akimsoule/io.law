@@ -26,6 +26,6 @@ batch:
 
 law:
   storage:
-    base-path: /tmp/law-test
+    base-path: data
   extractor:
     max-documents: 1000

@@ -26,7 +26,7 @@ batch:
 
 # Storage test
 law:
-  storage-base-path: /tmp/law-test
+  storage-base-path: data
 
 # Logging
 logging:

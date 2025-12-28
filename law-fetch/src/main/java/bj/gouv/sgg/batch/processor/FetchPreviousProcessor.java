@@ -6,6 +6,7 @@ import bj.gouv.sgg.service.FetchCursorService;
 import bj.gouv.sgg.service.HttpCheckService;
 import bj.gouv.sgg.service.LawDocumentService;
 import bj.gouv.sgg.service.LawDocumentValidator;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.item.ItemProcessor;
@@ -28,8 +29,8 @@ public class FetchPreviousProcessor implements ItemProcessor<String, LawDocument
     private final FetchCursorService cursorService;
     
     @Override
-    public synchronized LawDocumentEntity process(String documentId) {
-        if (documentId == null || documentId.isEmpty()) {
+    public synchronized LawDocumentEntity process(@NonNull String documentId) {
+        if (documentId.isEmpty()) {
             log.warn("⚠️ documentId null ou vide, skipping");
             return null;
         }

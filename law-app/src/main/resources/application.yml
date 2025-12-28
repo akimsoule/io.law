@@ -34,7 +34,7 @@ spring:
 # Configuration modules
 law:
   base-url: https://sgg.gouv.bj/doc
-  storage-base-path: ./data
+  storage-base-path: data
 
 # Logging
 logging:

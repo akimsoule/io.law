@@ -38,8 +38,7 @@ spring:
 # Configuration application
 law:
   storage:
-    base-path: ${LAW_STORAGE_PATH:./data}
-  current-year: ${CURRENT_YEAR:}
+    base-path: ${LAW_STORAGE_PATH:data}
 
 # Logging
 logging:

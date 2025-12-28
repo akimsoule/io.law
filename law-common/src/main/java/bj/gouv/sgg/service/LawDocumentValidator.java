@@ -12,9 +12,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * Service de validation des documents de loi avec vérification du système de fichiers.
+ * Service de validation des documents de loi avec vérification du système de
+ * fichiers.
  *
- * <p>Ce service combine la logique métier basée sur le status de l'entité
+ * <p>
+ * Ce service combine la logique métier basée sur le status de l'entité
  * avec la vérification de l'existence réelle des fichiers sur le disque.
  *
  * @author io.law
@@ -26,7 +28,7 @@ import java.nio.file.Path;
 public class LawDocumentValidator {
 
     private final AppConfig config;
-    
+
     @PostConstruct
     public void init() {
         log.info("✅ LawDocumentValidator initialized with Spring");
@@ -35,109 +37,46 @@ public class LawDocumentValidator {
     // ========== FETCH VALIDATION ==========
 
     /**
-     * Vérifie si le document doit être fetch.
-     * Garantit l'idempotence : ne fetch que si nécessaire.
-     * 
-     * Note: Les documents NOT_FOUND pour l'année courante ne sont JAMAIS mis en BD,
-     * donc ce cas n'existe pas ici.
-     */
-    public boolean mustFetch(LawDocumentEntity entity) {
-        ProcessingStatus status = entity.getStatus();
-        
-        // Cas 1: Document jamais fetch (état initial)
-        if (status == ProcessingStatus.PENDING) {
-            return true;
-        }
-        
-        // Cas 2: Si déjà FETCHED ou plus loin dans le pipeline, ne pas refetch
-        // (garantit l'idempotence)
-        if (status == ProcessingStatus.FETCHED || 
-            status == ProcessingStatus.DOWNLOADED ||
-            status == ProcessingStatus.OCRED_V2 ||
-            status == ProcessingStatus.EXTRACTED ||
-            status == ProcessingStatus.CONSOLIDATED) {
-            return false;
-        }
-        
-        // Cas 3: NOT_FOUND → ne jamais refetch
-        // Les documents NOT_FOUND pour l'année courante ne sont pas en BD
-        // Les documents NOT_FOUND des années précédentes ne réapparaîtront pas
-        if (status == ProcessingStatus.NOT_FOUND) {
-            return false;
-        }
-        
-        // Cas 4: Échecs en aval ne nécessitent pas de refetch
-        // FAILED_DOWNLOAD, FAILED_CORRUPTED, FAILED_OCR, FAILED_EXTRACTION, etc.
-        // Ces échecs ne remettent pas en cause le fait que le document existe
-        
-        return false;
-    }
-
-    /**
      * Vérifie si le document a été fetch.
-     * Retourne true si le status est dans la chaîne de traitement OU si des fichiers existent.
+     * Retourne true si le status est dans la chaîne de traitement OU si des
+     * fichiers existent.
      */
     public boolean isFetched(LawDocumentEntity entity) {
         ProcessingStatus status = entity.getStatus();
-        
+
         // Si le status indique que le document a été fetch
-        if (status == ProcessingStatus.FETCHED || 
-            status == ProcessingStatus.DOWNLOADED ||
-            status == ProcessingStatus.OCRED_V2 ||
-            status == ProcessingStatus.EXTRACTED ||
-            status == ProcessingStatus.CONSOLIDATED) {
+        if (status == ProcessingStatus.FETCHED ||
+                status == ProcessingStatus.NOT_FOUND ||
+                status == ProcessingStatus.DOWNLOADED ||
+                status == ProcessingStatus.OCRED_V2 ||
+                status == ProcessingStatus.EXTRACTED ||
+                status == ProcessingStatus.CONSOLIDATED) {
             return true;
         }
-        
+
         // OU si des fichiers existent sur le disque (preuve qu'il a été fetch)
         if (pdfExists(entity) || ocrExists(entity) || jsonExists(entity)) {
             return true;
         }
-        
+
         return false;
     }
 
     // ========== DOWNLOAD VALIDATION ==========
 
-    /**
-     * Vérifie si le document doit être téléchargé.
-     * Combine le status avec la vérification de l'existence du PDF sur le disque.
-     */
-    public boolean mustDownload(LawDocumentEntity entity) {
-        // Cas 1: Status indique qu'il faut télécharger
-        if (entity.getStatus() == ProcessingStatus.FETCHED) {
-            return true;
-        }
-
-        // Cas 2: PDF corrompu, il faut re-télécharger
-        if (entity.getStatus() == ProcessingStatus.FAILED_CORRUPTED) {
-            return true;
-        }
-
-        // Cas 3: Status indique "downloaded" mais le fichier n'existe pas
-        if (entity.getStatus() == ProcessingStatus.DOWNLOADED && !pdfExists(entity)) {
-            log.warn("⚠️ Document {} marqué DOWNLOADED mais PDF absent sur disque", entity.getDocumentId());
-            return true;
-        }
-
-        return false;
-    }
 
     /**
      * Vérifie si le document a été téléchargé.
      * Combine le status avec la vérification de l'existence du PDF sur le disque.
      */
-    public boolean isDownloaded(LawDocumentEntity entity) {
+    public boolean isNotDownloaded(LawDocumentEntity entity) {
         ProcessingStatus status = entity.getStatus();
+        boolean isDownloaded = pdfExists(entity);
 
-        boolean statusOk = status == ProcessingStatus.DOWNLOADED || status == ProcessingStatus.OCRED_V2 || status == ProcessingStatus.EXTRACTED || status == ProcessingStatus.CONSOLIDATED;
+        boolean downloadedIsStored = status == ProcessingStatus.DOWNLOADED || status == ProcessingStatus.OCRED_V2
+                || status == ProcessingStatus.EXTRACTED || status == ProcessingStatus.CONSOLIDATED;
 
-        // Si le status indique téléchargé, vérifier que le fichier existe vraiment
-        if (statusOk) {
-            return pdfExists(entity);
-        }
-
-        return false;
+        return !(isDownloaded || downloadedIsStored);
     }
 
     // ========== OCR VALIDATION ==========
@@ -173,7 +112,8 @@ public class LawDocumentValidator {
     public boolean isOcred(LawDocumentEntity entity) {
         ProcessingStatus status = entity.getStatus();
 
-        boolean statusOk = status == ProcessingStatus.OCRED_V2 || status == ProcessingStatus.EXTRACTED || status == ProcessingStatus.CONSOLIDATED;
+        boolean statusOk = status == ProcessingStatus.OCRED_V2 || status == ProcessingStatus.EXTRACTED
+                || status == ProcessingStatus.CONSOLIDATED;
 
         // Si le status indique OCR fait, vérifier que le fichier existe vraiment
         if (statusOk) {
@@ -242,7 +182,8 @@ public class LawDocumentValidator {
      * Vérifie si le fichier PDF existe sur le disque.
      */
     public boolean pdfExists(LawDocumentEntity entity) {
-        Path pdfPath = config.getStoragePath().resolve("pdfs").resolve(entity.getType()).resolve(entity.getDocumentId() + ".pdf");
+        Path pdfPath = config.getStoragePath().resolve("pdfs").resolve(entity.getType())
+                .resolve(entity.getDocumentId() + ".pdf");
         return Files.exists(pdfPath);
     }
 
@@ -250,7 +191,8 @@ public class LawDocumentValidator {
      * Vérifie si le fichier OCR existe sur le disque.
      */
     public boolean ocrExists(LawDocumentEntity entity) {
-        Path ocrPath = config.getStoragePath().resolve("ocr").resolve(entity.getType()).resolve(entity.getDocumentId() + ".txt");
+        Path ocrPath = config.getStoragePath().resolve("ocr").resolve(entity.getType())
+                .resolve(entity.getDocumentId() + ".txt");
         return Files.exists(ocrPath);
     }
 
@@ -258,7 +200,8 @@ public class LawDocumentValidator {
      * Vérifie si le fichier JSON existe sur le disque.
      */
     public boolean jsonExists(LawDocumentEntity entity) {
-        Path jsonPath = config.getStoragePath().resolve("articles").resolve(entity.getType()).resolve(entity.getDocumentId() + ".json");
+        Path jsonPath = config.getStoragePath().resolve("articles").resolve(entity.getType())
+                .resolve(entity.getDocumentId() + ".json");
         return Files.exists(jsonPath);
     }
 
@@ -266,20 +209,23 @@ public class LawDocumentValidator {
      * Retourne le chemin du fichier PDF.
      */
     public Path getPdfPath(LawDocumentEntity entity) {
-        return config.getStoragePath().resolve("pdfs").resolve(entity.getType()).resolve(entity.getDocumentId() + ".pdf");
+        return config.getStoragePath().resolve("pdfs").resolve(entity.getType())
+                .resolve(entity.getDocumentId() + ".pdf");
     }
 
     /**
      * Retourne le chemin du fichier OCR.
      */
     public Path getOcrPath(LawDocumentEntity entity) {
-        return config.getStoragePath().resolve("ocr").resolve(entity.getType()).resolve(entity.getDocumentId() + ".txt");
+        return config.getStoragePath().resolve("ocr").resolve(entity.getType())
+                .resolve(entity.getDocumentId() + ".txt");
     }
 
     /**
      * Retourne le chemin du fichier JSON.
      */
     public Path getJsonPath(LawDocumentEntity entity) {
-        return config.getStoragePath().resolve("articles").resolve(entity.getType()).resolve(entity.getDocumentId() + ".json");
+        return config.getStoragePath().resolve("articles").resolve(entity.getType())
+                .resolve(entity.getDocumentId() + ".json");
     }
 }

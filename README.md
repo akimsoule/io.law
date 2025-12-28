@@ -210,7 +210,7 @@ spring:
 
 law:
   storage:
-    base-path: /path/to/data
+    base-path: data
   
   capacity:
     ia: 4   # Score RAM/CPU pour IA (16GB+ RAM)
@@ -510,6 +510,7 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de 
 - [ ] Recherche sémantique avec embeddings
 - [ ] Support des décrets présidentiels
 - [ ] Intégration CI/CD
+- [ ] Déploiement Docker/Kubernetes
 
 ---
 

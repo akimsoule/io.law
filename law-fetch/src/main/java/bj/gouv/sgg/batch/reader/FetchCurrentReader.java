@@ -1,5 +1,6 @@
 package bj.gouv.sgg.batch.reader;
 
+import bj.gouv.sgg.service.Utils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.batch.core.configuration.annotation.StepScope;
@@ -28,8 +29,9 @@ public class FetchCurrentReader implements ItemReader<String> {
     
     @Value("#{jobParameters['documentId']}")
     private String documentId;
-    
+
     private Queue<String> documentIds;
+    private final Utils utils;
     
     @Override
     public synchronized String read() {
@@ -60,19 +62,13 @@ public class FetchCurrentReader implements ItemReader<String> {
         
         int currentYear = LocalDate.now().getYear();
         Set<String> ids = new LinkedHashSet<>();
-        
+
         // Scanner systématiquement toute l'année courante (1 à 2000)
         for (int num = 1; num <= 2000; num++) {
-            String documentId = String.format("%s-%d-%s", type, currentYear, num);
-            ids.add(documentId);
-            
-            // Ajouter les variantes avec padding pour num < 10
-            if (num < 10) {
-                ids.add(String.format("%s-%d-0%d", type, currentYear, num));
-                ids.add(String.format("%s-%d-00%d", type, currentYear, num));
-            }
+            Set<String> newIds = utils.getIds(type, currentYear, num);
+            ids.addAll(newIds);
         }
-        
+
         this.documentIds = new ConcurrentLinkedQueue<>(ids);
         
         log.info("📖 FetchCurrentReader initialisé: {} documents à vérifier pour type={}, year={}", 

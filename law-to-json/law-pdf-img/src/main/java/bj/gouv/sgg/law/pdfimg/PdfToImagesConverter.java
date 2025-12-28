@@ -19,7 +19,8 @@ public class PdfToImagesConverter {
 
     /**
      * Convertit le PDF en images PNG, une image par page.
-     * Les images sont écrites dans `outputBaseDir/documentId/` nommées page-0001.png, page-0002.png ...
+     * Les images sont écrites dans `outputBaseDir/documentId/` nommées
+     * page-0001.png, page-0002.png ...
      * Retourne le nombre de pages converties.
      */
     public int convertPdfToImages(Path pdfPath, Path outputBaseDir, String documentId) throws IOException {
@@ -37,21 +38,16 @@ public class PdfToImagesConverter {
             PDFTextStripper stripper = new PDFTextStripper();
             int pageCount = document.getNumberOfPages();
             LOG.info("Conversion de {} pages pour {} -> {}", pageCount, pdfPath, destDir);
-            boolean detected = false;
+            int converted = 0;
 
             for (int i = 0; i < pageCount; i++) {
-                if (detected) {
-                    LOG.info("Arrêt de la conversion d'images à la page {} suite à la détection d'AMPLIATIONS.", i + 1);
-                    break;
-                }
                 // Inspecter le texte de la page avant de la convertir
                 stripper.setStartPage(i + 1);
                 stripper.setEndPage(i + 1);
                 String pageText = stripper.getText(document);
-                if (pageText != null && pageText.contains("AMPLIATIONS")) {
-                    LOG.info("🚨 AMPLIATIONS détecté à la page {} - arrêt de la conversion d'images.", i + 1);
-                    detected = true;
-                    // On arrête la conversion pour les pages suivantes
+                boolean hasAmpliations = pageText != null && pageText.contains("AMPLIATIONS");
+                if (hasAmpliations) {
+                    LOG.info("🚨 AMPLIATIONS détecté à la page {} - conversion de la page, puis arrêt.", i + 1);
                 }
 
                 BufferedImage bim = renderer.renderImageWithDPI(i, 300, ImageType.RGB);
@@ -59,8 +55,15 @@ public class PdfToImagesConverter {
                 Path imagePath = destDir.resolve(fileName);
                 ImageIO.write(bim, "png", imagePath.toFile());
                 LOG.debug("Écrit image : {}", imagePath);
+                converted++;
+
+                if (hasAmpliations) {
+                    LOG.info("Arrêt de la conversion d'images après la page {} suite à la détection d'AMPLIATIONS.",
+                            i + 1);
+                    break;
+                }
             }
-            return pageCount;
+            return converted;
         }
     }
 }
