@@ -54,7 +54,7 @@ public class DownloadProcessor implements ItemProcessor<LawDocumentEntity, LawDo
             }
 
             // utiliser validator
-            if (validator.isNotDownloaded(document)) {
+            if (!validator.isNotDownloaded(document)) {
                 log.info("ℹ️  {} ne nécessite pas de téléchargement, skip", documentId);
                 return null; // Skip ce document
             }
