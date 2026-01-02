@@ -13,15 +13,19 @@ import org.springframework.batch.item.ItemReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.stream.Stream;
 
 /**
  * ItemReader pour trouver les documents qui ont un PDF téléchargé
  * mais n'ont pas encore de répertoire d'images généré.
+ * 
+ * Scanne le disque pour découvrir les PDFs au lieu d'utiliser la BD.
  */
 @Slf4j
 @Component
@@ -58,74 +62,97 @@ public class PdfImgReader implements ItemReader<LawDocumentEntity> {
         log.info("🔍 PdfImgReader - Initialisation... type={}, documentId={}", type, documentId);
         this.documents = new ConcurrentLinkedQueue<>();
 
-        if (documentId != null && !documentId.isEmpty() && !"ALL".equals(documentId)) {
-            repository.findByDocumentId(documentId).ifPresent(doc -> {
-                if (shouldProcess(doc))
+        try {
+            if (documentId != null && !documentId.isEmpty() && !"ALL".equals(documentId)) {
+                // Traiter un document spécifique
+                processSpecificDocument(documentId);
+            } else {
+                // Scanner tous les PDFs du type
+                scanPdfsForType(type);
+            }
+        } catch (IOException e) {
+            log.error("❌ Erreur lors du scan du disque", e);
+        }
+
+        log.info("📖 PdfImgReader initialisé: {} document(s) à traiter", documents.size());
+    }
+
+    private void processSpecificDocument(String docId) throws IOException {
+        Path pdfDir = config.getStoragePath().resolve("pdfs").resolve(type);
+        Path pdfFile = pdfDir.resolve(docId + ".pdf");
+
+        if (Files.exists(pdfFile)) {
+            repository.findByDocumentId(docId).ifPresent(doc -> {
+                if (shouldProcess(doc)) {
                     documents.add(doc);
+                }
             });
-            log.info("📖 PdfImgReader initialisé: {} document(s)", documents.size());
+        } else {
+            log.warn("⚠️ PDF non trouvé pour documentId={} : {}", docId, pdfFile);
+        }
+    }
+
+    private void scanPdfsForType(String type) throws IOException {
+        Path pdfDir = config.getStoragePath().resolve("pdfs").resolve(type);
+
+        if (!Files.exists(pdfDir)) {
+            log.warn("⚠️ Répertoire PDF non trouvé: {}", pdfDir);
             return;
         }
 
-        List<LawDocumentEntity> found = repository.findByType(type);
-        long totalFound = found.size();
-        long notFoundCount = found.stream().filter(d -> d.getStatus() == ProcessingStatus.NOT_FOUND).count();
-        long imagedCount = found.stream().filter(d -> d.hasOtherProcessingStatus(OtherProcessingStatus.IMAGED)).count();
+        log.info("🔍 Scanning PDFs in {}", pdfDir);
 
-        List<LawDocumentEntity> candidates = found.stream()
-                .filter(d -> d.getStatus() != ProcessingStatus.NOT_FOUND)
-                .filter(d -> !d.hasOtherProcessingStatus(OtherProcessingStatus.IMAGED))
-                .toList();
+        try (Stream<Path> paths = Files.list(pdfDir)) {
+            List<Path> pdfFiles = paths
+                    .filter(Files::isRegularFile)
+                    .filter(p -> p.toString().endsWith(".pdf"))
+                    .sorted() // Pour cohérence
+                    .toList();
 
-        log.info("🔢 PdfImgReader maxItems limit = {}", maxItems);
-        log.info("🔎 PdfImgReader found {} documents for type={} (total={}, excluded NOT_FOUND={}, IMAGED={})",
-                candidates.size(), type, totalFound, notFoundCount, imagedCount);
+            log.info("🔎 Trouvé {} fichiers PDF pour type={}", pdfFiles.size(), type);
 
-        // Diagnostic: afficher les 10 premiers candidats et pourquoi ils seraient
-        // skip/accept
-        int idx = 0;
-        for (LawDocumentEntity d : candidates) {
-            boolean pdfExists = d.getPdfPath() != null && Files.exists(Path.of(d.getPdfPath()));
-            boolean imagesExist = Files.exists(config.getImagesDir().resolve(d.getDocumentId()));
-            boolean imaged = d.hasOtherProcessingStatus(bj.gouv.sgg.entity.OtherProcessingStatus.IMAGED);
-            boolean willProcess = shouldProcess(d);
-            if (idx < 10) {
-                String displayIdx = willProcess ? String.valueOf(++idx) : "-";
-                log.info("  [{}] {} status={} pdfExists={} imagesExist={} imaged={} willProcess={}",
-                        displayIdx, d.getDocumentId(), d.getStatus(), pdfExists, imagesExist, imaged, willProcess);
-            }
-        }
+            int processed = 0;
+            for (Path pdfFile : pdfFiles) {
+                String fileName = pdfFile.getFileName().toString();
+                String docId = fileName.substring(0, fileName.length() - 4); // Enlever .pdf
 
-        for (LawDocumentEntity doc : candidates) {
-            if (shouldProcess(doc)) {
-                documents.add(doc);
+                repository.findByDocumentId(docId).ifPresentOrElse(doc -> {
+                    boolean willProcess = shouldProcess(doc);
+                    if (willProcess) {
+                        documents.add(doc);
+                    }
+                }, () -> {
+                    log.debug("⏭️ Skip {} - document non trouvé en BD", docId);
+                });
+
                 if (documents.size() >= (maxItems != null ? maxItems.intValue() : 10)) {
-                    log.info("🔔 Reached maxItems limit ({}). Stopping enqueue.", maxItems);
+                    log.info("🔔 Reached maxItems limit ({}). Stopping scan.", maxItems);
                     break;
                 }
             }
         }
-        log.info("📖 PdfImgReader initialisé: {} document(s) à traiter (type={})", documents.size(), type);
     }
 
     private boolean shouldProcess(LawDocumentEntity doc) {
-        // Doit être téléchargé (PDF présent) et images absentes
-        if (validator.isNotDownloaded(doc) && (doc.getPdfPath() == null || !Files.exists(Path.of(doc.getPdfPath())))) {
-            log.debug("⏭️ Skip {} - not downloaded (no pdf on storage or pdfPath)", doc.getDocumentId());
+        // Vérifier que le PDF existe (normalement oui puisque scanné)
+        if (!validator.pdfExists(doc)) {
+            log.debug("⏭️ Skip {} - PDF non trouvé sur disque", doc.getDocumentId());
             return false;
         }
 
         // Doit être non marqué IMAGED
-        if (doc.hasOtherProcessingStatus(bj.gouv.sgg.entity.OtherProcessingStatus.IMAGED)) {
-            log.debug("⏭️ Skip {} - already IMAGED (status present)", doc.getDocumentId());
+        if (doc.hasOtherProcessingStatus(OtherProcessingStatus.IMAGED)) {
+            log.debug("⏭️ Skip {} - already IMAGED", doc.getDocumentId());
             return false;
         }
 
+        // Vérifier que les images n'existent pas
         Path imagesDir = config.getImagesDir().resolve(doc.getDocumentId());
         if (Files.exists(imagesDir)) {
             log.debug("⏭️ Skip {} - images already exist: {}", doc.getDocumentId(), imagesDir);
             return false;
         }
+
         return true;
     }
 }

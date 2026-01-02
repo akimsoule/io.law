@@ -63,12 +63,43 @@ class OcrJobIntegrationTest {
                         }
                     });
         }
+        // Nettoyer les fichiers de test dans data/
+        Path pdfsDir = Path.of(System.getProperty("user.dir")).resolve("data").resolve("pdfs").resolve("loi");
+        if (Files.exists(pdfsDir)) {
+            Files.walk(pdfsDir)
+                    .sorted((a, b) -> -a.compareTo(b))
+                    .forEach(path -> {
+                        try {
+                            Files.deleteIfExists(path);
+                        } catch (IOException e) {
+                            // Ignore
+                        }
+                    });
+        }
+        Path ocrDir = Path.of(System.getProperty("user.dir")).resolve("data").resolve("ocr").resolve("loi");
+        if (Files.exists(ocrDir)) {
+            Files.walk(ocrDir)
+                    .sorted((a, b) -> -a.compareTo(b))
+                    .forEach(path -> {
+                        try {
+                            Files.deleteIfExists(path);
+                        } catch (IOException e) {
+                            // Ignore
+                        }
+                    });
+        }
     }
 
     @Test
     void shouldProcessDownloadedDocumentToOcred() throws Exception {
         // Given: Document DOWNLOADED avec PDF réel
-        File goodPdf = new ClassPathResource("good_pdf/loi-2025-17.pdf").getFile();
+        ClassPathResource resource = new ClassPathResource("good_pdf/loi-2025-17.pdf");
+        
+        // Copy to the expected location: data/pdfs/loi/loi-2025-17.pdf
+        Path pdfsDir = Path.of(System.getProperty("user.dir")).resolve("data").resolve("pdfs").resolve("loi");
+        Files.createDirectories(pdfsDir);
+        Path expectedPdf = pdfsDir.resolve("loi-2025-17.pdf");
+        Files.copy(resource.getInputStream(), expectedPdf, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         
         LawDocumentEntity doc = LawDocumentEntity.builder()
                 .type("loi")
@@ -76,7 +107,7 @@ class OcrJobIntegrationTest {
                 .number("17")
                 .documentId("loi-2025-17")
                 .status(ProcessingStatus.DOWNLOADED)
-                .pdfPath(goodPdf.getAbsolutePath())
+                .pdfPath(expectedPdf.toString())
                 .build();
         repository.saveAndFlush(doc);
 
@@ -106,9 +137,19 @@ class OcrJobIntegrationTest {
 
     @Test
     void shouldSkipDocumentWithExistingOcrPath() throws Exception {
-        // Given: Document DOWNLOADED avec ocrPath déjà défini
-        File goodPdf = new ClassPathResource("good_pdf/loi-2025-17.pdf").getFile();
-        Path existingOcr = tempDir.resolve("existing-ocr.txt");
+        // Given: Document DOWNLOADED avec PDF réel
+        ClassPathResource resource = new ClassPathResource("good_pdf/loi-2025-17.pdf");
+        
+        // Copy to the expected location: data/pdfs/loi/loi-2025-018.pdf
+        Path pdfsDir = Path.of(System.getProperty("user.dir")).resolve("data").resolve("pdfs").resolve("loi");
+        Files.createDirectories(pdfsDir);
+        Path expectedPdf = pdfsDir.resolve("loi-2025-018.pdf");
+        Files.copy(resource.getInputStream(), expectedPdf, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+        
+        // Create existing OCR file
+        Path ocrDir = Path.of(System.getProperty("user.dir")).resolve("data").resolve("ocr").resolve("loi");
+        Files.createDirectories(ocrDir);
+        Path existingOcr = ocrDir.resolve("loi-2025-018.txt");
         Files.write(existingOcr, "Texte OCR déjà extrait précédemment".getBytes());
 
         LawDocumentEntity doc = LawDocumentEntity.builder()
@@ -117,7 +158,7 @@ class OcrJobIntegrationTest {
                 .number("018")
                 .documentId("loi-2025-018")
                 .status(ProcessingStatus.DOWNLOADED)
-                .pdfPath(goodPdf.getAbsolutePath())
+                .pdfPath(expectedPdf.toString())
                 .ocrPath(existingOcr.toString())
                 .build();
         repository.saveAndFlush(doc);
@@ -141,7 +182,13 @@ class OcrJobIntegrationTest {
     @Test
     void shouldHandleCorruptedPdf() throws Exception {
         // Given: Document DOWNLOADED avec PDF corrompu
-        File corruptedPdf = new ClassPathResource("corrupted_pdf/loi-2012-43.pdf").getFile();
+        ClassPathResource resource = new ClassPathResource("corrupted_pdf/loi-2012-43.pdf");
+        
+        // Copy to the expected location: data/pdfs/loi/loi-2012-043.pdf
+        Path pdfsDir = Path.of(System.getProperty("user.dir")).resolve("data").resolve("pdfs").resolve("loi");
+        Files.createDirectories(pdfsDir);
+        Path expectedPdf = pdfsDir.resolve("loi-2012-043.pdf");
+        Files.copy(resource.getInputStream(), expectedPdf, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
         
         LawDocumentEntity doc = LawDocumentEntity.builder()
                 .type("loi")
@@ -149,7 +196,7 @@ class OcrJobIntegrationTest {
                 .number("043")
                 .documentId("loi-2012-043")
                 .status(ProcessingStatus.DOWNLOADED)
-                .pdfPath(corruptedPdf.getAbsolutePath())
+                .pdfPath(expectedPdf.toString())
                 .build();
         repository.saveAndFlush(doc);
 

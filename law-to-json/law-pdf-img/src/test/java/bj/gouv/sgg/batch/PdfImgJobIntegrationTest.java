@@ -54,7 +54,9 @@ class PdfImgJobIntegrationTest {
             Files.walk(tempDir)
                     .sorted(Comparator.reverseOrder())
                     .forEach(p -> {
-                        try { Files.deleteIfExists(p); } catch (Exception e) {
+                        try {
+                            Files.deleteIfExists(p);
+                        } catch (Exception e) {
                             // ignore deletion failures during cleanup of temporary test directory
                         }
                     });
@@ -65,8 +67,12 @@ class PdfImgJobIntegrationTest {
     void givenDownloadedPdfWhenJobRunsThenCreatesImagesAndMarksImaged() throws Exception {
         // Given: a downloaded PDF available on disk
         ClassPathResource resource = new ClassPathResource("pdf/loi-1961-20.pdf");
-        Path tempPdf = tempDir.resolve("loi-1961-20.pdf");
-        Files.copy(resource.getInputStream(), tempPdf, StandardCopyOption.REPLACE_EXISTING);
+
+        // Copy to the expected location: data/pdfs/loi/loi-2025-17.pdf
+        Path pdfsDir = Path.of(System.getProperty("user.dir")).resolve("data").resolve("pdfs").resolve("loi");
+        Files.createDirectories(pdfsDir);
+        Path expectedPdf = pdfsDir.resolve(DOCUMENT_ID + ".pdf");
+        Files.copy(resource.getInputStream(), expectedPdf, StandardCopyOption.REPLACE_EXISTING);
 
         // And: no pre-existing images for this document (tests may leave artifacts)
         Path imagesRoot = Path.of(System.getProperty("user.dir")).resolve("data").resolve("images");
@@ -75,7 +81,9 @@ class PdfImgJobIntegrationTest {
             Files.walk(docImages)
                     .sorted(Comparator.reverseOrder())
                     .forEach(p -> {
-                        try { Files.deleteIfExists(p); } catch (Exception e) {
+                        try {
+                            Files.deleteIfExists(p);
+                        } catch (Exception e) {
                             // ignore deletion failures of pre-existing test artifacts
                         }
                     });
@@ -87,7 +95,7 @@ class PdfImgJobIntegrationTest {
                 .number("17")
                 .documentId(DOCUMENT_ID)
                 .status(ProcessingStatus.DOWNLOADED)
-                .pdfPath(tempPdf.toAbsolutePath().toString())
+                .pdfPath(expectedPdf.toString())
                 .build();
         repository.saveAndFlush(doc);
 

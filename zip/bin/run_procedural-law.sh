@@ -14,7 +14,7 @@ trap 'echo "ERROR: $(basename "$0") failed at line $LINENO" >&2' ERR
 
 # Defaults
 TYPE="loi"
-JOBS="fetchCurrentJob,fetchPreviousJob,downloadJob"
+JOBS="ocrJob"
 
 mkdir -p "$PROJECT_ROOT/logs"
 # Log header

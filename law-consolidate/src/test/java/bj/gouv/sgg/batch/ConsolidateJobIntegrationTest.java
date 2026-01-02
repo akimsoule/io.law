@@ -3,7 +3,6 @@ package bj.gouv.sgg.batch;
 import bj.gouv.sgg.entity.LawDocumentEntity;
 import bj.gouv.sgg.entity.ProcessingStatus;
 import bj.gouv.sgg.repository.LawDocumentRepository;
-import bj.gouv.sgg.service.FileStorageService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,26 +39,29 @@ class ConsolidateJobIntegrationTest {
     @Autowired
     private LawDocumentRepository repository;
 
-    @Autowired
-    private FileStorageService fileStorageService;
-
     private Path jsonDir;
+    private Path articlesDir;
 
     @BeforeEach
     void setUp() throws IOException {
         // Nettoyer la base
         repository.deleteAll();
 
-        // Créer répertoire JSON de test
+        // Initialiser les répertoires de test - utiliser le même chemin que la config
         jsonDir = Path.of("/tmp/law-test/articles/loi");
-        Files.createDirectories(jsonDir);
+        articlesDir = Path.of("/tmp/law-test/articles");
     }
 
     @AfterEach
     void tearDown() throws IOException {
         // Nettoyer les fichiers de test
-        if (Files.exists(jsonDir)) {
-            Files.walk(jsonDir)
+        cleanupDirectory(jsonDir);
+        cleanupDirectory(articlesDir);
+    }
+
+    private void cleanupDirectory(Path dir) throws IOException {
+        if (Files.exists(dir)) {
+            Files.walk(dir)
                     .sorted((a, b) -> -a.compareTo(b)) // Ordre inverse pour supprimer enfants avant parents
                     .forEach(path -> {
                         try {
@@ -76,6 +78,9 @@ class ConsolidateJobIntegrationTest {
      */
     @Test
     void shouldConsolidateExtractedDocumentWithJson() throws Exception {
+        // Créer répertoires de test
+        Files.createDirectories(jsonDir);
+
         // GIVEN: Document EXTRACTED avec fichier JSON
         LawDocumentEntity doc = new LawDocumentEntity();
         doc.setType("loi");
@@ -83,11 +88,11 @@ class ConsolidateJobIntegrationTest {
         doc.setNumber("027");
         doc.setDocumentId("loi-2018-027");
         doc.setStatus(ProcessingStatus.EXTRACTED);
-        doc.setJsonPath("/tmp/law-test/articles/loi/loi-2018-027.json");
-        repository.save(doc);
 
         // Créer fichier JSON réel
         Path jsonFile = jsonDir.resolve("loi-2018-027.json");
+        doc.setJsonPath(jsonFile.toString());
+        repository.save(doc);
         String jsonContent = """
                 {
                   "articles": [
@@ -129,6 +134,9 @@ class ConsolidateJobIntegrationTest {
      */
     @Test
     void shouldSkipAlreadyConsolidatedDocument() throws Exception {
+        // Créer répertoires de test
+        Files.createDirectories(jsonDir);
+
         // GIVEN: Document déjà CONSOLIDATED
         LawDocumentEntity doc = new LawDocumentEntity();
         doc.setType("loi");
@@ -136,11 +144,11 @@ class ConsolidateJobIntegrationTest {
         doc.setNumber("045");
         doc.setDocumentId("loi-2019-045");
         doc.setStatus(ProcessingStatus.CONSOLIDATED);
-        doc.setJsonPath("/tmp/law-test/articles/loi/loi-2019-045.json");
-        repository.save(doc);
 
         // Créer JSON
         Path jsonFile = jsonDir.resolve("loi-2019-045.json");
+        doc.setJsonPath(jsonFile.toString());
+        repository.save(doc);
         Files.writeString(jsonFile, "{\"articles\": []}");
 
         // WHEN: Lancement du job
@@ -201,6 +209,9 @@ class ConsolidateJobIntegrationTest {
      */
     @Test
     void shouldFailIfJsonEmpty() throws Exception {
+        // Créer répertoires de test
+        Files.createDirectories(jsonDir);
+
         // GIVEN: Document EXTRACTED avec JSON vide
         LawDocumentEntity doc = new LawDocumentEntity();
         doc.setType("loi");
